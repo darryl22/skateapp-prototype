@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home</title>
+    <link rel="stylesheet" href="/index.css">
+    <!-- swiper cdn -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+
+    <!-- <a href="https://www.flaticon.com/free-icons/back" title="back icons">Back icons created by Roundicons - Flaticon</a> -->
+    <!-- <a href="https://www.flaticon.com/free-icons/user" title="user icons">User icons created by Graphics Plazza - Flaticon</a> -->
+    <!-- <a href="https://www.flaticon.com/free-icons/message" title="message icons">Message icons created by apien - Flaticon</a> -->
+     <style>
+        .swiper {
+            width: 100%;
+            height: 100vh;
+            }
+     </style>
+</head>
+<body>
+    <%- include('templates/nav.ejs') %>
+    <div class="swiper">
+        <div class="swiper-wrapper">
+            <div class="swiper-slide">
+                <div class="carousel-image" style="background-image: url('/images/carouselimage1.jpg');"></div>
+            </div>
+            <div class="swiper-slide">
+                <div class="carousel-image" style="background-image: url('/images/carouselimage2.jpg');"></div>
+            </div>
+            <div class="swiper-slide">
+                <div class="carousel-image" style="background-image: url('/images/carouselimage3.jpg');"></div>
+            </div>
+        </div>
+        <div class="swiper-pagination"></div>
+        <div class="swiper-button-prev"></div>
+        <div class="swiper-button-next"></div>
+    </div>
+    <div style="text-align: center; display: flex; flex-direction: column; align-items: center;">
+        <p style="margin-top: 4em; color: #116dff; margin-bottom: 0em;">Section 1</p>
+        <p style="font-size: 2em; color: purple; margin-top: 0.5em;">An Introduction to Skateboarding in Kenya</p>
+        <p style="width: 50%; font-family: roboto; color: gray; margin-bottom: 5em;">Lorem ipsum dolor sit amet consectetur, adipisicing elit. Pariatur facere excepturi debitis? Quae debitis non unde, magni esse distinctio? Illum perspiciatis suscipit laudantium non quibusdam omnis atque eius a mollitia minima voluptas rem dolores nostrum nemo, vel quas id architecto placeat cupiditate excepturi voluptates? Provident delectus quia nesciunt atque est.</p>
+    </div>
+    <!-- <div class="paralax-div">
+        <p style="font-size: 1.5em; font-weight: 500;">one</p>
+        <p style="font-size: 1.5em; font-weight: 500;">two</p>
+        <p style="font-size: 1.5em; font-weight: 500;">three</p>
+    </div> -->
+</body>
+<script>
+    const swiper = new Swiper('.swiper', {
+        direction: 'horizontal',
+        // slidesPerView: 2,
+        loop: true,
+        pagination: {
+            el: '.swiper-pagination',
+        },
+        navigation: {
+            nextEl: '.swiper-button-next',
+            prevEl: '.swiper-button-prev',
+        },
+        scrollbar: {
+            el: '.swiper-scrollbar',
+        },
+    });
+</script>
+</html>

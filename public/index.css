@@ -1,0 +1,461 @@
+@font-face {
+    font-family: montserrat;
+    src: url("./fonts/Montserrat/Montserrat-VariableFont_wght.ttf");
+}
+
+@font-face {
+    font-family: roboto;
+    src: url("./fonts/Roboto_Mono/RobotoMono-VariableFont_wght.ttf");
+}
+
+:root {
+    --lightblue: #116dff;
+    --darkgray: #021526;
+    --dark-blue: #0C0C0C;
+    --transparent-background: rgba(0, 0, 0, 0);
+}
+
+::-webkit-scrollbar{
+    display: block;
+    background-color: var(--transparent-background);
+    /* border: 1px solid rgb(79, 79, 79); */
+    border-radius: 10px;
+    width: 10px;
+    padding: 2px !important;
+}
+
+::-webkit-scrollbar-thumb{
+    display: block;
+    background-color: rgb(79, 79, 79);
+    border-radius: 10px;
+    scrollbar-width: 5px;
+}
+
+html{
+    margin: 0;
+}
+
+body{
+    margin: 0;
+    font-family: montserrat;
+    /* background-color: var(--darkgray); */
+    background-image: linear-gradient(var(--dark-blue), var(--darkgray));
+    background-repeat: no-repeat;
+    min-height: 100vh;
+}
+
+a{
+    text-decoration: none;
+    color: black;
+}
+
+.spinner-container{
+    position: fixed;
+    top: 47%;
+    left: 47%;
+    z-index: 12;
+    display: none;
+}
+
+.spinner{
+    width: 50px;
+    height: 50px;
+    animation: spinnerAnimation 1.3s ease-in-out infinite;
+}
+
+@keyframes spinnerAnimation {
+    0% {
+        transform: scale(1) rotate(0deg);
+    }
+
+    25% {
+        transform: scale(1.3) rotate(0deg);
+    }
+
+    50% {
+        transform: scale(1.3) rotate(360deg);
+    }
+
+    75% {
+        transform: scale(1.3) rotate(360deg);
+    }
+
+    100% {
+        transform: scale(1) rotate(360deg);
+    }
+}
+
+.nav-div{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5em;
+    background-color: var(--darkgray);
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    color: white;
+}
+
+.menu-logo{
+    height: 1.5em;
+}
+
+.nav-links{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.4em;
+}
+
+.nav-div a{
+    color: white;
+}
+
+.alert{
+    position: absolute;
+    top: 90px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgb(201, 255, 201);
+    padding: 15px;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    gap: 2em;
+}
+
+.popup-style{
+    font-family: roboto;
+    color: red;
+}
+
+.popup-button{
+    border: 1px solid black;
+    border-radius: 3px;
+    background-color: white;
+    color: black;
+    cursor: pointer;
+    padding: 5px;
+}
+
+.carousel-image{
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+    width: 100%;
+    height: 100%;
+}
+
+.active{
+    display: block;
+}
+
+.prev, .next{
+    cursor: pointer;
+    height: 1.3em;
+    position: absolute;
+    top: 50%;
+}
+
+.next{
+    right: 10px;
+}
+
+.prev{
+    left: 10px;
+}
+
+.paralax-div{
+    background-image: url("./images/carouselimage1.jpg");
+    background-attachment: fixed;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    height: 50vh;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    color: white;
+}
+
+.auth-div{
+    /* background-color: rgb(186, 0, 186); */
+    /* background-image: linear-gradient(to right, rgb(163, 0, 163), rgb(213, 0, 153)); */
+    border: 1px solid white;
+    color: white;
+    padding: 2em;
+    border-radius: 15px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 30%;
+    min-width: 250px;
+    margin: auto;
+    margin-top: 3em;
+}
+
+.auth-input{
+    border: none;
+    background-color: rgba(255, 255, 255, 0);
+    padding: 1em 0em;
+    width: 50%;
+    min-width: 150px;
+    margin: 1em 0em;
+    color: white;
+    border: none;
+    border-bottom: 1px solid white;
+    outline: none;
+}
+
+.auth-input::placeholder{
+    color: white;
+}
+
+.auth-button{
+    border: none;
+    background-color: white;
+    color: black;
+    padding: 0.7em 1.5em;
+    border-radius: 30px;
+    margin-top: 3em;
+    font-family: roboto;
+    cursor: pointer;
+}
+
+/* map styles */
+
+.spots-div{
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+    overflow-y: scroll;
+    height: 70vh;
+}
+
+.spot-info{
+    display: flex;
+}
+
+.spot-image{
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+    flex: 1;
+    aspect-ratio: 1 / 1;
+}
+
+.spot-details{
+    /* background-color: rgb(238, 238, 238); */
+    border: 1px solid gray;
+    flex: 1;
+    padding: 1em;
+}
+
+.map-outer-div{
+    width: 100%;
+    height: 92vh;
+    display: flex;
+    position: relative;
+}
+
+.map-sidebar{
+    flex: 2;
+    /* background-color: var(--dark-blue); */
+    background-image: linear-gradient(to right, var(--dark-blue), var(--darkgray));
+    padding: 1.5em;
+    overflow-y: scroll;
+    display: none;
+    z-index: 12;
+    color: white;
+}
+
+.map-div{
+    flex: 3;
+    position: relative;
+}
+
+.mapboxgl-popup-content{
+    /* background-color: var(--darkgray); */
+    background-color: rgba(2, 21, 38, 0.3);
+    backdrop-filter: blur(3px);
+    color: white;
+    padding: 1em;
+    border-radius: 10px;
+    padding: 1em;
+    max-height: 70vh;
+    overflow-y: scroll;
+    width: auto;
+}
+
+.mapboxgl-popup-close-button{
+    font-size: 2em;
+    /* margin-bottom: 1em; */
+    color: white;
+}
+
+.spot-details-button{
+    border: 1px solid white;
+    /* background-color: var(--darkgray); */
+    background-color: var(--transparent-background);
+    color: white;
+    padding: 1em;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: 200ms;
+}
+
+.spot-details-button:hover{
+    background-color: white;
+    color: black;
+}
+
+.spot-details-image{
+    width: 100%;
+    height: auto;
+}
+
+.map-inner-sidebar{
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    padding: 0.5em 1em;
+    background-color: white;
+    z-index: 10;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+.map-inner-sidebar-content, .spot-details-modal{
+    position: fixed;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5);
+    top: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* display: none; */
+    opacity: 0;
+    z-index: 11;
+    transition: 200ms;
+    pointer-events: none;
+}
+
+.spot-details-modal-inner{
+    width: 70%;
+    background-color: var(--darkgray);
+    color: white;
+    min-height: 50vh;
+    transform: translateY(-20%);
+    transition: 200ms;
+}
+
+.addspot-div{
+    width: 70%;
+    height: 80vh;
+    background-color: var(--dark-blue);
+    color: white;
+    padding: 2em;
+    overflow-y: scroll;
+    border-radius: 15px;
+    position: relative;
+    transform: translateY(-20%);
+    transition: 200ms;
+}
+
+.close-menu{
+    width: 2em;
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    cursor: pointer;
+}
+
+.map-filters{
+    display: flex;
+    align-items: center;
+    gap: 2em;
+    margin-bottom: 1em;
+}
+
+.spots-list{
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+    height: 70vh;
+    overflow-y: scroll;
+    border: 2px solid rgb(79, 79, 79);
+    border-radius: 10px;
+    padding: 15px;
+    width: 70%;
+}
+
+.spot-list-item{
+    display: flex;
+    gap: 1em;
+}
+
+.spot-list-item-image{
+    width: 30%;
+    aspect-ratio: 1 / 1;
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+    border-radius: 5px;
+}
+
+.add-spot-button{
+    cursor: pointer;
+    background-color: var(--transparent-background);
+    border: 1px solid white;
+    padding: 10px 15px;
+    border-radius: 5px;
+    transition: 200ms;
+    color: white;
+}
+
+.add-spot-button:hover{
+    background-color: white;
+    color: black;
+}
+
+.addspot-form{
+    margin-top: 1em;
+    margin-bottom: 3em;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid rgb(85, 85, 85);
+    border-radius: 5px;
+    padding: 1em;
+}
+
+.spot-confirm, .cancel-spot-button{
+    padding: 10px 10px;
+    margin-top: 2em;
+    background-color: var(--dark-blue);
+    color: white;
+    width: fit-content;
+    border: 1px solid white;
+    border-radius: 5px;
+    transition: 200ms;
+    cursor: pointer;
+}
+
+.spot-confirm:hover, .cancel-spot-button:hover{
+    background-color: white;
+    color: black;
+}
+
+@media screen and (max-width: 900px) {
+
+    .map-outer-div{
+        flex-direction: column-reverse;
+    }
+}
+
+/* @media screen and (max-width: 445px) {
+    
+} */

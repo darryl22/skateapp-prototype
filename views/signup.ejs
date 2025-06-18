@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign up</title>
+    <link rel="stylesheet" href="/index.css">
+</head>
+<body>
+    <%- include('templates/nav.ejs') %>
+    <form action="" method="post" class="auth-div">
+        <p style="text-align: center; font-size: 1.5em;">Sign up</p>
+        <input type="text" class="auth-input" placeholder="username" name="username" required>
+        <input type="text" class="auth-input" placeholder="email" name="email" required>
+        <input type="password" class="auth-input" placeholder="password" name="password" required>
+        <input type="password" class="auth-input" placeholder="confirm password" name="confirmpassword" required>
+        <button class="auth-button">Confirm</button>
+        <a href="/login" style="color: rgb(198, 198, 198); font-size: 0.8em; margin-top: 3em;">Login</a>
+    </form>
+</body>
+</html>

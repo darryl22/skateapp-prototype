@@ -1,0 +1,21 @@
+<div class="nav-div">
+    <div class="nav-links">
+        <a href="/" style="font-size: 1.2em; color: purple;">Home</a>
+        <a href="/map">Map</a>
+        <!-- <a href="/info">Skateboarding in Africa</a> -->
+    </div>
+    <div style="display: flex; align-items: center; gap: 1em;">
+        <% if (user === "anonymous") { %>
+            <a href="/login" style="margin: 0px;">Login</a>
+        <% } else { %>
+            <!-- <a href="/messages">
+                <img src="/logos/message.png" alt="" style="height: 1.2em;">
+            </a> -->
+            <a href="/profile">
+                <img src="/logos/profile-light.png" alt="" style="height: 1em;">
+            </a>
+            <a href="/logout">Logout</a>
+        <% } %>
+
+    </div>
+</div>
