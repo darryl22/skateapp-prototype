@@ -3,6 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- swiper cdn -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+
     <!-- mapbox dependencies -->
     <link href="https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.css" rel="stylesheet">
     <script src="https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.js"></script>
@@ -14,12 +19,17 @@
     <script id="search-js" defer src="https://api.mapbox.com/search-js/v1.1.0/web.js"></script>
     <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css" type="text/css">
     <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
-    <title>Document</title>
+    <title>Skatespot App</title>
     <link rel="stylesheet" href="/index.css">
     <style>
         .nav-div{
             box-shadow: none;
-            /* border-bottom: 1px solid rgb(152, 152, 152); */
+            /* border-bottom: none; */
+        }
+
+        .swiper {
+            width: 100%;
+            height: 50vh;
         }
 
         body{
@@ -29,13 +39,15 @@
 </head>
 <body>
     
-    <div class="spinner-container">
+    <div class="spinner-container" id="spinnerContainer">
         <img src="/logos/skateboardlight.png" alt="spinner" class="spinner">
     </div>
     <%- include('templates/nav.ejs') %>
+    <%- include('templates/alert.ejs') %>
     <div class="map-inner-sidebar-content" id="menuContent">
-        <img src="./logos/closelight.png" alt="close menu" class="close-menu" onclick="hideMenu()">
+        <!-- <img src="./logos/closelight.png" alt="close menu" class="close-menu" onclick="hideMenu()"> -->
         <div class="addspot-div" id="addSpotDiv">
+            <img src="./logos/closelight.png" alt="close menu" class="close-menu2" onclick="hideMenu()">
             <button class="add-spot-button" id="addNewSpotButton">Add new spot</button>
             <div id="spotInformation" style="margin-top: 2em;">
                 <p>Filters</p>
@@ -50,6 +62,7 @@
                                 <option value="rail">rail</option>
                                 <option value="stairs">stairs</option>
                                 <option value="park">park</option>
+                                <option value="other">other</option>
                             </select>
                         </div>
                         <div style="display: flex; flex-direction: column;">
@@ -87,8 +100,21 @@
     </div>
     <% for(var x = 0; x < spots.length; x++) { %>
     <div class="spot-details-modal" id="spotDetailsModal<%= spots[x]._id  %>">
-        <img src="./logos/closelight.png" alt="close menu" class="close-menu" onclick="hideDetails('<%= spots[x]._id  %>')">
+        <!-- <img src="./logos/closelight.png" alt="close menu" class="close-menu" onclick="hideDetails('<%= spots[x]._id  %>')"> -->
         <div class="spot-details-modal-inner" id="spotDetailsInner<%= spots[x]._id  %>">
+            <img src="./logos/closelight.png" alt="close menu" class="close-menu2" onclick="hideDetails('<%= spots[x]._id  %>')">
+            <div class="swiper" style="height: 60vh;">
+                <div class="swiper-wrapper">
+                    <% for(var y = 0; y < spots[x].spotimages.length; y++) { %>
+                    <div class="swiper-slide">
+                        <div class="carousel-image" style="background-image: url('<%= spots[x].spotimages[y]  %>'); background-size: contain;"></div>
+                    </div>
+                    <% } %>
+                </div>
+                <div class="swiper-pagination"></div>
+                <div class="swiper-button-prev"></div>
+                <div class="swiper-button-next"></div>
+            </div>
             <p id="spotDetailsTitle"><%= spots[x].description  %></p>
         </div>
     </div>
@@ -133,10 +159,32 @@
 </body>
 <div id="spot-container" data-object="<%= JSON.stringify(spots) %>"></div>
 <script>
+    const swiper = new Swiper('.swiper', {
+        direction: 'horizontal',
+        // slidesPerView: 2,
+        loop: true,
+        pagination: {
+            el: '.swiper-pagination',
+        },
+        navigation: {
+            nextEl: '.swiper-button-next',
+            prevEl: '.swiper-button-prev',
+        },
+        scrollbar: {
+            el: '.swiper-scrollbar',
+        },
+    });
+
+    addNewAlert("SUCCESS", "This is a test message")
+    addNewAlert("ERROR", "This is a second test message")
+
+
     let dataContainer = document.getElementById('spot-container');
     let spotsData = JSON.parse(dataContainer.getAttribute('data-object'));
+    // let spotsData = JSON.parse('<%- JSON.stringify(spots)%>')
 
     function showMenu() {
+        addNewAlert("SUCCESS", "This is a test message")
         let menuContent = document.getElementById("menuContent")
         let addSpotDiv = document.getElementById("addSpotDiv")
         addSpotDiv.style.transform = "translateY(0)"
@@ -198,7 +246,7 @@
                     <p style="font-weight: bold; font-size: 2em; margin-bottom: 10px; margin-top: 0em;">${item.spottype}</p>
                     <img class="spot-details-image" src="${item.spotimages[0]}"></img>
                     <p style="font-size: 1.3em;">${item.description}</p>
-                    <p style="font-size: 1.3em; color: var(--lightblue)">Uploaded by: Joe</p>
+                    <p style="font-size: 1.3em; color: var(--lightblue)">Uploaded by: ${item.createdBy}</p>
                     <button class='spot-details-button' onclick="showSpotDetails('${item._id}')">Details</button>
                 </div>`
             },
@@ -235,7 +283,7 @@
     }
 
     let categoryEntries = Object.entries(spotCategories)
-    console.log(categoryEntries)
+    console.log("Cat entries", categoryEntries)
     console.log("screen width", screen.width)
 
     const popup = new mapboxgl.Popup({maxWidth: "390px"})
@@ -418,6 +466,7 @@
         })
         $('#addSpotForm').submit(function(e) {
             e.preventDefault()
+            $("#spinnerContainer").css("display", "block")
             let images = document.getElementById("spotImages")
             // console.log(images.files)
             let image64Promises = []
@@ -441,6 +490,7 @@
                     url: "/addspot",
                     data: sendData,
                     success: function() {
+                        $("#spinnerContainer").css("display", "none")
                         console.log("successful request")
                         map.easeTo({
                             center: [36.8219, -1.2921],
@@ -456,6 +506,7 @@
 
                     },
                     error: function() {
+                        $("#spinnerContainer").css("display", "none")
                         console.log("error on request")
                     }
                 })

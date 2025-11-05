@@ -3,11 +3,172 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Profile</title>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <title>Skatespot App</title>
     <link rel="stylesheet" href="/index.css">
 </head>
 <body>
     <%- include('templates/nav.ejs') %>
-    <p style="text-align: center; font-size: 1.3em;">Profile <%= user %></p>
+    <div class="profile-div">
+        <div class="profile-side">
+            <div class="profile-info-div">
+                <div class="profile-settings-picture">
+                    <img src="/logos/profile.png" alt="" style="width: 50%;">
+                </div>
+                <p class="profile-title">Details</p>
+                <div class="underline"></div>
+
+                <p class="profile-detail-title">Name</p>
+                <p class="profile-detail-info">Test name</p>
+
+                <p class="profile-detail-title">Email</p>
+                <p class="profile-detail-info">testemail@gmail.com</p>
+            </div>
+        </div>
+        <div class="profile-main">
+            <div class="profile-info-div">
+                <p class="profile-title">preferences1</p>
+                <div class="underline"></div>
+
+                <div class="profile-pill-outer">
+                    <div class="profile-pill-title">param1</div>
+                    <div class="profile-pill-div" id="param1Pill">
+                        <div class="profile-pill-circle" id="param1PillCircle"></div>
+                    </div>
+                    <input type="hidden" value="<%= user.preferences.param1 %>" id="param1PillValue">
+                </div>
+                <div class="profile-pill-outer">
+                    <div class="profile-pill-title">param2</div>
+                    <div class="profile-pill-div" id="param2Pill">
+                        <div class="profile-pill-circle" id="param2PillCircle"></div>
+                    </div>
+                    <input type="hidden" value="<%= user.preferences.param2 %>" id="param2PillValue">
+                </div>
+                <div class="profile-pill-outer">
+                    <div class="profile-pill-title">param3</div>
+                    <div class="profile-pill-div" id="param3Pill">
+                        <div class="profile-pill-circle" id="param3PillCircle"></div>
+                    </div>
+                    <input type="hidden" value="<%= user.preferences.param3 %>" id="param3PillValue">
+                </div>
+            </div>
+            <div class="profile-info-div">
+                <p class="profile-title">Preferences2</p>
+                <div class="underline"></div>
+
+                <div class="profile-pill-outer">
+                    <div>
+                        <p class="profile-pill-title">param1</p>
+                        <p class="profile-detail-info">param detail</p>
+                    </div>
+                    <div class="profile-pill-div" id="param4Pill">
+                        <div class="profile-pill-circle" id="param4PillCircle"></div>
+                    </div>
+                    <input type="hidden" value="<%= user.preferences2.param1 %>" id="param4PillValue">
+                </div>
+                <div class="profile-pill-outer">
+                    <div>
+                        <p class="profile-pill-title">param2</p>
+                        <p class="profile-detail-info">param detail</p>
+                    </div>
+                    <div class="profile-pill-div" id="param5Pill">
+                        <div class="profile-pill-circle" id="param5PillCircle"></div>
+                    </div>
+                    <input type="hidden" value="<%= user.preferences2.param2 %>" id="param5PillValue">
+                </div>
+                <div class="profile-pill-outer">
+                    <div>
+                        <p class="profile-pill-title">param3</p>
+                        <p class="profile-detail-info">param detail</p>
+                    </div>
+                    <div class="profile-pill-div" id="param6Pill">
+                        <div class="profile-pill-circle" id="param6PillCircle"></div>
+                    </div>
+                    <input type="hidden" value="<%= user.preferences2.param3 %>" id="param6PillValue">
+                </div>
+                <form action="/updateProfile" method="post" id="updateProfileForm">
+                </form>
+            </div>
+        </div>
+    </div>
 </body>
+<script>
+    let user = JSON.parse('<%- JSON.stringify(user)%>')
+    console.log(user)
+    let param1Pill = document.getElementById("param1Pill")
+    let param2Pill = document.getElementById("param2Pill")
+    let param3Pill = document.getElementById("param3Pill")
+    let param4Pill = document.getElementById("param4Pill")
+    let param5Pill = document.getElementById("param5Pill")
+    let param6Pill = document.getElementById("param6Pill")
+
+    let param1PillCircle = document.getElementById("param1PillCircle")
+    let param2PillCircle = document.getElementById("param2PillCircle")
+    let param3PillCircle = document.getElementById("param3PillCircle")
+    let param4PillCircle = document.getElementById("param4PillCircle")
+    let param5PillCircle = document.getElementById("param5PillCircle")
+    let param6PillCircle = document.getElementById("param6PillCircle")
+
+    function updateSettingsDisplay() {
+        param1Pill.classList.add(user.preferences.param1 ? "pill-on" : "pill-off")
+        param2Pill.classList.add(user.preferences.param2 ? "pill-on" : "pill-off")
+        param3Pill.classList.add(user.preferences.param3 ? "pill-on" : "pill-off")
+        param4Pill.classList.add(user.preferences2.param1 ? "pill-on" : "pill-off")
+        param5Pill.classList.add(user.preferences2.param2 ? "pill-on" : "pill-off")
+        param6Pill.classList.add(user.preferences2.param3 ? "pill-on" : "pill-off")
+
+        param1PillCircle.classList.add(user.preferences.param1 ? "pill-circle-on" : "pill-circle-off")
+        param2PillCircle.classList.add(user.preferences.param2 ? "pill-circle-on" : "pill-circle-off")
+        param3PillCircle.classList.add(user.preferences.param3 ? "pill-circle-on" : "pill-circle-off")
+        param4PillCircle.classList.add(user.preferences2.param1 ? "pill-circle-on" : "pill-circle-off")
+        param5PillCircle.classList.add(user.preferences2.param2 ? "pill-circle-on" : "pill-circle-off")
+        param6PillCircle.classList.add(user.preferences2.param3 ? "pill-circle-on" : "pill-circle-off")
+    }
+    updateSettingsDisplay()
+
+    function updateProfileForm() {
+        let updateProfileForm = document.getElementById("updateProfileForm")
+        let param1Value = document.getElementById("param1Value")
+        let param2Value = document.getElementById("param2Value")
+        let param3Value = document.getElementById("param3Value")
+        let param4Value = document.getElementById("param4Value")
+        let param5Value = document.getElementById("param5Value")
+        let param6Value = document.getElementById("param6Value")
+        console.log(param1Value.value, param2Value.value, param3Value.value, param4Value.value, param5Value.value, param6Value.value)
+    }
+
+    $(document).ready(function () {
+
+        $(".profile-pill-div").on("click", function() {
+            $(this).toggleClass("pill-on")
+            let pillID = $(this).attr("id") + "Circle"
+            let pillVal = $(this).attr("id") + "Value"
+            $(`#${pillID}`).toggleClass("pill-circle-on")
+            if ($(`#${pillVal}`).val() == "true") {
+                $(`#${pillVal}`).val("false")
+            } else {
+                $(`#${pillVal}`).val("true")
+            }
+            console.log($(`#${pillVal}`).val())
+            $.ajax({
+                url: "updateProfile",
+                method: "post",
+                data: {
+                    param1: $("#param1PillValue").val(),
+                    param2: $("#param2PillValue").val(),
+                    param3: $("#param3PillValue").val(),
+                    param4: $("#param4PillValue").val(),
+                    param5: $("#param5PillValue").val(),
+                    param6: $("#param6PillValue").val(),
+                },
+                success: function(res) {
+                    console.log(res)
+                },
+                error: function(error) {
+                    console.log(error)
+                }
+            })
+        })
+    })
+</script>
 </html>

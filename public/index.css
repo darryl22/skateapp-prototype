@@ -39,7 +39,7 @@ body{
     margin: 0;
     font-family: montserrat;
     /* background-color: var(--darkgray); */
-    background-image: linear-gradient(var(--dark-blue), var(--darkgray));
+    background-image: linear-gradient(var(--darkgray), var(--dark-blue));
     background-repeat: no-repeat;
     min-height: 100vh;
 }
@@ -95,6 +95,7 @@ a{
     top: 0;
     z-index: 3;
     color: white;
+    border-bottom: 1px solid gray;
 }
 
 .menu-logo{
@@ -112,17 +113,58 @@ a{
     color: white;
 }
 
-.alert{
+.alert-div{
     position: absolute;
-    top: 90px;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: rgb(201, 255, 201);
-    padding: 15px;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+    z-index: 12;
+    max-width: 300px;
+}
+
+.alert-item-div{
     border-radius: 5px;
+    padding: 10px;
+    position: relative;
     display: flex;
     align-items: center;
-    gap: 2em;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 0.9em;
+    opacity: 0;
+    transform: translateX(50%);
+    transition: 500ms;
+}
+
+.show-alert{
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.alert-message{
+    padding-right: 20px;
+}
+
+.alert-message-code{
+    font-weight: bold;
+    padding-right: 5px;
+}
+
+.alert-success{
+    background-color: rgb(179, 255, 187);
+    color: rgb(0, 83, 0);
+}
+
+.alert-error{
+    background-color: rgb(179, 194, 194);
+    color: rgb(157, 0, 0);
+}
+
+.close-alert{
+    cursor: pointer;
+    height: 1em;
 }
 
 .popup-style{
@@ -145,6 +187,7 @@ a{
     background-repeat: no-repeat;
     width: 100%;
     height: 100%;
+    /* aspect-ratio: 1 / 1; */
 }
 
 .active{
@@ -345,16 +388,17 @@ a{
 }
 
 .spot-details-modal-inner{
-    width: 70%;
+    width: 85%;
     background-color: var(--darkgray);
     color: white;
     min-height: 50vh;
     transform: translateY(-20%);
     transition: 200ms;
+    padding: 2em;
 }
 
 .addspot-div{
-    width: 70%;
+    width: 85%;
     height: 80vh;
     background-color: var(--dark-blue);
     color: white;
@@ -372,6 +416,13 @@ a{
     top: 15px;
     left: 15px;
     cursor: pointer;
+}
+
+.close-menu2{
+    width: 2em;
+    margin-bottom: 2em;
+    cursor: pointer;
+    display: block;
 }
 
 .map-filters{
@@ -449,10 +500,132 @@ a{
     color: black;
 }
 
+.profile-div{
+    color: white;
+    width: 100%;
+    display: flex;
+    height: 100%;
+}
+
+.profile-side{
+    flex: 2;
+    border-right: 1px solid gray;
+    height: 100%;
+    padding: 2em;
+}
+
+.profile-main{
+    flex: 4;
+    height: 100%;
+    padding: 2em;
+}
+
+.profile-settings-picture{
+    width: 30%;
+    min-width: 100px;
+    aspect-ratio: 1 / 1;
+    background-color: white;
+    border-radius: 50%;
+    margin: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.profile-info-div{
+    border: 2px solid gray;
+    border-radius: 15px;
+    padding: 2em;
+    margin-top: 2em;
+}
+
+.profile-title{
+    font-size: 2em;
+    color: white;
+    margin: 0;
+}
+
+.underline{
+    width: 100%;
+    height: 1px;
+    background-color: white;
+    margin: 1em 0em;
+}
+
+.profile-detail-title{
+    font-size: 1.2em;
+    color: white;
+    margin-bottom: 3px;
+    margin-top: 2em;
+}
+
+.profile-pill-title{
+    font-size: 1.2em;
+    color: white;
+    margin: 0;
+}
+
+.profile-detail-info{
+    color: gray;
+    margin: 0;
+}
+
+.profile-pill-outer{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1em;
+    margin-top: 2em;
+    /* width: 50%; */
+}
+
+.profile-pill-div{
+    width: 50px;
+    padding: 5px;
+    border-radius: 20px;
+    display: flex;
+    cursor: pointer;
+    justify-content: flex-start;
+    border: 1px solid gray;
+    transition: 200ms;
+}
+
+.profile-pill-circle{
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background-color: gray;
+    transition: 200ms;
+}
+
+.pill-on{
+    /* justify-content: flex-start; */
+    border: 1px solid rgb(0, 212, 0);
+}
+
+.pill-circle-on{
+    transform: translateX(35px);
+    background-color: rgb(0, 212, 0);
+}
+
+/* @media screen and (max-width: 1200px) {
+    .profile-div{
+        flex-direction: column;
+    }
+} */
+
 @media screen and (max-width: 900px) {
 
     .map-outer-div{
         flex-direction: column-reverse;
+    }
+
+    .profile-div{
+        flex-direction: column;
+    }
+    
+    .profile-side{
+        border: none;
     }
 }
 

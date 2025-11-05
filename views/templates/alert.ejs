@@ -1,4 +1,33 @@
-<div class="alert">
-    <p style="margin: 0;">Message</p>
-    <img src="/logos/close.png" alt="" style="height: 1em;">
+<div class="alert-div" id="alertDiv">
 </div>
+<script>
+    let alertList = []
+    function addNewAlert(code, message) {
+        let alertDiv = document.getElementById("alertDiv")
+        let alertsLength = document.getElementsByClassName("alert-item-div").length
+        console.log("alerts length", alertsLength)
+        alertDiv.insertAdjacentHTML("beforeend", `
+            <div class="alert-item-div ${code === 'SUCCESS' ? 'alert-success': 'alert-error'}" id='alertItem${alertsLength}' onclick="closeAlert('alertItem${alertsLength}')">
+                <p class="alert-message"><span class="alert-message-code">${code}:</span>${message}</p>
+                <img src="./logos/close.png" alt="close menu" class="close-alert">
+            </div>
+        `)
+        let alertItem = document.getElementById(`alertItem${alertsLength}`)
+        alertItem.offsetHeight
+        alertItem.classList.add("show-alert")
+        setTimeout(() => {
+            alertItem.classList.remove("show-alert")
+        }, 5000)
+        setTimeout(() => {
+            alertItem.remove()
+        }, 5500)
+    }
+
+    function closeAlert(messageID) {
+        let messageDiv = document.getElementById(messageID)
+        messageDiv.classList.remove("show-alert")
+        setTimeout(() => {
+            messageDiv.remove()
+        }, 500)
+    }
+</script>
