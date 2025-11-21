@@ -4,18 +4,48 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Skatespot App</title>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
     <link rel="stylesheet" href="/index.css">
 </head>
 <body>
     <%- include('templates/nav.ejs') %>
-    <!-- <%- include('templates/alert.ejs') %> -->
-    <form action="" method="post" class="auth-div">
+    <%- include('templates/alert.ejs') %>
+    <form action="" method="post" class="auth-div" id="loginForm">
         <p style="text-align: center; font-size: 1.5em;">Login</p>
-        <input type="text" class="auth-input" placeholder="email" name="email" required>
-        <input type="password" class="auth-input" placeholder="password" name="password" required>
+        <input type="text" class="auth-input" placeholder="email" name="email" id="email" required>
+        <input type="password" class="auth-input" placeholder="password" name="password" id="password" required>
         <button class="auth-button">Confirm</button>
         <a href="#forgot" style="color: rgb(198, 198, 198); font-size: 0.8em; margin-top: 3em;">forgot password</a>
         <a href="/signup" style="color: rgb(198, 198, 198); font-size: 0.8em; margin-top: 1em;">sign up</a>
     </form>
 </body>
+<script>
+    $(document).ready(function() {
+        $("#loginForm").submit(function(e) {
+            e.preventDefault()
+            $.ajax({
+                url: "/login",
+                method: "post",
+                data: {
+                    email: $("#email").val(),
+                    password: $("#password").val()
+                },
+                success: function(res) {
+                    console.log(res)
+                    setTimeout(() => {
+                        if (res.status === "SUCCESS") {
+                            window.location.replace("/profile")
+                        } else {
+                            addNewAlert(res.status, res.message)
+                        }
+                    }, 2000)
+                },
+                error: function(error) {
+                    console.log(error)
+                    addNewAlert(res.status, res.message)
+                }
+            })
+        })
+    })
+</script>
 </html>

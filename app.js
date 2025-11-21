@@ -51,7 +51,7 @@ app.get('/', (request, response) => {
 app.get('/map', async (request, response) => {
     await Promise.all([databaseMethods.getMany("spots"), databaseMethods.getOne("users", {email: request.session.user})])
     .then(res => {
-        console.log(res[1])
+        // console.log(res[1])
         let userObject = {
             username: "anonymous",
         }
@@ -59,7 +59,7 @@ app.get('/map', async (request, response) => {
             userObject.username = res[1].username
             userObject.preferences = res[1].preferences
         }
-        response.render('map.ejs', {mapboxtoken : process.env.MAPBOX_ACCESS_TOKEN, user: userObject, spots: res[0]})
+        response.render('map.ejs', {mapboxtoken : process.env.MAPBOX_ACCESS_TOKEN, userObject: userObject, spots: res[0], user: request.session.user})
     })
     .catch(error => {
         console.log(error)
@@ -78,16 +78,51 @@ app.post('/addspot', async (request, response) => {
         createdAt: date,
         createdBy: request.session.user
     }
+
+    for (x of data.spotimages) {
+        console.log(x.length)
+    }
     await databaseMethods.addOne("spots", data)
-    .then(res => {
+    .then( async res => {
         console.log(res)
+        await databaseMethods.getOne("spots", {_id: res.insertedId})
+        .then(spot => {
+            // console.log(spot)
+            response.json({status: "SUCCESS", message: "New spot added", newSpot: res.insertedId})
+        })
+        .catch(error => {
+            console.log(error)
+            response.json({status: "ERROR", message: "Error getting created item, please reload page"})
+        })
     })
     .catch(error => {
         console.log(error)
-        response.redirect("/map")
+        response.json({status: "ERROR", message: "There was an error, please try again"})
     })
 
-    response.redirect("/map")
+    // response.redirect("/map")
+})
+
+app.get('/getSpot', async (request, response) => {
+    console.log(request.query)
+    try{
+        let spotID = ObjectId.createFromHexString(request.query.spotID)
+        await databaseMethods.getOne("spots", {_id: spotID})
+        .then(res => {
+            console.log(res)
+            if(res !== null) {
+                response.json({status: "SUCCESS", message: "Reference received", spot: res})
+            } else {
+                response.json({status: "ERROR", message: "Spot not found", spot: res})
+            }
+        })
+        .catch(error => {
+            console.log(error)
+            response.json({status: "ERROR", message: "There was an error getting spot"})
+        })
+    } catch(error) {
+        response.json({status: "ERROR", message: "Invalid reference"})
+    }
 })
 
 app.get('/info', (request, response) => {
@@ -140,13 +175,11 @@ app.post('/updateProfile', async (request, response) => {
         // console.log("UserId", request.session.userID)
         // console.log(user)
         // response.redirect("/profile")
-        response.json({success: "true"})
+        response.json({status: "SUCCESS", message: "Profile updated"})
     } catch (error) {
         console.log(error)
         // response.redirect("/profile")
-        response.json({
-            success: "false"
-        })
+        response.json({status: "ERROR", message: "Error making update"})
     }
 })
 
@@ -158,19 +191,20 @@ app.post('/login', async (request, response) => {
     const password = request.body.password
     await databaseMethods.getOne("users", {email: request.body.email})
     .then(res => {
-        console.log(cryptr.decrypt(res.password))
+        console.log(cryptr.decrypt(res.password), password)
+        console.log(res)
         if(password === cryptr.decrypt(res.password)) {
             request.session.user = res.email
             request.session.userID = res._id.toString()
-            response.redirect("/profile")
+            // response.redirect("/profile")
+            response.json({status: "SUCCESS", message: "Login successful"})
         } else {
-            console.log("wrong password")
-            response.redirect("/login")
+            response.json({status: "ERROR", message: "Password missmatch"})
         }
     })
     .catch(error => {
         console.log(error)
-        response.redirect("/login")
+        response.json({status: "ERROR", message: "Could not get user"})
     })
 })
 
@@ -185,7 +219,7 @@ app.post('/signup', async (request, response) => {
     const confirmpassword = request.body.confirmpassword
     if (password === confirmpassword) {
         await Promise.all([databaseMethods.getOne("users", {email: email}), databaseMethods.getOne("users", {username: username})])
-        .then(res => {
+        .then(async res => {
             console.log("Check users", res)
             if (res[0] === null && res[1] === null) {
                 const encryptedpass = cryptr.encrypt(password)
@@ -204,27 +238,29 @@ app.post('/signup', async (request, response) => {
                         param3: false
                     }
                 }
-                // await databaseMethods.addOne("users", user)
-                // .then(res => {
-                //     console.log(res)
-                //     response.redirect("/profile")
-                // })
-                // .catch(error => {
-                //     console.log(error)
-                //     response.redirect("/signup")
-                // })
-                response.redirect("/signup")
+                await databaseMethods.addOne("users", user)
+                .then(userResponse => {
+                    console.log(userResponse)
+                    request.session.user = email
+                    request.session.userID = userResponse.insertedId.toString()
+                    // response.redirect("/profile")
+                    response.json({status: "SUCCESS", message: "Created user"})
+                })
+                .catch(error => {
+                    console.log(error)
+                    response.json({status: "ERROR", message: "There was an error creating account"})
+                })
             } else if (res[0] !== null) {
                 console.log("This email already exists")
-                response.redirect("/signup")
+                response.json({status: "ERROR", message: "This email already exists"})
             } else if (res[1] !== null) {
                 console.log("This username already exists")
-                response.redirect("/signup")
+                response.json({status: "ERROR", message: "This username already exists"})
             }
         })
     } else {
         console.log("Password Missmatch")
-        response.redirect("/signup")
+        response.json({status: "ERROR", message: "Password Missmatch"})
     }
 })
 

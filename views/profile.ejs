@@ -9,6 +9,7 @@
 </head>
 <body>
     <%- include('templates/nav.ejs') %>
+    <%- include('templates/alert.ejs') %>
     <div class="profile-div">
         <div class="profile-side">
             <div class="profile-info-div">
@@ -163,6 +164,7 @@
                 },
                 success: function(res) {
                     console.log(res)
+                    addNewAlert(res.status, res.message)
                 },
                 error: function(error) {
                     console.log(error)
