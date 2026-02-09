@@ -12,9 +12,15 @@
     <%- include('templates/alert.ejs') %>
     <div class="profile-div">
         <div class="profile-side">
-            <div class="profile-info-div">
-                <div class="profile-settings-picture">
-                    <img src="/logos/profile.png" alt="" style="width: 50%;">
+            <div class="profile-info-div" style="display: flex; flex-direction: column; align-items: start;">
+                <div class="profile-image-container">
+                    <div class="profile-settings-picture" style="background-image: url('<%= user.profileImage %>');" id="profilePicture">
+                        <!-- <img src="/images/defaultProfile.jpg" alt="" style="width: 100%; aspect-ratio: 1 / 1;"> -->
+                    </div>
+                    <div class="edit-profile-image" id="editProfileImage">
+                        <p style="margin: 0; font-size: 1em; font-weight: bold;">+</p>
+                    </div>
+                    <input type="file" accept="image" name="profilePicture" id="profilePictureInput" style="display: none;">
                 </div>
                 <p class="profile-title">Details</p>
                 <div class="underline"></div>
@@ -92,6 +98,19 @@
             </div>
         </div>
     </div>
+    <div class="profile-image-modal-outer" id="profileImageModalOuter">
+        <div class="profile-image-modal-container" id="profileImageModalContainer">
+            <img src="./logos/closelight.png" alt="close menu" class="close-menu2" onclick="hideProfileImageModal()">
+            <p style="align-self: center; font-weight: bold;">Preview</p>
+
+            <div class="profile-image-container" style="width: 50%;">
+                <div class="profile-settings-picture" style="background-image: url('/images/defaultProfile2.png'); width: 100%;" id="profilePicturePreview">
+                </div>
+                <input type="file" accept="image" name="profilePicture" id="profilePictureInput" style="display: none;">
+            </div>
+            <button class="default-button" style="justify-self: flex-end;" id="confirmProfileImageUpdate">CONFIRM</button>
+        </div>
+    </div>
 </body>
 <script>
     let user = JSON.parse('<%- JSON.stringify(user)%>')
@@ -138,6 +157,71 @@
         console.log(param1Value.value, param2Value.value, param3Value.value, param4Value.value, param5Value.value, param6Value.value)
     }
 
+    function filesToBase64(img) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader
+            reader.onload = () => resolve(reader.result)
+            reader.onerror = reject
+            reader.readAsDataURL(img)
+        })
+    }
+
+    let profilePictureInput = document.getElementById("profilePictureInput")
+    let profilePreview = ""
+    document.getElementById("editProfileImage").addEventListener("click", function() {
+        profilePictureInput.click()
+    })
+
+    profilePictureInput.addEventListener("change", function() {
+        console.log(profilePictureInput.files[0].size)
+        filesToBase64(profilePictureInput.files[0])
+        .then(fileRes => {
+            // console.log(fileRes)
+            profilePreview = fileRes
+            let prev = document.getElementById("profilePicturePreview")
+            prev.style.backgroundImage = `url("${profilePreview}")`
+            openProfileImageModal()
+        })
+        .catch(error => {
+            console.log(error)
+        })
+    })
+
+    // document.getElementById("confirmProfileImageUpdate").addEventListener("click", function() {
+    //     fetch('/updateProfileImage', {
+    //         method: "POST",
+    //         headers: {
+    //             // "Accept": "application/json",
+    //             "Content-Type": "application/json"
+    //         },
+    //         body: JSON.stringify({
+    //             profileImage: profilePreview
+    //         })
+    //     })
+    //     .then(res => {
+    //         console.log(res)
+    //     })
+    //     .catch(error => {
+    //         console.log(error)
+    //     })
+    // })
+
+    function openProfileImageModal() {
+        let profileImageModalOuter = document.getElementById("profileImageModalOuter")
+        let profileImageModalContainer = document.getElementById("profileImageModalContainer")
+        profileImageModalOuter.style.opacity = 1
+        profileImageModalContainer.style.transform = "translateY(0)"
+        profileImageModalOuter.style.pointerEvents = "auto"
+    }
+
+    function hideProfileImageModal() {
+        let profileImageModalOuter = document.getElementById("profileImageModalOuter")
+        let profileImageModalContainer = document.getElementById("profileImageModalContainer")
+        profileImageModalOuter.style.opacity = 0
+        profileImageModalContainer.style.transform = "translateY(-20%)"
+        profileImageModalOuter.style.pointerEvents = "none"
+    }
+
     $(document).ready(function () {
 
         $(".profile-pill-div").on("click", function() {
@@ -164,6 +248,25 @@
                 },
                 success: function(res) {
                     console.log(res)
+                    addNewAlert(res.status, res.message)
+                },
+                error: function(error) {
+                    console.log(error)
+                }
+            })
+        })
+
+        $("#confirmProfileImageUpdate").on("click", function() {
+            $.ajax({
+                url: "/updateProfileImage",
+                method: "post",
+                data: {
+                    profileImage: profilePreview
+                },
+                success: function(res) {
+                    console.log(res)
+                    $("#profilePicture").css('background-image', `url('${profilePreview}')`)
+                    hideProfileImageModal()
                     addNewAlert(res.status, res.message)
                 },
                 error: function(error) {

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <title>Skatespot App</title>
+    <link rel="stylesheet" href="/index.css">
+</head>
+<body>
+    <%- include('templates/nav.ejs') %>
+    <%- include('templates/alert.ejs') %>
+    <form action="" method="post" class="auth-div" id="submitForm">
+        <p style="text-align: center; font-size: 1.5em;">Verify Email</p>
+        <input type="text" class="auth-input" placeholder="token" name="token" id="token" required>
+        <p id="tokenExpiryCounter">Token Expires in <span id="timerSpan"></span></p>
+        <p id="resendTokenDiv">Token Expired</p>
+        <button type="button" class="secondary-button" id="resendTokenButton">resend</button>
+        <button class="auth-button">Confirm</button>
+    </form>
+</body>
+<script>
+    let isExpired = '<%= expired %>'
+    let tokenExpiryCounter = document.getElementById("tokenExpiryCounter")
+    let resendTokenDiv = document.getElementById("resendTokenDiv")
+    if (isExpired === "true") {
+        tokenExpiryCounter.style.display = "none"
+        resendTokenDiv.style.display = "flex"
+    } else {
+        tokenExpiryCounter.style.display = "block"
+        resendTokenDiv.style.display = "none"
+    }
+    console.log(isExpired)
+    let timerInterval = null
+    function setTimer(duration, targetElement) {
+        if (timerInterval !== null) {
+            clearInterval(timerInterval)
+        }
+        let timerSpan = document.getElementById(targetElement)
+        let temp = duration
+        let initialMinute = parseInt((duration / 1000) / 60)
+        let initialSeconds = parseInt((duration / 1000) - (initialMinute * 60))
+        timerSpan.innerText = `${initialMinute}:${initialSeconds}`
+        timerInterval = setInterval(() => {
+            temp = (temp - 1000)
+            let minute = parseInt((temp / 1000) / 60)
+            let seconds = parseInt((temp / 1000) - (minute * 60))
+            timerSpan.innerText = `${minute}:${seconds}`
+        }, 1000);
+        let timer = setTimeout(() => {
+            clearInterval(timerInterval)
+            // timerSpan.innerText = "done"
+            tokenExpiryCounter.style.display = "none"
+            resendTokenDiv.style.display = "flex"
+        }, duration)
+    }
+    let duration = '<%= duration %>'
+    setTimer(parseInt(duration), "timerSpan")
+    $(document).ready(function() {
+        $("#submitForm").submit(function(e) {
+            e.preventDefault()
+            $.ajax({
+                url: "/verify",
+                method: "post",
+                data: {
+                    action: "checkToken",
+                    sentToken: $("#token").val()
+                },
+                success: function(res) {
+                    console.log(res)
+                    addNewAlert(res.status, res.message)
+                    if (res.status === "SUCCESS") {
+                        window.location.replace("/profile")
+                    }
+                },
+                error: function(error) {
+                    console.log(error)
+                    addNewAlert(res.status, res.message)
+                }
+            })
+        })
+
+        $("#resendTokenButton").on("click", function() {
+            $.ajax({
+                url: "/verify",
+                method: "post",
+                data: {
+                    action: "resendToken",
+                },
+                success: function(res) {
+                    console.log(res)
+                    setTimer(parseInt(res.duration), "timerSpan")
+                    tokenExpiryCounter.style.display = "block"
+                    resendTokenDiv.style.display = "none"
+                    addNewAlert("SUCCESS", "New token sent")
+                },
+                error: function(error) {
+                    console.log(error)
+                    addNewAlert("ERROR", "Error sending mail, please try again later")
+                }
+            })
+        })
+    })
+</script>
+</html>

@@ -54,7 +54,7 @@
                 <div>
                     <div class="map-filters">
                         <div style="display: flex; flex-direction: column;">
-                            <label for="">Spot type</label>
+                            <label for="typeFilter">Spot type</label>
                             <select name="typefilter" id="typeFilter" style="padding: 0.3em; margin-top: 0.5em; border: 1px solid gray; border-radius: 4px;" onchange="handleSpotFilters()">
                                 <option value="" selected disabled>select</option>
                                 <option value="all">all</option>
@@ -66,7 +66,7 @@
                             </select>
                         </div>
                         <div style="display: flex; flex-direction: column;">
-                            <label for="">Sort By</label>
+                            <label for="sortByFilter">Sort By</label>
                             <select name="sortBy" id="sortByFilter" style="padding: 0.3em; margin-top: 0.5em; border: 1px solid gray; border-radius: 4px;" onchange="handleSpotFilters()">
                                 <option value="" selected disabled>select</option>
                                 <option value="popular">Popularity</option>
@@ -100,36 +100,162 @@
     </div>
     <% for(var x = 0; x < spots.length; x++) { %>
     <div class="spot-details-modal" id="spotDetailsModal<%= spots[x]._id  %>">
-        <!-- <img src="./logos/closelight.png" alt="close menu" class="close-menu" onclick="hideDetails('<%= spots[x]._id  %>')"> -->
         <div class="spot-details-modal-inner" id="spotDetailsInner<%= spots[x]._id  %>">
             <img src="./logos/closelight.png" alt="close menu" class="close-menu2" onclick="hideDetails('<%= spots[x]._id  %>')">
-            <div class="swiper" style="height: 60vh;">
-                <div class="swiper-wrapper">
-                    <% for(var y = 0; y < spots[x].spotimages.length; y++) { %>
-                    <div class="swiper-slide">
-                        <div class="carousel-image" style="background-image: url('<%= spots[x].spotimages[y]  %>'); background-size: contain;"></div>
+            <button class="add-comment" id="addCommentButton<%= spots[x]._id  %>">COMMENT</button>
+            <form action="" class="add-comment-form" id="addCommentForm<%= spots[x]._id  %>">
+                <textarea name="commentInput" id="commentInput<%= spots[x]._id  %>" class="comment-input" rows="3" placeholder="Add comment"></textarea>
+                <input type="hidden" name="type" id="type<%= spots[x]._id  %>" value="newComment">
+                <input type="hidden" name="replyId" id="replyId<%= spots[x]._id  %>" value="">
+                <div style="display: flex; gap: 1em;">
+                    <button class="add-comment-button" type="submit">SEND</button>
+                    <button class="cancel-comment-button" type="button" id="cancelComment<%= spots[x]._id  %>">CANCEL</button>
+                </div>
+            </form>
+            <div class="spot-details-modal-content">
+                <div class="swiper" style="height: 60vh;">
+                    <div class="swiper-wrapper">
+                        <% for(var y = 0; y < spots[x].spotimages.length; y++) { %>
+                        <div class="swiper-slide">
+                            <div class="carousel-image" style="background-image: url('<%= spots[x].spotimages[y]  %>'); background-size: contain;"></div>
+                        </div>
+                        <% } %>
+                    </div>
+                    <div class="swiper-pagination"></div>
+                    <div class="swiper-button-prev"></div>
+                    <div class="swiper-button-next"></div>
+                </div>
+                <button id="getDirections<%= spots[x]._id  %>" data-lng="<%= spots[x].longitude %>" data-lat="<%= spots[x].latitude %>" data-id="<%= spots[x]._id  %>">Get Directions</button>
+                <p id="spotDetailsTitle"><%= spots[x].description  %></p>
+                <div style="height: 1px; background-color: gray; margin: 1em 0em;"></div>
+                <div class="comments-div" id="commentsDiv<%= spots[x]._id %>">
+                    <% for(var y = 0; y < spots[x].interactions.comments.length; y++) { %>
+                    <div class="comment-container">
+                        <div style="display: flex; flex-direction: column; gap: 1em; align-self: stretch; align-items: center;">
+                            <div class="comment-profile-image" style="background-image: url('/images/defaultProfile2.png');" id="commentprofileImage<%= spots[x].interactions.comments[y].commentID %>"></div>
+                            <% if (spots[x].interactions.comments[y].replies.length > 0) {%>
+                                <div class="comment-line"></div>
+                            <% } %>
+                        </div>
+                        <div class="comment-content-div">
+                            <div class="comment-info-div">
+                                <p style="font-weight: bold; margin-top: 0;" id="commentAuthor<%= spots[x].interactions.comments[y].commentID %>">Inactive User</p>
+                                <p style="color: gray; margin-top: 0;">10/11/25</p>
+                            </div>
+                            <div class="comment-content"><%= spots[x].interactions.comments[y].content %></div>
+                            <p class="reply-button replyEvent<%= spots[x]._id %>" id="replyButton<%= spots[x].interactions.comments[y].commentID %>" data-author="<%= spots[x].interactions.comments[y].author %>" data-replyref="<%= spots[x].interactions.comments[y].commentID %>" data-spotid="<%= spots[x]._id %>">reply</p>
+                            <div class="comment-reply-container" id="repliesContainer<%= spots[x]._id %>-<%= spots[x].interactions.comments[y].commentID %>">
+                                <% for(var z = 0; z < spots[x].interactions.comments[y].replies.length; z++) { %>
+                                <div class="comment-reply-div">
+                                    <div class="comment-profile-image" style="background-image: url('/images/defaultProfile2.png');" id="replyprofileImage<%= spots[x].interactions.comments[y].replies[z].commentID %>"></div>
+                                    <div class="comment-content-div">
+                                        <div class="comment-info-div">
+                                            <p style="font-weight: bold; margin-top: 0;" id="replyAuthor<%= spots[x].interactions.comments[y].replies[z].commentID %>">Inactive User</p>
+                                            <p style="color: gray; margin-top: 0;">10/11/25</p>
+                                        </div>
+                                        <div class="comment-content"><%= spots[x].interactions.comments[y].replies[z].content %></div>
+                                        <p class="reply-button replyEvent<%= spots[x]._id %>" id="replyButton<%= spots[x].interactions.comments[y].replies[z].commentID %>" data-author="<%= spots[x].interactions.comments[y].replies[z].author %>" data-replyref="<%= spots[x].interactions.comments[y].commentID %>" data-spotid="<%= spots[x]._id %>">reply</p>
+                                    </div>
+                                </div>
+                                <% } %>
+                            </div>
+                        </div>
                     </div>
                     <% } %>
                 </div>
-                <div class="swiper-pagination"></div>
-                <div class="swiper-button-prev"></div>
-                <div class="swiper-button-next"></div>
             </div>
-            <p id="spotDetailsTitle"><%= spots[x].description  %></p>
-            <button onclick="getDirections('36.8219', '-1.2921', '<%= spots[x].longitude %>', '<%= spots[x].latitude %>', '<%= spots[x]._id  %>')">Get Directions</button>
         </div>
     </div>
+    <script>
+        document.getElementById("addCommentButton<%= spots[x]._id  %>").addEventListener("click", function() {
+            let commentForm = document.getElementById("addCommentForm<%= spots[x]._id  %>")
+            let commentButton = document.getElementById("addCommentButton<%= spots[x]._id  %>")
+            let type = document.getElementById("type<%= spots[x]._id  %>")
+            let input = document.getElementById("commentInput<%= spots[x]._id  %>")
+            input.value = ""
+            commentForm.style.display = "flex"
+            commentButton.style.display = "none"
+            type.value = "newComment"
+        })
+        document.getElementById("cancelComment<%= spots[x]._id  %>").addEventListener("click", function() {
+            let commentForm = document.getElementById("addCommentForm<%= spots[x]._id  %>")
+            let commentButton = document.getElementById("addCommentButton<%= spots[x]._id  %>")
+            commentForm.style.display = "none"
+            commentButton.style.display = "block"
+        })
+
+        document.querySelectorAll(".replyEvent<%= spots[x]._id %>").forEach(elm => {
+            elm.addEventListener("click", function(e) {
+                let spotID = e.target.getAttribute("data-spotid")
+                let author = e.target.getAttribute("data-author")
+                let replyref = e.target.getAttribute("data-replyref")
+                let commentForm = document.getElementById("addCommentForm<%= spots[x]._id  %>")
+                let commentButton = document.getElementById("addCommentButton<%= spots[x]._id  %>")
+                let input = document.getElementById("commentInput<%= spots[x]._id  %>")
+                let replyID = document.getElementById("replyId<%= spots[x]._id  %>")
+                replyID.value = replyref
+                commentForm.style.display = "flex"
+                commentButton.style.display = "none"
+                let type = document.getElementById("type<%= spots[x]._id  %>")
+                type.value = "reply"
+                input.value = `@${author} `
+            })
+        })
+
+        document.getElementById("addCommentForm<%= spots[x]._id  %>").addEventListener("submit", function(e) {
+            e.preventDefault()
+            let commentData = {
+                comment: document.getElementById("commentInput<%= spots[x]._id  %>").value,
+                type: document.getElementById("type<%= spots[x]._id  %>").value,
+                spotID: "<%= spots[x]._id  %>",
+                replyId: document.getElementById("replyId<%= spots[x]._id  %>").value
+            }
+            fetch("/updateComment", {
+                method: "POST",
+                headers: {
+                    // "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(commentData)
+            })
+            .then(async res => {
+                let result = await res.json()
+                // closeCommentInput()
+                let commentForm = document.getElementById("addCommentForm<%= spots[x]._id  %>")
+                let commentButton = document.getElementById("addCommentButton<%= spots[x]._id  %>")
+                commentForm.style.display = "none"
+                commentButton.style.display = "block"
+                refreshComments(result.spot)
+                if (result.status === "ERROR") {
+                    addNewAlert(res.status, res.message)
+                }
+            })
+            .catch(error => {
+                addNewAlert("ERROR", "Error adding comment")
+            })
+        })
+    </script>
     <% } %>
 
     <div class="map-outer-div">
-        <div class="map-inner-sidebar" onclick="showMenu()">
+        <div class="map-inner-sidebar" onclick="showMenu()" id="optionsButton">
             <!-- <img src="/logos/menu.png" alt="menulogo" class="menu-logo"> -->
             <p style="margin: 0;">OPTIONS</p>
+        </div>
+        <div class="directions-detail-container" id="directionsDetails">
+            <img src="/logos/closelight.png" style="height: 1em; cursor: pointer; float: right;" alt="" onclick="closeDirectionsDetails()">
+            <p style="clear: both;"><span id="directionsDistance">0</span> meters</p>
+            <p>Accuracy: <span id="directionsAccuracy">25</span> meters</p>
+            <div class="directions-picker">
+                <p style="background-color: blue;">drive</p>
+                <p style="background-color: green;">walk</p>
+                <p style="background-color: purple;">cycle</p>
+            </div>
         </div>
         <div id="map" class="map-div"></div>
         <div class="map-sidebar" id="addSpotForm">
             <button class="cancel-spot-button" id="cancelNewSpotButton">Cancel</button>
-            <p>Drag the red marker to spot location</p>
+            <p>Drag the red marker to spot location(Current Location might be inaccurate)</p>
             <form action="/addspot" method="post" class="addspot-form">
                 <input type="hidden" value="0" name="longitude" id="longitude">
                 <input type="hidden" value="0" name="latitude" id="latitude">
@@ -149,7 +275,7 @@
                     <option value="other">other</option>
                 </select>
 
-                <label for="images" style="margin-bottom: 0.5em;">Upload Images</label>
+                <label for="spotImages" style="margin-bottom: 0.5em;">Upload Images</label>
                 <input type="file" name="images" id="spotImages" accept="image/png, image/jpeg" multiple required>
                 <!-- <input type="file" name="images" id="spotImages" accept="image/png, image/jpeg" multiple> -->
                 <p style="font-size: 0.8em; margin-top: 5px;">File size: <span id="fileSizeSpan">0</span> mb</p>
@@ -181,6 +307,14 @@
     let spotsData = JSON.parse(dataContainer.getAttribute('data-object'));
     // let spotsData = JSON.parse('<%- JSON.stringify(spots)%>')
 
+    async function getUser() {
+        let userRes = fetch('/getUser')
+        .then(res => {
+            console.log(res)
+            return res
+        })
+    }
+
     function showMenu() {
         let menuContent = document.getElementById("menuContent")
         let addSpotDiv = document.getElementById("addSpotDiv")
@@ -188,7 +322,7 @@
         // menuContent.style.display = "flex"
         menuContent.style.opacity = "1"
         menuContent.style.pointerEvents = "auto"
-        popup.remove()
+        // popup.remove()
     }
 
     function hideMenu() {
@@ -199,6 +333,9 @@
         addSpotDiv.style.transform = "translateY(-20%)"
     }
 
+    let detailsIsOpen = false
+    let openDetailsId = null
+
     function hideDetails(id) {
         let spotDetailsModal = document.getElementById(`spotDetailsModal${id}`)
         let spotDetailsInner = document.getElementById(`spotDetailsInner${id}`)
@@ -206,6 +343,9 @@
         spotDetailsModal.style.opacity = "0"
         spotDetailsInner.style.transform = "translateY(-20%)"
         spotDetailsModal.style.pointerEvents = "none"
+        detailsIsOpen = false
+        openDetailsId = null
+        popup.remove()
     }
 
     function showSpotDetails(id) {
@@ -215,7 +355,36 @@
         spotDetailsModal.style.opacity = "1"
         spotDetailsInner.style.transform = "translateY(0)"
         spotDetailsModal.style.pointerEvents = "auto"
-        popup.remove()
+        // popup.remove()
+        detailsIsOpen = true
+        openDetailsId = id
+    }
+
+    document.addEventListener("click", function(e) {
+        let addSpotDiv = document.getElementById("addSpotDiv")
+        let optionsButton = document.getElementById("optionsButton")
+        if (!addSpotDiv.contains(e.target) && !optionsButton.contains(e.target)) {
+            hideMenu()
+        }
+        if (detailsIsOpen) {
+            let spotDetailsInner = document.getElementById(`spotDetailsInner${openDetailsId}`)
+            let spotDetailsButton = document.getElementById(`spotDetailsButton${openDetailsId}`)
+            if(!spotDetailsInner.contains(e.target) && !spotDetailsButton.contains(e.target)){
+                hideDetails(openDetailsId)
+            }
+        }
+    })
+
+    function openDirectionsDetails() {
+        document.getElementById("directionsDetails").style.display = "block"
+    }
+
+    function closeDirectionsDetails() {
+        document.getElementById("directionsDetails").style.display = "none"
+        map.removeLayer("route")
+        clearInterval(directionsInterval)
+        clearInterval(userPositionInterval)
+        directionsmarker.remove()
     }
 
     mapboxgl.accessToken = "<%= mapboxtoken %>"
@@ -233,29 +402,218 @@
     //     showUserHeading: true,
     // }));
 
+    async function likeAction(spotID) {
+        let likeButton = document.getElementById(`likeButton${spotID}`)
+        let isLiked = likeButton.getAttribute("data-isliked")
+        await fetch("/updateLiked", {
+            method: "POST",
+            headers: {
+                // "Accept": "application/json",
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                ID: spotID,
+                isLiked: isLiked
+            })
+        })
+        .then(res => {
+            // let likeRes = await res.json()
+            console.log(res)
+        })
+        .catch(error => {
+            console.log(error)
+        })
+        if (isLiked === "true") {
+            likeButton.style.animationName = "unlikeAnimation"
+            setTimeout(function() {
+                likeButton.setAttribute("src", "/logos/heart-unfilledlight.png")
+                likeButton.setAttribute("data-isliked", "false")
+            }, 150)
+        } else {
+            likeButton.style.animationName = "likeAnimation"
+            setTimeout(function() {
+                likeButton.setAttribute("src", "/logos/heart-filledlight.png")
+                likeButton.setAttribute("data-isliked", "true")
+            }, 150)
+        }
+    }
+
+    function refreshComments(spot) {
+        let commentsDiv = document.getElementById(`commentsDiv${spot._id}`)
+        commentsDiv.replaceChildren()
+        for (let x = 0; x < spot.interactions.comments.length; x++) {
+            let replyNode = ""
+            for (let y = 0; y < spot.interactions.comments[x].replies.length; y++) {
+                let reply = `<div class="comment-reply-div">
+                    <div class="comment-profile-image" style="background-image: url('/images/defaultProfile2.png');" id="replyprofileImage${spot.interactions.comments[x].replies[y].commentID}"></div>
+                    <div class="comment-content-div">
+                        <div class="comment-info-div">
+                            <p style="font-weight: bold; margin-top: 0;" id="replyAuthor${spot.interactions.comments[x].replies[y].commentID}">Inactive User</p>
+                            <p style="color: gray; margin-top: 0;">10/11/25</p>
+                        </div>
+                        <div class="comment-content">${spot.interactions.comments[x].replies[y].content}</div>
+                        <p class="reply-button replyEvent${spot._id}" id="replyButton${spot.interactions.comments[x].replies[y].commentID}" data-author="${spot.interactions.comments[x].replies[y].author}" data-replyref="${spot.interactions.comments[x].commentID}" data-spotid="${spot._id}">reply</p>
+                    </div>
+                </div>
+                `
+                replyNode += reply
+            }
+
+            let commentNode = `<div class="comment-container">
+                <div style="display: flex; flex-direction: column; gap: 1em; align-self: stretch; align-items: center;">
+                    <div class="comment-profile-image" style="background-image: url('/images/defaultProfile2.png');" id="commentprofileImage${spot.interactions.comments[x].commentID}"></div>
+                    <div class="comment-line" style="display: ${spot.interactions.comments[x].replies.length > 0 ? "block" : "none"};"></div>
+                </div>
+                <div class="comment-content-div">
+                    <div class="comment-info-div">
+                        <p style="font-weight: bold; margin-top: 0;" id="commentAuthor${spot.interactions.comments[x].commentID}">Inactive User</p>
+                        <p style="color: gray; margin-top: 0;">10/11/25</p>
+                    </div>
+                    <div class="comment-content">${spot.interactions.comments[x].content}</div>
+                    <p class="reply-button replyEvent${spot._id}" id="replyButton${spot.interactions.comments[x].commentID}" data-author="${spot.interactions.comments[x].author}" data-replyref="${spot.interactions.comments[x].commentID}" data-spotid="${spot._id}">reply</p>
+                    <div class="comment-reply-container" id="repliesContainer${spot._id}-${spot.interactions.comments[x].commentID}">
+                        ${replyNode}
+                    </div>
+                </div>
+            </div>`
+
+            commentsDiv.insertAdjacentHTML("beforeend", commentNode)
+
+            document.querySelectorAll(`.replyEvent${spot._id}`).forEach(elm => {
+                elm.addEventListener("click", function(e) {
+                    let spotID = e.target.getAttribute("data-spotid")
+                    let author = e.target.getAttribute("data-author")
+                    let replyref = e.target.getAttribute("data-replyref")
+                    let commentForm = document.getElementById(`addCommentForm${spot._id}`)
+                    let commentButton = document.getElementById(`addCommentButton${spot._id}`)
+                    let input = document.getElementById(`commentInput${spot._id}`)
+                    let replyID = document.getElementById(`replyId${spot._id}`)
+                    replyID.value = replyref
+                    commentForm.style.display = "flex"
+                    commentButton.style.display = "none"
+                    let type = document.getElementById(`type${spot._id}`)
+                    type.value = "reply"
+                    input.value = `@${author} `
+                })
+            })
+        }
+        getProfilePicture(spot)
+    }
+
+    function interactionsCount(spot) {
+        let commentsCount = 0
+        let likesCount  = spot.interactions.likes.length
+        for (let x = 0; x < spot.interactions.comments.length; x++) {
+            commentsCount += 1
+            for (let y = 0; y < spot.interactions.comments[x].replies.length; y++) {
+                commentsCount += 1
+            }
+        }
+        return commentsCount
+    }
+
+    async function getProfilePicture(spot) {
+        for (let y = 0; y < spot.interactions.comments.length; y++) {
+            await fetch(`/profilePicture?user=${spot.interactions.comments[y].author}`, {
+                method: "GET"
+            })
+            .then(async res => {
+                let resData = await res.json()
+                console.log(resData)
+                if (resData.status === "SUCCESS") {
+                    let commentprofileImage = document.getElementById(`commentprofileImage${spot.interactions.comments[y].commentID}`)
+                    let commentAuthor = document.getElementById(`commentAuthor${spot.interactions.comments[y].commentID}`)
+                    let replyButton = document.getElementById(`replyButton${spot.interactions.comments[y].commentID}`)
+                    commentprofileImage.style.backgroundImage = `url("${resData.picture}")`
+                    commentAuthor.innerHTML = resData.user
+                    replyButton.setAttribute("data-author", resData.user)
+                } else {
+                    let commentprofileImage = document.getElementById(`commentprofileImage${spot.interactions.comments[y].commentID}`)
+                    let commentAuthor = document.getElementById(`commentAuthor${spot.interactions.comments[y].commentID}`)
+                    let replyButton = document.getElementById(`replyButton${spot.interactions.comments[y].commentID}`)
+                    commentprofileImage.style.backgroundImage = `url("/images/defaultProfile2.png")`
+                    // /images/defaultProfile2.png
+                    commentAuthor.innerHTML = "Inactive User"
+                    replyButton.setAttribute("data-author", "Inactive User")
+                }
+            })
+            .catch(error => {
+                // console.log(error)
+                addNewAlert("ERROR", "Failed to get replies data")
+            })
+
+            for (let z = 0; z < spot.interactions.comments[y].replies.length; z++) {
+                await fetch(`/profilePicture?user=${spot.interactions.comments[y].replies[z].author}`, {
+                    method: "GET"
+                })
+                .then(async res => {
+                    let resData = await res.json()
+                    if (resData.status === "SUCCESS") {
+                        let replyprofileImage = document.getElementById(`replyprofileImage${spot.interactions.comments[y].replies[z].commentID}`)
+                        let replyAuthor = document.getElementById(`replyAuthor${spot.interactions.comments[y].replies[z].commentID}`)
+                        let replyButton = document.getElementById(`replyButton${spot.interactions.comments[y].replies[z].commentID}`)
+                        replyprofileImage.style.backgroundImage = `url("${resData.picture}")`
+                        replyAuthor.innerHTML = resData.user
+                        replyButton.setAttribute("data-author", resData.user)
+                    } else {
+                        let replyprofileImage = document.getElementById(`replyprofileImage${spot.interactions.comments[y].replies[z].commentID}`)
+                        let replyAuthor = document.getElementById(`replyAuthor${spot.interactions.comments[y].replies[z].commentID}`)
+                        let replyButton = document.getElementById(`replyButton${spot.interactions.comments[y].replies[z].commentID}`)
+                        replyprofileImage.style.backgroundImage = `url("/images/defaultProfile2.png")`
+                        replyAuthor.innerHTML = "Inactive User"
+                        replyButton.setAttribute("data-author", "Inactive User")
+                    }
+                })
+                .catch(error => {
+                    // console.log(error)
+                    addNewAlert("ERROR", "Failed to get replies data")
+                })
+            }
+        }
+    }
+
     let spotPoints = spotsData.map((item, index) => {
+        let user = "<%= user %>"
+        let isLiked = false
+        if (item.interactions.likes.includes(user)) {
+            isLiked = true
+        }
         return {
-            'type': 'Feature',
-            'properties': {
-                'description':
+            type: 'Feature',
+            properties: {
+                description:
                 `<div>
-                    <p style="font-weight: bold; font-size: 2em; margin-bottom: 10px; margin-top: 0em;">${item.spottype}</p>
                     <img class="spot-details-image" src="${item.spotimages[0]}"></img>
-                    <p style="font-size: 1.3em;">${item.description}</p>
-                    <p style="font-size: 1.3em; color: var(--lightblue)">Uploaded by: ${item.createdBy}</p>
-                    <button class='spot-details-button' onclick="showSpotDetails('${item._id}')">Details</button>
+                    <div style="padding: 1em;">
+                        <p style="font-weight: bold; font-size: 1em; margin-bottom: 0px; margin-top: 0em; color: gray;">Type: ${item.spottype}</p>
+                        <p style="font-size: 1.3em; margin-top: 0.5em; margin-bottom: 0.5em;">${item.description}</p>
+                        <p style="font-size: 1.3em; color: var(--lightblue); margin: 0;">Uploaded by: ${item.createdBy}</p>
+                        <div class="popup-interactions">
+                            <div style="display: flex; gap: 5px">
+                                <div style="display: flex; align-items: center; gap: 0.5em">
+                                    <img src="${isLiked === true ? '/logos/heart-filledlight.png' : '/logos/heart-unfilledlight.png'}" class="like-button" id="likeButton${item._id}" data-isliked="${isLiked === true ? 'true' : 'false'}" onclick="likeAction('${item._id}')"></img>
+                                    <p>${item.interactions.likes.length}</p>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 0.5em">
+                                    <img src="/logos/comments-light.png" style="height: 2em;"></img>
+                                    <p>${interactionsCount(item)}</p>
+                                </div>
+                            </div>
+                            <button class='spot-details-button' id="spotDetailsButton${item._id}" onclick="showSpotDetails('${item._id}')">Details</button>
+                        </div>    
+                    </div>
                 </div>`
             },
-            'geometry': {
-                'type': 'Point',
-                'coordinates': [item.longitude, item.latitude]
+            geometry: {
+                type: 'Point',
+                coordinates: [item.longitude, item.latitude]
             },
-            'spotID': item._id,
-            'spotType': item.spottype
+            spotID: item._id,
+            spotType: item.spottype
         }
     })
 
-    console.log('spot points', spotsData)
+    // console.log('spot points', spotPoints)
     let spotCategories = {
         ledge: [],
         rail: [],
@@ -269,8 +627,6 @@
             let spotID = searchParams.get(paramName)
             let spotResult = await fetch(`/getSpot?spotID=${spotID}`)
             let spotData = await spotResult.json()
-            console.log(spotData)
-            addNewAlert(spotData.status, spotData.message)
             if(spotData.spot) {
                 map.easeTo({
                     center: [spotData.spot.longitude, spotData.spot.latitude],
@@ -279,11 +635,12 @@
                 })
                 for (x of spotPoints) {
                     if (x.spotID === spotID) {
-                        console.log(x)
                         popup.setLngLat([spotData.spot.longitude, spotData.spot.latitude]).setHTML(x.properties.description).addTo(map);
                         
                     }
                 }
+            } else {
+                addNewAlert(spotData.status, spotData.message)
             }
         }
     }
@@ -303,23 +660,44 @@
     }
 
     let categoryEntries = Object.entries(spotCategories)
-    console.log("Cat entries", categoryEntries)
-    console.log("screen width", screen.width)
+    console.log(categoryEntries)
 
-    const popup = new mapboxgl.Popup({maxWidth: "390px"})
+    const popup = new mapboxgl.Popup({maxWidth: screen.width > 500 ? "390px" : "70%"})
+    let directionsInterval = null
+    let userPositionInterval = null
     map.on('load', () => {
         for (let x = 0; x < categoryEntries.length; x++) {
             let pointColor = ""
             if (categoryEntries[x][0] === "stairs") {
                 pointColor = "green"
+                map.loadImage("/logos/stairs.png", (error, image) => {
+                    if (error) throw error
+                    map.addImage("stairsImage", image)
+                })
             } else if (categoryEntries[x][0] === "rail") {
                 pointColor = "blue"
+                map.loadImage("/logos/rail.png", (error, image) => {
+                    if (error) throw error
+                    map.addImage("railImage", image)
+                })
             } else if (categoryEntries[x][0] === "park") {
                 pointColor = "purple"
+                map.loadImage("/logos/park.png", (error, image) => {
+                    if (error) throw error
+                    map.addImage("parkImage", image)
+                })
             } else if (categoryEntries[x][0] === "ledge") {
                 pointColor = "red"
+                map.loadImage("/logos/ledge.png", (error, image) => {
+                    if (error) throw error
+                    map.addImage("ledgeImage", image)
+                })
             } else {
                 pointColor = "gray"
+                map.loadImage("/logos/star.png", (error, image) => {
+                    if (error) throw error
+                    map.addImage("otherImage", image)
+                })
             }
             map.addSource(`spotsSource${categoryEntries[x][0]}`, {
                 'type': 'geojson',
@@ -331,8 +709,15 @@
 
             map.addLayer({
                 'id': `spotsLayer${categoryEntries[x][0]}`,
+                // 'type': 'symbol',
                 'type': 'circle',
                 'source': `spotsSource${categoryEntries[x][0]}`,
+                // 'layout': {
+                //     'icon-image': `${categoryEntries[x][0]}Image`,
+                //     // 'icon-image': 'heart',
+                //     'icon-size': 0.05,
+                //     'icon-allow-overlap': true
+                // },
                 'paint': {
                     'circle-color': pointColor,
                     // 'circle-color': categoryEntries[x][0] === "stairs" ? '#021526' : "red",
@@ -363,47 +748,108 @@
             });
         }
         getOneSpot('spot')
+        for (let x = 0; x < spotsData.length; x++) {
+            getProfilePicture(spotsData[x])
+            document.getElementById(`getDirections${spotsData[x]._id}`).addEventListener("click", function() {
+                // let directionsGeolocateControl = new mapboxgl.GeolocateControl({
+                //     positionOptions: {
+                //         enableHighAccuracy: true
+                //     },
+                //     trackUserLocation: true,
+                //     showUserHeading: true,
+                // })
+                // map.addControl(directionsGeolocateControl);
+                let endLng = this.getAttribute("data-lng")
+                let endLat = this.getAttribute("data-lat")
+                let id = this.getAttribute("data-id")
+                console.log(endLng, endLat, id)
+                directionsInterval = setInterval(getDirections, 30000, endLng, endLat, id)
+                userPositionInterval = setInterval(function () {
+                    if (navigator.geolocation) {
+                        navigator.geolocation.getCurrentPosition(function(position) {
+                            console.log(position)
+                            directionsmarker.setLngLat([position.coords.longitude, position.coords.latitude]).addTo(map)
+                        })
+                    }
+                }, 500)
+                // console.log("directionsInterval ID", directionsInterval)
+                openDirectionsDetails()
+                getDirections(endLng, endLat, id)
+                // setTimeout(function() {
+                //     clearInterval(directionsInterval)
+                // }, 5000)
+            })
+        }
     })
 
-    async function getDirections(startLng, startLat, endLng, endLat, id) {
-        let accessToken = "<%= mapboxtoken %>"
-        console.log(startLng, startLat, endLng, endLat, accessToken)
-        let directionsUrl = `https://api.mapbox.com/directions/v5/mapbox/cycling/${startLng},${startLat};${endLng},${endLat}?geometries=geojson&access_token=${accessToken}`
-        // let directionsUrl = "https://api.mapbox.com/directions/v5/mapbox/cycling/-84.518641,39.134270;-84.512023,39.102779?geometries=geojson&access_token=pk.eyJ1IjoiZGFycm8yNTQiLCJhIjoiY20wcDM4OW84MDB3aDJuc2JmOXFyYXppNCJ9.UAZYYFCxhyyQ4iOzCIFQgg"
-        let request = await fetch(directionsUrl)
-        let json = await request.json()
-        console.log(json)
-        if (map.getSource("route")) {
-            map.getSource("route").setData(json.routes[0].geometry)
-            hideDetails(id)
-        } else {
-            map.addLayer({
-                id: 'route',
-                type: 'line',
-                source: {
-                    type: 'geojson',
-                    data: {
-                        type: "Feature",
-                        properties: {},
-                        geometry: json.routes[0].geometry
+    let directionsController = null
+    const el = document.createElement('div');
+    el.className = 'marker';
+    let directionsmarker = new mapboxgl.Marker(el, {color: "red"})
+    function getDirections(endLng, endLat, id) {
+        if(navigator.geolocation) {
+            if(directionsController) {
+                directionsController.abort()
+            }
+            directionsController = new AbortController()
+            const signal = directionsController.signal
+            navigator.geolocation.getCurrentPosition(async function(position) {
+                console.log(position)
+                document.getElementById("directionsAccuracy").innerText = parseInt(position.coords.accuracy)
+                let accessToken = "<%= mapboxtoken %>"
+                let directionsUrl = `https://api.mapbox.com/directions/v5/mapbox/cycling/${position.coords.longitude},${position.coords.latitude};${endLng},${endLat}?geometries=geojson&access_token=${accessToken}`
+                await fetch(directionsUrl, {signal: signal})
+                .then(async res => {
+                    let json = await res.json()
+                    console.log(json)
+                    if (map.getSource("route")) {
+                        map.getSource("route").setData(json.routes[0].geometry)
+                        console.log(json.routes[0].distance)
+                        document.getElementById("directionsDistance").innerText = parseInt(json.routes[0].distance)
+                        hideDetails(id)
+                    } else {
+                        map.addLayer({
+                            id: 'route',
+                            type: 'line',
+                            source: {
+                                type: 'geojson',
+                                data: {
+                                    type: "Feature",
+                                    properties: {},
+                                    geometry: json.routes[0].geometry
+                                }
+                            },
+                            layout: {
+                                'line-join': 'round',
+                                'line-cap': 'round'
+                            },
+                            paint: {
+                                'line-color': "#37ff00",
+                                'line-width': 4,
+                                'line-opacity': 1
+                            }
+                        })
+                        hideDetails(id)
+                        map.easeTo({
+                            center: [position.coords.longitude, position.coords.latitude],
+                            zoom: 13
+                        })
                     }
-                },
-                layout: {
-                    'line-join': 'round',
-                    'line-cap': 'round'
-                },
-                paint: {
-                    'line-color': "#37ff00",
-                    'line-width': 4,
-                    'line-opacity': 1
-                }
+                    directionsmarker.setLngLat([position.coords.longitude, position.coords.latitude]).addTo(map)
+                })
+                .catch(error => {
+                    console.log(error)
+                })
+            }, function(error) {
+                // window.alert("Cannot get user Location")
+                console.log(error)
+                addNewAlert("ERROR", "Cannot get user location")
+            }, {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
             })
-            hideDetails(id)
-        }
-        map.easeTo({
-            center: [startLng, startLat],
-            zoom: 13
-        })
+        } 
     }
 
     function handleSpotFilters() {
@@ -411,13 +857,11 @@
         let sortByFilter = document.getElementById("sortByFilter")
         let yourFavouritesCheck = document.getElementById("yourFavouritesCheck")
         let savedSpotsCheck = document.getElementById("savedSpotsCheck")
-        console.log(typeFilter.value, sortByFilter.value, yourFavouritesCheck.checked, savedSpotsCheck.checked)
         // if (typeFilter.value === "ledge") {
         //     map.setLayoutProperty("spotsLayerledge", "visibility", 'none')
         //     // map.setLayoutProperty("spotsLayerledge", "visibility", 'visible')
         // }
         // let paintProperty = map.getPaintProperty('spotsLayerledge', 'source')
-        // console.log("Paint property", paintProperty)
 
         for (x of categoryEntries) {
             if (x[0] === typeFilter.value || typeFilter.value === "all") {
@@ -434,6 +878,7 @@
     }
 
     const addSpotMarker = new mapboxgl.Marker({color: "red", draggable: true})
+    // addSpotMarker.setRotation(45)
     let markerCoordinates = []
     let longitude = document.getElementById("longitude")
     let latitude = document.getElementById("latitude")
@@ -458,7 +903,7 @@
 
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(function (position) {
-                console.log(position.coords.latitude, position.coords.longitude)
+                console.log(position.coords.latitude, position.coords.longitude, position)
                 markerCoordinates = [position.coords.longitude, position.coords.latitude]
                 longitude.value = position.coords.longitude
                 latitude.value = position.coords.latitude
@@ -467,6 +912,13 @@
                     zoom: 13
                 })
                 addSpotMarker.setLngLat([position.coords.longitude, position.coords.latitude]).addTo(map)
+            }, function() {
+                addNewAlert("ERROR", "Could not get current position, manually drag red marker to spot.")
+                map.easeTo({
+                    center: [36.8219, -1.2921],
+                    zoom: 13
+                })
+                addSpotMarker.setLngLat([36.8219, -1.2921]).addTo(map)
             })
         }
     })
@@ -534,18 +986,15 @@
             let images = document.getElementById('spotImages')
             let totalSize = 0
             for (let x = 0; x < images.files.length; x++) {
-                console.log(images.files[x].size)
                 totalSize = totalSize + images.files[x].size
             }
             sizeInMB = totalSize / 1000000
-            console.log("total size", sizeInMB.toFixed(2))
             $('#fileSizeSpan').html(sizeInMB.toFixed(2))
         })
         $('#addSpotForm').submit(function(e) {
             e.preventDefault()
             $("#spinnerContainer").css("display", "block")
             let images = document.getElementById("spotImages")
-            // console.log(images.files)
             let image64Promises = []
             for (let x = 0; x < images.files.length; x++) {
                 image64Promises.push(filesToBase64(images.files[x]))
@@ -553,7 +1002,6 @@
 
             Promise.all(image64Promises)
             .then(fileResults => {
-                console.log(fileResults)
                 let sendData = {
                     description: $('#description').val(),
                     spottype: $('#spottype').val(),
@@ -568,7 +1016,6 @@
                     data: sendData,
                     success: function(res) {
                         $("#spinnerContainer").css("display", "none")
-                        console.log("successful request", res)
                         addNewAlert(res.status, res.message)
                         map.easeTo({
                             center: [36.8219, -1.2921],
