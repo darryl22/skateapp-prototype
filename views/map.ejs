@@ -44,10 +44,11 @@
     </div>
     <%- include('templates/nav.ejs') %>
     <%- include('templates/alert.ejs') %>
+    <%- include('templates/theme.ejs') %>
     <div class="map-inner-sidebar-content" id="menuContent">
         <!-- <img src="./logos/closelight.png" alt="close menu" class="close-menu" onclick="hideMenu()"> -->
         <div class="addspot-div" id="addSpotDiv">
-            <img src="./logos/closelight.png" alt="close menu" class="close-menu2" onclick="hideMenu()">
+            <img src="./logos/closelight.png" alt="close menu" class="close-menu2 image-invert" onclick="hideMenu()">
             <button class="add-spot-button" id="addNewSpotButton">Add new spot</button>
             <div id="spotInformation" style="margin-top: 2em;">
                 <p>Filters</p>
@@ -101,7 +102,7 @@
     <% for(var x = 0; x < spots.length; x++) { %>
     <div class="spot-details-modal" id="spotDetailsModal<%= spots[x]._id  %>">
         <div class="spot-details-modal-inner" id="spotDetailsInner<%= spots[x]._id  %>">
-            <img src="./logos/closelight.png" alt="close menu" class="close-menu2" onclick="hideDetails('<%= spots[x]._id  %>')">
+            <img src="./logos/closelight.png" alt="close menu" class="close-menu2 image-invert" onclick="hideDetails('<%= spots[x]._id  %>')">
             <button class="add-comment" id="addCommentButton<%= spots[x]._id  %>">COMMENT</button>
             <form action="" class="add-comment-form" id="addCommentForm<%= spots[x]._id  %>">
                 <textarea name="commentInput" id="commentInput<%= spots[x]._id  %>" class="comment-input" rows="3" placeholder="Add comment"></textarea>
@@ -240,7 +241,7 @@
     <div class="map-outer-div">
         <div class="map-inner-sidebar" onclick="showMenu()" id="optionsButton">
             <!-- <img src="/logos/menu.png" alt="menulogo" class="menu-logo"> -->
-            <p style="margin: 0;">OPTIONS</p>
+            <p style="margin: 0; color: black;">OPTIONS</p>
         </div>
         <div class="directions-detail-container" id="directionsDetails">
             <img src="/logos/closelight.png" style="height: 1em; cursor: pointer; float: right;" alt="" onclick="closeDirectionsDetails()">
@@ -388,9 +389,12 @@
     }
 
     mapboxgl.accessToken = "<%= mapboxtoken %>"
+    let darkMap = "<%= darkMap %>"
     const map = new mapboxgl.Map({
         container: 'map',
-        style: 'mapbox://styles/mapbox/dark-v11',
+        style: darkMap === "true" ? 'mapbox://styles/mapbox/dark-v11' : 'mapbox://styles/mapbox/streets-v12',
+        // style: 'mapbox://styles/mapbox/streets-v12',
+        // style: 'mapbox://styles/mapbox/satellite-streets-v12',
         center: [36.8219, -1.2921],
         zoom: 10
     })
@@ -416,26 +420,26 @@
                 isLiked: isLiked
             })
         })
-        .then(res => {
-            // let likeRes = await res.json()
-            console.log(res)
+        .then(async res => {
+            let likeRes = await res.json()
+            console.log(likeRes)
+            if (isLiked === "true") {
+                likeButton.style.animationName = "unlikeAnimation"
+                setTimeout(function() {
+                    likeButton.setAttribute("src", "/logos/heart-unfilledlight.png")
+                    likeButton.setAttribute("data-isliked", "false")
+                }, 150)
+            } else {
+                likeButton.style.animationName = "likeAnimation"
+                setTimeout(function() {
+                    likeButton.setAttribute("src", "/logos/heart-filledlight.png")
+                    likeButton.setAttribute("data-isliked", "true")
+                }, 150)
+            }
         })
         .catch(error => {
             console.log(error)
         })
-        if (isLiked === "true") {
-            likeButton.style.animationName = "unlikeAnimation"
-            setTimeout(function() {
-                likeButton.setAttribute("src", "/logos/heart-unfilledlight.png")
-                likeButton.setAttribute("data-isliked", "false")
-            }, 150)
-        } else {
-            likeButton.style.animationName = "likeAnimation"
-            setTimeout(function() {
-                likeButton.setAttribute("src", "/logos/heart-filledlight.png")
-                likeButton.setAttribute("data-isliked", "true")
-            }, 150)
-        }
     }
 
     function refreshComments(spot) {
@@ -573,7 +577,7 @@
     }
 
     let spotPoints = spotsData.map((item, index) => {
-        let user = "<%= user %>"
+        let user = "<%= userID %>"
         let isLiked = false
         if (item.interactions.likes.includes(user)) {
             isLiked = true
@@ -584,7 +588,7 @@
                 description:
                 `<div>
                     <img class="spot-details-image" src="${item.spotimages[0]}"></img>
-                    <div style="padding: 1em;">
+                    <div style="padding: 1em;" class="popup-details">
                         <p style="font-weight: bold; font-size: 1em; margin-bottom: 0px; margin-top: 0em; color: gray;">Type: ${item.spottype}</p>
                         <p style="font-size: 1.3em; margin-top: 0.5em; margin-bottom: 0.5em;">${item.description}</p>
                         <p style="font-size: 1.3em; color: var(--lightblue); margin: 0;">Uploaded by: ${item.createdBy}</p>

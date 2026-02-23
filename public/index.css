@@ -13,19 +13,71 @@
     src: url("./fonts/Red_Hat_Display/RedHatDisplay-VariableFont_wght.ttf");
 }
 
+*{
+    box-sizing: border-box;
+}
+
 :root {
     --lightblue: #116dff;
-    --darkgray: #021526;
-    --dark-blue: #0C0C0C;
+    --bg-color-secondary: #defbff;
+    --bg-color: #f3f3f3;
+    --transparent-background: rgba(0, 0, 0, 0);
+    --transparent-dark: rgba(243, 243, 243, 0.3);
+    --border-color: gray;
+    --text-color-primary: black;
+}
+
+.image-invert{
+    filter: invert(100%)
+}
+
+@media(prefers-color-scheme: dark) {
+    :root {
+        --lightblue: #116dff;
+        --bg-color-secondary: #021526;
+        --bg-color: #0C0C0C;
+        --transparent-background: rgba(0, 0, 0, 0);
+        --transparent-dark: rgba(2, 21, 38, 0.3);
+        --border-color: gray;
+        --text-color-primary: white;
+    }
+
+    .image-invert{
+        filter: invert(0%);
+    }
+}
+
+.dark-mode{
+    --lightblue: #116dff;
+    --bg-color-secondary: #021526;
+    --bg-color: #0C0C0C;
     --transparent-background: rgba(0, 0, 0, 0);
     --transparent-dark: rgba(2, 21, 38, 0.3);
+    --border-color: gray;
+    --text-color-primary: white;
+}
 
+.dark-mode .image-invert{
+    filter: invert(0%);
+}
+
+.light-mode{
+    --lightblue: #116dff;
+    --bg-color-secondary: #defbff;
+    --bg-color: #f3f3f3;
+    --transparent-background: rgba(0, 0, 0, 0);
+    --transparent-dark: rgba(243, 243, 243, 0.3);
+    --border-color: gray;
+    --text-color-primary: black;
+}
+
+.light-mode .image-invert{
+    filter: invert(100%);
 }
 
 ::-webkit-scrollbar{
     display: block;
     background-color: var(--transparent-background);
-    /* border: 1px solid rgb(79, 79, 79); */
     border-radius: 10px;
     width: 10px;
     padding: 2px !important;
@@ -44,17 +96,19 @@ html{
 
 body{
     margin: 0;
-    font-family: montserrat;
-    /* font-family: Redhat; */
-    background-color: var(--dark-blue);
-    /* background-image: linear-gradient(var(--darkgray), var(--dark-blue)); */
+    /* font-family: montserrat; */
+    font-family: Redhat;
+    background-color: var(--bg-color);
+    /* background-image: linear-gradient(var(--bg-color-secondary), var(--bg-color)); */
     background-repeat: no-repeat;
     min-height: 100vh;
+    color: var(--text-color-primary);
+    transition: background-color 400ms, color 400ms;
 }
 
 a{
     text-decoration: none;
-    color: black;
+    color: var(--text-color-primary);
 }
 
 .spinner-container{
@@ -79,6 +133,21 @@ a{
     border-radius: 50%;
     cursor: pointer;
 }
+
+.base-button{
+    border: 1px solid var(--border-color);
+    padding: 1em;
+    border-radius: 5px;
+    background-color: var(--transparent-background);
+    color: var(--text-color-primary);
+    cursor: pointer;
+    transition: 200ms;
+}
+
+/* .base-button:hover{
+    background-color: var(--bg-color-secondary);
+    color: var(--text-color-primary);
+} */
 
 @keyframes spinnerAnimation {
     0% {
@@ -105,7 +174,7 @@ a{
 .secondary-button{
     padding: 7px;
     background-color: purple;
-    color: white;
+    color: var(--text-color-primary);
     border: none;
     border-radius: 5px;
     cursor: pointer;
@@ -115,13 +184,15 @@ a{
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 1.5em;
-    background-color: var(--dark-blue);
+    padding: 0px 1.5em;
+    height: 70px;
+    background-color: var(--bg-color);
     position: sticky;
     top: 0;
     z-index: 3;
-    color: white;
+    color: var(--text-color-primary);
     border-bottom: 1px solid gray;
+    transition: background-color 400ms, color 400ms;
 }
 
 .menu-logo{
@@ -136,11 +207,11 @@ a{
 }
 
 .nav-div a{
-    color: white;
+    color: var(--text-color-primary);
 }
 
 .alert-div{
-    position: absolute;
+    position: fixed;
     bottom: 20px;
     right: 20px;
     display: flex;
@@ -200,6 +271,11 @@ a{
     color: red;
 }
 
+.popup-details{
+    /* color: var(--text-color-primary); */
+    color: white;
+}
+
 .popup-button{
     border: 1px solid black;
     border-radius: 3px;
@@ -247,14 +323,12 @@ a{
     display: flex;
     align-items: center;
     justify-content: space-around;
-    color: white;
+    color: var(--text-color-primary);
 }
 
 .auth-div{
-    /* background-color: rgb(186, 0, 186); */
-    /* background-image: linear-gradient(to right, rgb(163, 0, 163), rgb(213, 0, 153)); */
-    border: 1px solid white;
-    color: white;
+    border: 1px solid var(--border-color);
+    color: var(--text-color-primary);
     padding: 2em;
     border-radius: 15px;
     display: flex;
@@ -274,25 +348,30 @@ a{
     width: 50%;
     min-width: 150px;
     margin: 1em 0em;
-    color: white;
-    border: none;
-    border-bottom: 1px solid white;
+    color: var(--text-color-primary);
+    border-bottom: 1px solid var(--border-color);
     outline: none;
 }
 
 .auth-input::placeholder{
-    color: white;
+    color: var(--text-color-primary);
 }
 
 .auth-button{
-    border: none;
-    background-color: white;
-    color: black;
+    border: 1px solid var(--border-color);
+    background-color: var(--transparent-background);
+    color: var(--text-color-primary);
     padding: 0.7em 1.5em;
     border-radius: 30px;
     margin-top: 3em;
     font-family: roboto;
     cursor: pointer;
+    transition: 200ms;
+}
+
+.auth-button:hover{
+    background-color: var(--border-color);
+    color: white;
 }
 
 /* map styles */
@@ -319,27 +398,27 @@ a{
 
 .spot-details{
     /* background-color: rgb(238, 238, 238); */
-    border: 1px solid gray;
+    border: 1px solid var(--border-color);
     flex: 1;
     padding: 1em;
 }
 
 .map-outer-div{
     width: 100%;
-    height: 92vh;
+    height: calc(100vh - 71px);
     display: flex;
     position: relative;
 }
 
 .map-sidebar{
     flex: 2;
-    /* background-color: var(--dark-blue); */
-    background-image: linear-gradient(to right, var(--dark-blue), var(--darkgray));
+    /* background-color: var(--bg-color); */
+    background-image: linear-gradient(to bottom, var(--bg-color), var(--bg-color-secondary));
     padding: 1.5em;
     overflow-y: scroll;
     display: none;
     z-index: 12;
-    color: white;
+    color: var(--text-color-primary);
 }
 
 .map-div{
@@ -349,14 +428,13 @@ a{
 
 .directions-detail-container{
     position: absolute;
-    color: white;
-    /* border: 1px solid white; */
+    color: var(--text-color-primary);
     border-radius: 10px;
     z-index: 10;
     top: 10px;
     right: 10px;
     padding: 1em;
-    background-color: var(--darkgray);
+    background-color: var(--bg-color-secondary);
     /* width: 50%; */
     display: none;
 }
@@ -375,7 +453,7 @@ a{
 
 .directions-picker p{
     cursor: pointer;
-    color: white;
+    color: var(--text-color-primary);
     padding: 5px;
     border-radius: 5px;
 }
@@ -383,7 +461,7 @@ a{
 .mapboxgl-popup-content{
     background-color: var(--transparent-dark);
     backdrop-filter: blur(5px);
-    color: white;
+    color: var(--text-color-primary);
     max-height: 70vh;
     /* overflow-y: scroll; */
     overflow: hidden;
@@ -396,7 +474,7 @@ a{
 .mapboxgl-popup-close-button{
     font-size: 2em;
     /* margin-bottom: 1em; */
-    color: white;
+    color: var(--text-color-primary);
     margin: 0;
     padding: 0;
     display: none;
@@ -412,8 +490,9 @@ a{
 
 .spot-details-button{
     border: 1px solid white;
-    /* background-color: var(--darkgray); */
+    /* background-color: var(--bg-color-secondary); */
     background-color: var(--transparent-background);
+    /* color: var(--text-color-primary); */
     color: white;
     padding: 1em;
     border-radius: 5px;
@@ -507,9 +586,9 @@ a{
     bottom: 30px;
     right: 50px;
     padding: 1em;
-    border: 1px solid white;
+    border: 1px solid var(--border-color);
     background-color: rgba(0, 0, 0, 0);
-    color: white;
+    color: var(--text-color-primary);
     border-radius: 5px;
     cursor: pointer;
     transition: 200ms;
@@ -528,15 +607,15 @@ a{
     gap: 1em;
     left: 30px;
     right: 50px;
-    background-color: var(--darkgray);
+    background-color: var(--bg-color-secondary);
     z-index: 3;
 }
 
 .add-comment-button{
     padding: 1em;
-    border: 1px solid white;
+    border: 1px solid var(--border-color);
     background-color: rgba(0, 0, 0, 0);
-    color: white;
+    color: var(--text-color-primary);
     border-radius: 5px;
     cursor: pointer;
     transition: 200ms;
@@ -544,7 +623,7 @@ a{
 
 .cancel-comment-button{
     padding: 1em;
-    border: 1px solid white;
+    border: 1px solid var(--border-color);
     background-color: white;
     color: black;
     border-radius: 5px;
@@ -598,25 +677,28 @@ a{
     background-size: cover;
     border-radius: 50%;
     background-repeat: no-repeat;
-    border: 1px solid white;
+    border: 1px solid var(--border-color);
 }
 
 .spot-details-modal-inner{
     width: 85%;
-    background-color: var(--darkgray);
-    color: white;
+    /* background-color: var(--bg-color-secondary); */
+    background-image: linear-gradient(to bottom, var(--bg-color), var(--bg-color-secondary));
+    color: var(--text-color-primary);
     height: 90vh;
     transform: translateY(-20%);
     transition: 200ms;
     padding: 2em;
     overflow: hidden;
+    border-radius: 10px;
 }
 
 .addspot-div{
     width: 85%;
     height: 80vh;
-    background-color: var(--dark-blue);
-    color: white;
+    /* background-color: var(--bg-color); */
+    background-image: linear-gradient(to bottom, var(--bg-color), var(--bg-color-secondary));
+    color: var(--text-color-primary);
     padding: 2em;
     overflow-y: scroll;
     border-radius: 15px;
@@ -653,7 +735,7 @@ a{
     gap: 1em;
     height: 70vh;
     overflow-y: scroll;
-    border: 2px solid rgb(79, 79, 79);
+    border: 2px solid var(--border-color);
     border-radius: 10px;
     padding: 15px;
     width: 100%;
@@ -677,11 +759,11 @@ a{
 .default-button{
     cursor: pointer;
     background-color: var(--transparent-background);
-    border: 1px solid white;
+    border: 1px solid var(--border-color);
     padding: 10px 15px;
     border-radius: 5px;
     transition: 200ms;
-    color: white;
+    color: var(--text-color-primary);
 }
 
 .default-button:hover{
@@ -692,11 +774,11 @@ a{
 .add-spot-button{
     cursor: pointer;
     background-color: var(--transparent-background);
-    border: 1px solid white;
+    border: 1px solid var(--border-color);
     padding: 10px 15px;
     border-radius: 5px;
     transition: 200ms;
-    color: white;
+    color: var(--text-color-primary);
 }
 
 .add-spot-button:hover{
@@ -709,7 +791,7 @@ a{
     margin-bottom: 3em;
     display: flex;
     flex-direction: column;
-    border: 1px solid rgb(85, 85, 85);
+    border: 1px solid var(--border-color);
     border-radius: 5px;
     padding: 1em;
 }
@@ -717,10 +799,10 @@ a{
 .spot-confirm, .cancel-spot-button{
     padding: 10px 10px;
     margin-top: 2em;
-    background-color: var(--dark-blue);
-    color: white;
+    background-color: var(--bg-color);
+    color: var(--text-color-primary);
     width: fit-content;
-    border: 1px solid white;
+    border: 1px solid var(--border-color);
     border-radius: 5px;
     transition: 200ms;
     cursor: pointer;
@@ -732,23 +814,33 @@ a{
 }
 
 .profile-div{
-    color: white;
+    color: var(--text-color-primary);
     width: 100%;
     display: flex;
-    height: 100%;
+    height: calc(100vh - 71px);
+    /* height: 100%; */
+    /* overflow-y: hidden; */
 }
 
 .profile-side{
     flex: 2;
-    border-right: 1px solid gray;
+    /* border-right: 1px solid gray; */
     height: 100%;
     padding: 2em;
 }
 
+.profile-divider{
+    height: calc(100vh - 71px);
+    /* height: 100%; */
+    width: 1px;
+    background-color: gray;
+}
+
 .profile-main{
     flex: 4;
-    height: 100%;
+    height: calc(100vh - 71px);
     padding: 2em;
+    overflow-y: scroll;
 }
 
 .profile-image-container{
@@ -779,7 +871,7 @@ a{
     width: 1.5em;
     aspect-ratio: 1 / 1;
     background-color: rgb(255, 47, 206);
-    color: white;
+    color: var(--text-color-primary);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -809,10 +901,10 @@ a{
 .profile-image-modal-container{
     width: 60%;
     /* height: 80vh; */
-    background-color: var(--darkgray);
+    background-color: var(--bg-color-secondary);
     border-radius: 10px;
     padding: 20px;
-    color: white;
+    color: var(--text-color-primary);
     display: flex;
     flex-direction: column;
     align-items: start;
@@ -820,39 +912,40 @@ a{
 }
 
 .profile-info-div{
-    border: 2px solid gray;
+    border: 1px solid var(--border-color);
     border-radius: 15px;
     padding: 2em;
     margin-top: 2em;
 }
 
 .profile-title{
-    font-size: 2em;
-    color: white;
+    font-size: 1.2em;
+    color: var(--text-color-primary);
     margin: 0;
 }
 
 .underline{
     width: 100%;
     height: 1px;
-    background-color: white;
+    background-color: var(--border-color);
     margin: 1em 0em;
 }
 
 .profile-detail-title{
-    font-size: 1.2em;
-    color: white;
+    /* font-size: 1.2em; */
+    color: var(--text-color-primary);
     margin-bottom: 3px;
-    margin-top: 2em;
+    /* margin-top: 2em; */
 }
 
 .profile-pill-title{
-    font-size: 1.2em;
-    color: white;
+    /* font-size: 1.2em; */
+    color: var(--text-color-primary);
     margin: 0;
 }
 
 .profile-detail-info{
+    font-size: 0.8em;
     color: gray;
     margin: 0;
 }
@@ -862,7 +955,7 @@ a{
     align-items: center;
     justify-content: space-between;
     gap: 1em;
-    margin-top: 2em;
+    margin-top: 1.5em;
     /* width: 50%; */
 }
 
@@ -873,7 +966,7 @@ a{
     display: flex;
     cursor: pointer;
     justify-content: flex-start;
-    border: 1px solid gray;
+    border: 1px solid var(--border-color);
     transition: 200ms;
 }
 
@@ -885,13 +978,24 @@ a{
     transition: 200ms;
 }
 
+.verified-tick-div{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: fit-content;
+    padding: 5px;
+    aspect-ratio: 1 / 1;
+    background-color: blue;
+    border-radius: 50%;
+}
+
 .pill-on{
     /* justify-content: flex-start; */
     border: 1px solid rgb(0, 212, 0);
 }
 
 .pill-circle-on{
-    transform: translateX(35px);
+    transform: translateX(22px);
     background-color: rgb(0, 212, 0);
 }
 
@@ -909,6 +1013,13 @@ a{
 
     .profile-div{
         flex-direction: column;
+        overflow-y: scroll;
+        height: 100%;
+    }
+
+    .profile-divider{
+        width: 100%;
+        height: 1px;
     }
     
     .profile-side{

@@ -33,7 +33,6 @@ const transporter = nodemailer.createTransport({
 const DatabaseMethods = require("./dbFunctions")
 const appFunctions = require("./appFunctions")
 const { error } = require("console")
-const africastalking = require("africastalking")
 let databaseMethods = new DatabaseMethods()
 let appFuncs = new appFunctions()
 const ExpressSanitizer = require("perfect-express-sanitizer")
@@ -56,21 +55,19 @@ app.use(cors({
 }))
 
 app.use((request, response, next) => {
-    console.log(request.path)
+    console.log(request.method, request.path)
+    if (request.session.user === undefined) {
+        request.session.user = "anonymous"
+    }
+    if (request.session.darkMode === undefined) {
+        request.session.darkMode = "none"
+    }
     next()
 })
 
 app.get('/', async (request, response) => {
-    if (request.session.user === undefined) {
-        request.session.user = "anonymous"
-    } else {
-        response.locals.user = request.session.user
-    }
-    // let content = "<h1>Test Content</h1> <p style='color: blue;'>This is new test content</p>"
-    // let mailresult = await appFuncs.sendPrimaryMail("darrylandrew22@gmail.com", "Test mail", content)
-    // console.log(mailresult)
-    // console.log(mailresult.messageId)
-    response.render('index.ejs', {user: request.session.user})
+    console.log(request.session.user)
+    response.render('index.ejs', {user: request.session.user, darkMode: request.session.darkMode})
 })
 
 app.get('/getUser', async (request, response) => {
@@ -89,18 +86,17 @@ app.get('/getUser', async (request, response) => {
 })
 
 app.get('/map', async (request, response) => {
-    console.log(request.session.userID)
+    let date = new Date()
+    // let currentDate = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`
     await Promise.all([databaseMethods.getMany("spots"), databaseMethods.getOne("users", {username: request.session.user})])
     .then(res => {
         // console.log(res[1])
-        let userObject = {
-            username: "anonymous",
-        }
+        let darkMap = "true"
         if (res[1] !== null) {
-            userObject.username = res[1].username
-            userObject.preferences = res[1].preferences
+            darkMap = res[1].settings.darkMap
         }
-        response.render('map.ejs', {mapboxtoken : process.env.MAPBOX_ACCESS_TOKEN, userObject: userObject, spots: res[0], user: request.session.user})
+        
+        response.render('map.ejs', {mapboxtoken : process.env.MAPBOX_ACCESS_TOKEN, spots: res[0], user: request.session.user, userID: request.session.userID, darkMode: request.session.darkMode, darkMap: darkMap})
     })
     .catch(error => {
         console.log(error)
@@ -110,6 +106,7 @@ app.get('/map', async (request, response) => {
 
 app.post('/addspot', async (request, response) => {
     const date = new Date()
+    let currentDate = date.toISOString().split("T")
     const options = { xss: true, noSql: true, sql: true, level: 5 }
     let sanitizedDesc = ExpressSanitizer.sanitize.prepareSanitize(request.body.description, options)
     console.log(sanitizedDesc)
@@ -121,30 +118,24 @@ app.post('/addspot', async (request, response) => {
         spotimages: request.body.spotimages,
         createdAt: date,
         createdBy: request.session.user,
+        createdByID: request.session.userID,
         interactions: {
             likes: [],
             comments: []
-        }
+        },
+        dateCreated: currentDate[0]
     }
 
-    for (x of data.spotimages) {
-        console.log(x.length)
-    }
     await databaseMethods.addOne("spots", data)
-    .then( async res => {
-        await databaseMethods.getOne("spots", {_id: res.insertedId})
-        .then(spot => {
-            // console.log(spot)
-            response.json({status: "SUCCESS", message: "New spot added", newSpot: res.insertedId})
-        })
-        .catch(error => {
-            console.log(error)
-            response.json({status: "ERROR", message: "Error getting created item, please reload page"})
-        })
+    .then(res => {
+        return databaseMethods.getOne("spots", {_id: res.insertedId})
+    })
+    .then(spot => {
+        response.json({status: "SUCCESS", message: "New spot added", newSpot: spot._id})
     })
     .catch(error => {
         console.log(error)
-        response.json({status: "ERROR", message: "There was an error, please try again"})
+        response.json({status: "ERROR", message: "Error getting created item, please reload page"})
     })
 
     // response.redirect("/map")
@@ -173,31 +164,25 @@ app.get('/getSpot', async (request, response) => {
 
 app.post('/updateComment', async (request, response) => {
     // console.log(request.body)
-    let spotID = ObjectId.createFromHexString(request.body.spotID)
     try {
+        let spotID = ObjectId.createFromHexString(request.body.spotID)
+        const date = new Date()
+        let currentDate = date.toISOString().split("T")
         await databaseMethods.getOne("spots", {_id: spotID})
-        .then(async spotRes => {
+        .then(spotRes => {
             // console.log(spotRes)
             if(request.body.type === "newComment") {
                 let newID = new ObjectId()
-                await databaseMethods.makeUpdate("spots", {_id: spotID}, {
+                return databaseMethods.makeUpdate("spots", {_id: spotID}, {
                     $push: {
                         "interactions.comments": {
                             commentID: newID.toHexString(),
                             content: request.body.comment,
                             author: request.session.userID,
-                            replies: []
+                            replies: [],
+                            dateCreated: currentDate[0]
                         }
                     }
-                })
-                .then(async commentRes => {
-                    console.log(commentRes)
-                    let spot = await databaseMethods.getOne("spots", {_id: spotID})
-                    response.json({status: "SUCCESS", message: "Added comment", spot: spot})
-                })
-                .catch(error => {
-                    console.log(error)
-                    response.json({status: "SUCCESS", message: "Error adding comment"})
                 })
             } else if (request.body.type === "reply") {
                 let newID = new ObjectId()
@@ -208,22 +193,19 @@ app.post('/updateComment', async (request, response) => {
                             commentID: newID.toHexString(),
                             content: request.body.comment,
                             author: request.session.userID,
+                            dateCreated: currentDate[0]
                         }
-                        await databaseMethods.makeUpdate("spots", {_id: spotID}, {
+                        return databaseMethods.makeUpdate("spots", {_id: spotID}, {
                             $push: queryObject
-                        })
-                        .then(async commentRes => {
-                            console.log(commentRes)
-                            let spot = await databaseMethods.getOne("spots", {_id: spotID})
-                            response.json({status: "SUCCESS", message: "Added comment", spot: spot})
-                        })
-                        .catch(error => {
-                            console.log(error)
-                            response.json({status: "SUCCESS", message: "Error adding comment"})
                         })
                     }
                 }
             }
+        })
+        .then(async res => {
+            console.log("Comment result", res)
+            let spot = await databaseMethods.getOne("spots", {_id: spotID})
+            response.json({status: "SUCCESS", message: "Added comment", spot: spot})
         })
         .catch(error => {
             console.log(error)
@@ -237,49 +219,62 @@ app.post('/updateComment', async (request, response) => {
 })
 
 app.post('/updateLiked', async (request, response) => {
-    console.log(request.body)
     try{
         let spotID = ObjectId.createFromHexString(request.body.ID)
+        let likesCount = 0
         await databaseMethods.getOne("spots", {_id: spotID})
         .then(async res => {
             console.log(res.interactions.likes)
             if(request.body.isLiked === "false") {
-                await databaseMethods.makeUpdate("spots", {_id: spotID}, {
+                let spotLikeUpdate = databaseMethods.makeUpdate("spots", {_id: spotID}, {
                     $push: {
-                        "interactions.likes": request.session.user
+                        "interactions.likes": request.session.userID
                     }
                 })
-                .then(res => {
-                    console.log(res)
-                })
-                .catch(error => {
-                    console.log(error)
-                })
+                return spotLikeUpdate
             } else {
                 let tempLikes = res.interactions.likes
-                for (let x = 0; x < tempLikes.length; x++) {
-                    if (tempLikes[x] === request.session.user) {
-                        tempLikes.splice(x, 1)
-                    }
-                }
-                console.log(tempLikes)
-                await databaseMethods.makeUpdate("spots", {_id: spotID}, {
+                for (let x = 0; x < tempLikes.length; x++) if (tempLikes[x] === request.session.userID) tempLikes.splice(x, 1)
+                let userID = ObjectId.createFromHexString(request.session.userID)
+                // let spotLikeUpdate = databaseMethods.makeUpdate("spots", {_id: spotID}, {
+                //     $set: {
+                //         "interactions.likes": tempLikes
+                //     }
+                // })
+                let spotLikeUpdate = await Promise.all([databaseMethods.makeUpdate("spots", {_id: spotID}, {
                     $set: {
                         "interactions.likes": tempLikes
                     }
+                }), databaseMethods.getOne("users", {_id: userID})])
+                return spotLikeUpdate
+            }
+        })
+        .then(res => {
+            console.log("spot likes Update", res)
+            let userID = ObjectId.createFromHexString(request.session.userID)
+            if (request.body.isLiked === "false") {
+                return databaseMethods.makeUpdate("users", {_id: userID}, {
+                    $push: {
+                        likedSpots: request.body.ID
+                    }
                 })
-                .then(res => {
-                    console.log(res)
-                })
-                .catch(error => {
-                    console.log(error)
+            } else {
+                let tempLikedSpots = res[1].likedSpots
+                for (let x = 0; x < tempLikedSpots.length; x++) if (tempLikedSpots[x] === request.body.ID) tempLikedSpots.splice(x, 1)
+                return databaseMethods.makeUpdate("users", {_id: userID}, {
+                    $set: {
+                        likedSpots: tempLikedSpots
+                    }
                 })
             }
-            response.json({status: "SUCCESS", message: "Post liked"})
+        })
+        .then(res => {
+            console.log("Spot user Like update", res)
+            response.json({status: "SUCCESS", message: "Like action complete"})
         })
         .catch(error => {
             console.log(error)
-            response.json({status: "ERROR", message: "Error adding like"})
+            response.json({status: "ERROR", message: "Error with like action"})
         })
     } catch {
         response.json({status: "ERROR", message: "Error adding like"})
@@ -291,7 +286,7 @@ app.get('/profilePicture', async (request, response) => {
     let userID = ObjectId.createFromHexString(request.query.user)
     await databaseMethods.getOne("users", {_id: userID})
     .then(res => {
-        console.log(res)
+        // console.log(res)
         if (res !== null) {
             response.json({status: "SUCCESS", message: "Loaded profile Imgages", picture: res.profileImage, user: res.username})
         }else {
@@ -311,23 +306,19 @@ app.get('/info', (request, response) => {
 app.get('/profile', async (request, response) => {
     await databaseMethods.getOne("users", {username: request.session.user})
     .then(res => {
-        console.log(res)
         userProfile = {
             username: res.username,
             email: res.email,
-            preferences: {
-                param1: res.preferences.param1,
-                param2: res.preferences.param2,
-                param3: res.preferences.param3
+            verified: res.verified,
+            settings: {
+                twoFactorAuth: res.settings.twoFactorAuth,
+                darkMode: res.settings.darkMode,
+                darkMap: res.settings.darkMap
             },
-            preferences2: {
-                param1: res.preferences2.param1,
-                param2: res.preferences2.param2,
-                param3: res.preferences2.param3
-            },
-            profileImage: res.profileImage
+            profileImage: res.profileImage,
+            likedSpots: res.likedSpots
         }
-        response.render('profile.ejs', {user: userProfile})
+        response.render('profile.ejs', {user: userProfile, darkMode: request.session.darkMode})
     })
 })
 
@@ -336,32 +327,42 @@ app.post('/updateProfile', async (request, response) => {
         let userID = request.session.userID
         let idObject = ObjectId.createFromHexString(userID)
         console.log("Profile updated")
-        databaseMethods.makeUpdate("users", {_id: idObject}, {
+        await databaseMethods.makeUpdate("users", {_id: idObject}, {
             $set: {
-                preferences: {
-                    param1: request.body.param1 === "true" ? true : false,
-                    param2: request.body.param2 === "true" ? true : false,
-                    param3: request.body.param3 === "true" ? true : false
+                settings: {
+                    twoFactorAuth: request.body.twoFactorAuth === "true" ? true : false,
+                    darkMode: request.body.darkMode === "true" ? true : false,
+                    darkMap: request.body.darkMap === "true" ? true : false,
                 },
-                preferences2: {
-                    param1: request.body.param4 === "true" ? true : false,
-                    param2: request.body.param5 === "true" ? true : false,
-                    param3: request.body.param6 === "true" ? true : false
-                }
             }
         })
         .then(res => {
             console.log(res)
+            request.session.darkMode = request.body.darkMode
             response.json({status: "SUCCESS", message: "Profile updated"})
         })
         .catch(error => {
             console.log(error)
+            response.json({status: "ERROR", message: "Error with update"})
         })
     } catch (error) {
         console.log(error)
         // response.redirect("/profile")
         response.json({status: "ERROR", message: "Error making update"})
     }
+})
+
+app.get('/getUserSpots', async (request, response) => {
+    let userID = request.session.userID
+    let user = request.session.user
+    await databaseMethods.getMany("spots", {createdBy: user})
+    .then(res => {
+        response.json({status: "SUCCESS", message: "spots retrieved", myUploads: res})
+    })
+    .catch(error => {
+        console.log(error)
+        response.json({status: "ERROR", message: "Could not retrieve uploads"})
+    })
 })
 
 app.post('/updateProfileImage', async (request, response) => {
@@ -382,7 +383,7 @@ app.post('/updateProfileImage', async (request, response) => {
 })
 
 app.get('/login', (request, response) => {
-    response.render('login.ejs', {user: request.session.user})
+    response.render('login.ejs', {user: request.session.user, darkMode: request.session.darkMode})
 })
 
 app.post('/login', async (request, response) => {
@@ -394,6 +395,8 @@ app.post('/login', async (request, response) => {
         if(password === cryptr.decrypt(res.password)) {
             request.session.user = res.username
             request.session.userID = res._id.toString()
+            request.session.email = res.email
+            request.session.darkMode = res.darkMode ? "true" : "false"
             // response.redirect("/profile")
             response.json({status: "SUCCESS", message: "Login successful"})
         } else {
@@ -407,7 +410,7 @@ app.post('/login', async (request, response) => {
 })
 
 app.get('/signup', (request, response) => {
-    response.render('signup.ejs', {user: request.session.user})
+    response.render('signup.ejs', {user: request.session.user, darkMode: request.session.darkMode})
 })
 
 app.post('/signup', async (request, response) => {
@@ -415,6 +418,8 @@ app.post('/signup', async (request, response) => {
     const email = request.body.email
     const password = request.body.password
     const confirmpassword = request.body.confirmpassword
+    const date = new Date()
+    let currentDate = date.toISOString().split("T")
     if (password === confirmpassword) {
         await Promise.all([databaseMethods.getOne("users", {email: email}), databaseMethods.getOne("users", {username: username})])
         .then(async res => {
@@ -426,17 +431,14 @@ app.post('/signup', async (request, response) => {
                     email: email,
                     password: encryptedpass,
                     verified: false,
-                    preferences: {
-                        param1: true,
-                        param2: true,
-                        param3: true
+                    settings: {
+                        twoFactorAuth: false,
+                        darkMode: false,
+                        darkMap: false
                     },
-                    preferences2: {
-                        param1: true,
-                        param2: false,
-                        param3: false
-                    },
-                    profileImage: "/images/defaultProfile2.png"
+                    profileImage: "/images/defaultProfile2.png",
+                    likedSpots: [],
+                    dateCreated: currentDate[0]
                 }
                 await databaseMethods.addOne("users", user)
                 .then(async userResponse => {
@@ -467,6 +469,9 @@ app.post('/signup', async (request, response) => {
                 response.json({status: "ERROR", message: "This username already exists"})
             }
         })
+        .catch(error => {
+            response.json({status: "ERROR", message: "Error getting user"})
+        })
     } else {
         console.log("Password Missmatch")
         response.json({status: "ERROR", message: "Password Missmatch"})
@@ -475,24 +480,24 @@ app.post('/signup', async (request, response) => {
 
 app.get("/verify", (request, response) => {
     if (request.session.email === undefined) {
-        response.redirect("/login")
-    } else {
-        console.log("Token value", request.session.verifyToken)
-        console.log(request.session.userID)
-        let currentTime = new Date()
-        // request.session.tokenExpiry = currentTime.getTime() + 10000
-        console.log(request.session.tokenExpiry)
-        let duration = request.session.tokenExpiry - currentTime.getTime()
-        let expired = false
-        if (duration < 0) {
-            request.session.verifyToken = null
-            expired = true
-            duration = request.session.tokenExpiry - currentTime.getTime()
-            console.log("Token Expired")
-        }
-        console.log(duration)
-        response.render("verify.ejs", {user: request.session.user, duration: duration, expired: expired})
+        return response.redirect("/login")
     }
+    
+    console.log("Token value", request.session.verifyToken)
+    console.log(request.session.userID)
+    let currentTime = new Date()
+    // request.session.tokenExpiry = currentTime.getTime() + 10000
+    console.log(request.session.tokenExpiry)
+    let duration = request.session.tokenExpiry - currentTime.getTime()
+    let expired = false
+    if (duration < 0) {
+        request.session.verifyToken = null
+        expired = true
+        duration = request.session.tokenExpiry - currentTime.getTime()
+        console.log("Token Expired")
+    }
+    console.log(duration)
+    response.render("verify.ejs", {user: request.session.user, duration: duration, expired: expired, darkMode: request.session.darkMode})
 })
 
 app.post("/verify", async (request, response) => {
@@ -546,7 +551,8 @@ app.post("/verify", async (request, response) => {
 })
 
 app.get("/logout", (request, response) => {
-    request.session.user = "anonymous"
+    // request.session.user = "anonymous"
+    request.session.destroy()
     response.redirect("/login")
 })
 
