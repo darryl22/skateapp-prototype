@@ -304,6 +304,9 @@ app.get('/info', (request, response) => {
 })
 
 app.get('/profile', async (request, response) => {
+    if (request.session.user === undefined || request.session.user === "anonymous") {
+        return response.redirect("/")
+    }
     await databaseMethods.getOne("users", {username: request.session.user})
     .then(res => {
         userProfile = {
@@ -352,12 +355,36 @@ app.post('/updateProfile', async (request, response) => {
     }
 })
 
-app.get('/getUserSpots', async (request, response) => {
-    let userID = request.session.userID
+app.get('/getMyUploads', async (request, response) => {
     let user = request.session.user
     await databaseMethods.getMany("spots", {createdBy: user})
     .then(res => {
         response.json({status: "SUCCESS", message: "spots retrieved", myUploads: res})
+    })
+    .catch(error => {
+        console.log(error)
+        response.json({status: "ERROR", message: "Could not retrieve uploads"})
+    })
+})
+
+app.get('/getLikedSpots', async (request, response) => {
+    let userID = ObjectId.createFromHexString(request.session.userID)
+    await databaseMethods.getOne("users", {_id: userID})
+    .then(res => {
+        let myLikes = []
+        for (let x = 0; x < res.likedSpots.length; x++) {
+            try {
+                let likedId = ObjectId.createFromHexString(res.likedSpots[x])
+                myLikes.push(databaseMethods.getOne("spots", {_id: likedId}))
+                console.log("value retrieved")
+            } catch(error) {
+                console.log("Cannot get value")
+            }
+        }
+        return Promise.allSettled(myLikes)
+    })
+    .then(res => {
+        response.json({status: "SUCCESS", message: "spots retrieved", myLikes: res})
     })
     .catch(error => {
         console.log(error)

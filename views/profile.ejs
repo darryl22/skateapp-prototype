@@ -4,8 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+
     <title>Skatespot App</title>
     <link rel="stylesheet" href="/index.css">
+    <style>
+        .swiper {
+            width: 100%;
+            height: 50vh;
+        }
+    </style>
 </head>
 <body>
     <%- include('templates/nav.ejs') %>
@@ -68,17 +78,29 @@
                     <input type="hidden" value="<%= user.settings.darkMap %>" id="darkMapPillValue">
                 </div>
             </div>
-            <div class="profile-info-div">
+            <div class="profile-info-div" id="spotsContentDiv">
                 <p class="profile-title">Spots Content</p>
                 <div class="underline"></div>
-                <button class="base-button" style="margin-right: 1em;">Liked spots</button>
-                <button class="base-button">My Uploads</button>
+                <button class="base-button modal-button" style="margin-right: 1em;" data-toggle-modal="likedSpots">Liked spots</button>
+                <button class="base-button modal-button" data-toggle-modal="myUploads">My Uploads</button>
+                <div class="profile-modal" id="likedSpotsOuter">
+                    <div class="profile-modal-inner" id="likedSpotsInner">
+                        <img src="./logos/closelight.png" alt="close menu" class="close-menu2 image-invert close-modal" data-toggle-modal="likedSpots">
+                        <div class="profile-spots-container" id="likedSpotsContainer"></div>
+                    </div>
+                </div>
+                <div class="profile-modal" id="myUploadsOuter">
+                    <div class="profile-modal-inner" id="myUploadsInner">
+                        <img src="./logos/closelight.png" alt="close menu" class="close-menu2 image-invert close-modal" data-toggle-modal="myUploads">
+                        <div class="profile-spots-container" id="myUploadsContainer"></div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
     <div class="profile-image-modal-outer" id="profileImageModalOuter">
         <div class="profile-image-modal-container" id="profileImageModalContainer">
-            <img src="./logos/closelight.png" alt="close menu" class="close-menu2" onclick="hideProfileImageModal()">
+            <img src="./logos/closelight.png" alt="close menu" class="close-menu2 image-invert" onclick="hideProfileImageModal()">
             <p style="align-self: center; font-weight: bold;">Preview</p>
 
             <div class="profile-image-container" style="width: 50%;">
@@ -91,6 +113,25 @@
     </div>
 </body>
 <script>
+
+    // const swiper = new Swiper('.swiper', {
+    //     direction: 'horizontal',
+    //     // slidesPerView: 2,
+    //     loop: true,
+    //     pagination: {
+    //         el: '.swiper-pagination',
+    //     },
+    //     navigation: {
+    //         nextEl: '.swiper-button-next',
+    //         prevEl: '.swiper-button-prev',
+    //     },
+    //     scrollbar: {
+    //         el: '.swiper-scrollbar',
+    //     },
+    //     obsever: true,
+    //     observeParents: true
+    // });
+
     let user = JSON.parse('<%- JSON.stringify(user)%>')
     let twoFactorAuthPill = document.getElementById("twoFactorAuthPill")
     let darkModePill = document.getElementById("darkModePill")
@@ -110,6 +151,235 @@
         darkMapPillCircle.classList.add(user.settings.darkMap ? "pill-circle-on" : "pill-circle-off")
     }
     updateSettingsDisplay()
+
+    let currentOpenModal = null
+
+    function updateModalListeners() {
+        document.querySelectorAll(".modal-button").forEach(elm => {
+            elm.addEventListener("click", function() {
+                if(currentOpenModal !== null) {
+                    let modalOuterCurrent = document.getElementById(`${currentOpenModal}Outer`)
+                    let Current= document.getElementById(`${currentOpenModal}Inner`)
+                    modalOuterCurrent.style.opacity = "0"
+                    modalOuterCurrent.style.pointerEvents = "none"
+                    Current.style.transform = "translateY(-20px)"
+                }
+                let id = this.getAttribute("data-toggle-modal")
+                currentOpenModal = id
+                let modalOuter = document.getElementById(`${id}Outer`)
+                let modalInner= document.getElementById(`${id}Inner`)
+                modalOuter.style.opacity = "1"
+                modalOuter.style.pointerEvents = "auto"
+                modalInner.style.transform = "translateY(0)"
+            })
+        })
+
+        document.querySelectorAll(".close-modal").forEach(elm => {
+            elm.addEventListener("click", function() {
+                let id = this.getAttribute("data-toggle-modal")
+                let modalOuter = document.getElementById(`${id}Outer`)
+                let modalInner= document.getElementById(`${id}Inner`)
+                modalOuter.style.opacity = "0"
+                modalOuter.style.pointerEvents = "none"
+                modalInner.style.transform = "translateY(-20px)"
+                currentOpenModal = null
+            })
+        })
+
+        document.querySelectorAll(".edit-images-button").forEach(elm => {
+            elm.addEventListener("click", function() {
+                let id = elm.getAttribute("data-toggle-edit")
+                let carousel = document.getElementById(`spotPicturesCarousel-${id}`)
+                let editPicturesDiv = document.getElementById(`editPicturesDiv-${id}`)
+                let cancelEditImagesButton = document.getElementById(`cancelEditImagesButton-${id}`)
+                let editImagesButton = document.getElementById(`editImagesButton-${id}`)
+                carousel.style.display = "none"
+                editPicturesDiv.style.display = "grid"
+                elm.style.display = "none"
+                cancelEditImagesButton.style.display = "block"
+            })
+        })
+
+        document.querySelectorAll(".cancel-edit-images-button").forEach(elm => {
+            elm.addEventListener("click", function() {
+                let id = elm.getAttribute("data-toggle-edit")
+                let carousel = document.getElementById(`spotPicturesCarousel-${id}`)
+                let editPicturesDiv = document.getElementById(`editPicturesDiv-${id}`)
+                let cancelEditImagesButton = document.getElementById(`cancelEditImagesButton-${id}`)
+                let editImagesButton = document.getElementById(`editImagesButton-${id}`)
+                carousel.style.display = "block"
+                editPicturesDiv.style.display = "none"
+                elm.style.display = "none"
+                editImagesButton.style.display = "block"
+            })
+        })
+
+        document.querySelectorAll(".edit-pictures-item").forEach(elm => {
+            elm.addEventListener("click", function() {
+                console.log(elm.getAttribute("data-picture-index"))
+                let check = elm.querySelectorAll(".edit-pictures-check")[0]
+                check.classList.toggle("hide-check")
+            })
+        })
+    }
+    updateModalListeners()
+
+    document.addEventListener("click", function(e) {
+        // console.log(currentOpenModal)
+        if (currentOpenModal) {
+            let modal = document.getElementById(`${currentOpenModal}Inner`)
+            if (!modal.contains(e.target) && !e.target.classList.contains("modal-button")) {
+                let modalOuterCurrent = document.getElementById(`${currentOpenModal}Outer`)
+                let Current= document.getElementById(`${currentOpenModal}Inner`)
+                modalOuterCurrent.style.opacity = "0"
+                modalOuterCurrent.style.pointerEvents = "none"
+                Current.style.transform = "translateY(-20px)"
+                currentOpenModal = null
+            }
+        }
+    })
+
+    let selectedImages = []
+
+    function updateModalImages(id, images) {
+        let editPicturesDiv = document.getElementById(`editPicturesDiv-${id}`)
+        let spotPicturesCarousel = document.getElementById(`spotPicturesCarousel-${id}`).querySelectorAll(".swiper-wrapper")[0]
+        let imageNodes = ''
+        let carouselNodes = ''
+        for (let x = 0; x < images.length; x++) {
+            let image = `<div class="edit-pictures-item" style="background-image: url('${images[x]}');" data-picture-index="${x}">
+                <div class="edit-pictures-check hide-check">
+                    <img src="/logos/checkLight.png" alt="" style="width: 80%;">
+                </div>
+                <div class="edit-check-circle"></div>
+            </div>`
+
+            let cNode = `<div class="swiper-slide">
+                <div class="carousel-image" style="background-image: url('${images[x]}'); background-size: contain;"></div>
+            </div>`
+
+            imageNodes = imageNodes + image
+            carouselNodes = carouselNodes + cNode
+        }
+
+        editPicturesDiv.replaceChildren()
+        editPicturesDiv.insertAdjacentHTML("beforeend",imageNodes)
+        spotPicturesCarousel.replaceChildren()
+        spotPicturesCarousel.insertAdjacentHTML("beforeend",carouselNodes)
+    }
+
+    async function retrieveUploads() {
+        await fetch("/getMyUploads", {
+            method: "GET"
+        })
+        .then(async res => {
+            let resData = await res.json()
+            if (resData.status === "SUCCESS") {
+                let myUploadsContainer = document.getElementById("myUploadsContainer")
+                let spotsContentDiv = document.getElementById("spotsContentDiv")
+                for (let x = 0; x < resData.myUploads.length; x++) {
+                    let elementNode = `<div class="profile-spot-item">
+                        <div class="profile-spot-item-info">
+                            <div style="margin: 1em; display: flex; align-items: center; gap: 0.5em;">
+                                <a class="purple-button" href="/map?spot=${resData.myUploads[x]._id}" style="display: block;">View</a>
+                                <button class="purple-button modal-button" data-toggle-modal="editSpot${resData.myUploads[x]._id}">Edit</button>
+                            </div>
+                        </div>
+                        <div class="background-dark-filter" style="background-image: url('${resData.myUploads[x].spotimages[0]}');"></div>
+                    </div>`
+
+                    let modalNode = `<div class="profile-modal" id="editSpot${resData.myUploads[x]._id}Outer">
+                        <div class="profile-modal-inner" id="editSpot${resData.myUploads[x]._id}Inner">
+                            <img src="./logos/closelight.png" alt="close menu" class="close-menu2 image-invert close-modal" data-toggle-modal="editSpot${resData.myUploads[x]._id}">
+                            <div class="edit-pictures-container">
+                                <div class="edit-pictures-div" id="editPicturesDiv-${resData.myUploads[x]._id}" style="display: none;"></div>
+
+                                <div class="swiper" style="height: 60vh;" id="spotPicturesCarousel-${resData.myUploads[x]._id}">
+                                    <div class="swiper-wrapper"></div>
+                                    <div class="swiper-pagination"></div>
+                                    <div class="swiper-button-prev"></div>
+                                    <div class="swiper-button-next"></div>
+                                </div>
+
+                                <div style="display: flex; align-items: center; gap: 1em; margin-top: 2em;">
+                                    <button class="base-button edit-images-button" data-toggle-edit="${resData.myUploads[x]._id}" id="editImagesButton-${resData.myUploads[x]._id}">Edit Images</button>
+                                    <button class="base-button cancel-edit-images-button" data-toggle-edit="${resData.myUploads[x]._id}" style="display: none;" id="cancelEditImagesButton-${resData.myUploads[x]._id}">Cancel</button>
+                                    <button class="base-button cancel-edit-images-button" data-toggle-edit="${resData.myUploads[x]._id}" style="display: none;" id="confirmEditImagesButton-${resData.myUploads[x]._id}">Cancel</button>
+                                </div>
+
+                                <div class="edit-details">
+                                    <label for="description">description</label>
+                                    <textarea name="description" id="description" rows="4" style="padding: 0.3em; margin-top: 0.5em; border: 1px solid gray; border-radius: 4px; margin-bottom: 1em;"></textarea>
+
+                                    <label for="spottype">Spot Type</label>
+                                    <select name="spottype" id="spottype" style="padding: 0.3em; margin-top: 0.5em; border: 1px solid gray; border-radius: 4px; margin-bottom: 1em;">
+                                        <option value="${resData.myUploads[x].spottype}" selected>${resData.myUploads[x].spottype}</option>
+                                        <option value="rail">rail</option>
+                                        <option value="stairs">stairs</option>
+                                        <option value="park">park</option>
+                                        <option value="ledge">ledge</option>
+                                        <option value="other">other</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`
+                    myUploadsContainer.insertAdjacentHTML("beforeend", elementNode)
+                    spotsContentDiv.insertAdjacentHTML("beforeend", modalNode)
+
+                    updateModalImages(resData.myUploads[x]._id, resData.myUploads[x].spotimages)
+                }
+                updateModalListeners()
+                const swiper = new Swiper('.swiper', {
+                    direction: 'horizontal',
+                    // slidesPerView: 2,
+                    loop: true,
+                    pagination: {
+                        el: '.swiper-pagination',
+                    },
+                    navigation: {
+                        nextEl: '.swiper-button-next',
+                        prevEl: '.swiper-button-prev',
+                    },
+                    scrollbar: {
+                        el: '.swiper-scrollbar',
+                    },
+                    obsever: true,
+                    observeParents: true
+                });
+            }
+            console.log(resData.myUploads)
+        })
+        .catch(error => {
+            console.log(error)
+        })
+    }
+
+    async function retrieveLikes() {
+        await fetch("/getLikedSpots", {
+            method: "GET"
+        })
+        .then(async res => {
+            let resData = await res.json()
+            if (resData.status === "SUCCESS") {
+                let likedSpotsContainer = document.getElementById("likedSpotsContainer")
+                for (let x = 0; x < resData.myLikes.length; x++) {
+                    let elementNode = `<div class="profile-spot-item">
+                        <div class="profile-spot-item-info">
+                            <div style="margin: 1em;">
+                                <a class="purple-button" href="/map?spot=${resData.myLikes[x].value._id}" style="display: block;">View</a>
+                            </div>
+                        </div>
+                        <div class="background-dark-filter" style="background-image: url('${resData.myLikes[x].value.spotimages[0]}');"></div>
+                    </div>`
+                    likedSpotsContainer.insertAdjacentHTML("beforeend", elementNode)
+                }
+            }
+            console.log(resData)
+        })
+    }
+    retrieveUploads()
+    retrieveLikes()
 
     function filesToBase64(img) {
         return new Promise((resolve, reject) => {
@@ -141,6 +411,22 @@
         })
     })
 
+    function openProfileImageModal() {
+        let profileImageModalOuter = document.getElementById("profileImageModalOuter")
+        let profileImageModalContainer = document.getElementById("profileImageModalContainer")
+        profileImageModalOuter.style.opacity = 1
+        profileImageModalContainer.style.transform = "translateY(0)"
+        profileImageModalOuter.style.pointerEvents = "auto"
+    }
+
+    function hideProfileImageModal() {
+        let profileImageModalOuter = document.getElementById("profileImageModalOuter")
+        let profileImageModalContainer = document.getElementById("profileImageModalContainer")
+        profileImageModalOuter.style.opacity = 0
+        profileImageModalContainer.style.transform = "translateY(-20%)"
+        profileImageModalOuter.style.pointerEvents = "none"
+    }
+
     // document.getElementById("confirmProfileImageUpdate").addEventListener("click", function() {
     //     fetch('/updateProfileImage', {
     //         method: "POST",
@@ -159,33 +445,6 @@
     //         console.log(error)
     //     })
     // })
-
-    function openProfileImageModal() {
-        let profileImageModalOuter = document.getElementById("profileImageModalOuter")
-        let profileImageModalContainer = document.getElementById("profileImageModalContainer")
-        profileImageModalOuter.style.opacity = 1
-        profileImageModalContainer.style.transform = "translateY(0)"
-        profileImageModalOuter.style.pointerEvents = "auto"
-    }
-
-    function hideProfileImageModal() {
-        let profileImageModalOuter = document.getElementById("profileImageModalOuter")
-        let profileImageModalContainer = document.getElementById("profileImageModalContainer")
-        profileImageModalOuter.style.opacity = 0
-        profileImageModalContainer.style.transform = "translateY(-20%)"
-        profileImageModalOuter.style.pointerEvents = "none"
-    }
-
-    async function retrieveUploads() {
-        await fetch("/getUserSpots", {
-            method: "GET"
-        })
-        .then(async res => {
-            let resData = await res.json()
-            console.log(resData.myUploads)
-        })
-    }
-    retrieveUploads()
 
     $(document).ready(function () {
 
