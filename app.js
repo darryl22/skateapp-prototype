@@ -7,6 +7,8 @@ const fs = require("fs")
 
 const Cryptr = require("cryptr")
 const cryptr = new Cryptr(process.env.ENCRYPTION_KEY)
+const bcrypt = require("bcrypt")
+const saltRounds = 10
 const cors = require("cors")
 const session = require("express-session")
 const {ObjectId} = require("mongodb")
@@ -39,7 +41,7 @@ const ExpressSanitizer = require("perfect-express-sanitizer")
 
 app.set('view engine', 'ejs')
 app.use(express.static('public'))
-app.use(express.json())
+app.use(express.json({limit: "300mb"}))
 app.use(bodyParser.urlencoded({extended: true, limit: "300mb"}))
 app.use(require("express-session")({
     secret: process.env.SESSION_SECRET,
@@ -376,7 +378,6 @@ app.get('/getLikedSpots', async (request, response) => {
             try {
                 let likedId = ObjectId.createFromHexString(res.likedSpots[x])
                 myLikes.push(databaseMethods.getOne("spots", {_id: likedId}))
-                console.log("value retrieved")
             } catch(error) {
                 console.log("Cannot get value")
             }
@@ -389,6 +390,55 @@ app.get('/getLikedSpots', async (request, response) => {
     .catch(error => {
         console.log(error)
         response.json({status: "ERROR", message: "Could not retrieve uploads"})
+    })
+})
+
+app.post("/deleteImages", async (request, response) => {
+    console.log(request.body.imageList)
+    let ID = ObjectId.createFromHexString(request.body.id)
+    await databaseMethods.getOne("spots", {_id: ID})
+    .then(res => {
+        let tempImages = []
+        for (let x = 0; x < res.spotimages.length; x++) {
+            if (request.body.imageList[x].isSelected === false) {
+                tempImages.push(res.spotimages[x])
+            }
+        }
+        console.log(tempImages.length)
+        return databaseMethods.makeUpdate("spots", {_id: ID}, {
+            $set: {
+                spotimages: tempImages
+            }
+        })
+    })
+    .then(res => {
+        return databaseMethods.getOne("spots", {_id: ID})
+    })
+    .then(res => {
+        response.json({status: "SUCCESS", message: "Images Deleted", newImages: res.spotimages})
+    })
+    .catch(error => {
+        console.log(error)
+        response.json({status: "ERROR", message: "Error deleting images"})
+    })
+})
+
+app.post('/addSpotImages', async (request, response) => {
+    console.log(request.body.imagesData.length)
+    let ID = ObjectId.createFromHexString(request.body.spotID)
+    await databaseMethods.makeUpdate("spots", {_id: ID}, {
+        $push: {
+            spotimages: {$each : request.body.imagesData}
+        }
+    })
+    .then(res => {
+        return databaseMethods.getOne("spots", {_id: ID})
+    })
+    .then(res => {
+        response.json({status: "SUCCESS", message: "New images added", newImages: res.spotimages})
+    })
+    .catch(error => {
+        console.log(error)
     })
 })
 
@@ -416,15 +466,15 @@ app.get('/login', (request, response) => {
 app.post('/login', async (request, response) => {
     const password = request.body.password
     await databaseMethods.getOne("users", {email: request.body.email})
-    .then(res => {
-        console.log(cryptr.decrypt(res.password), password)
-        console.log(res)
-        if(password === cryptr.decrypt(res.password)) {
+    .then(async res => {
+        if (res === null) return response.json({status: "ERROR", message: "User not found"})
+        let checkPass = await bcrypt.compare(password, res.password)
+        console.log(checkPass)
+        if(checkPass) {
             request.session.user = res.username
             request.session.userID = res._id.toString()
             request.session.email = res.email
             request.session.darkMode = res.darkMode ? "true" : "false"
-            // response.redirect("/profile")
             response.json({status: "SUCCESS", message: "Login successful"})
         } else {
             response.json({status: "ERROR", message: "Password missmatch"})
@@ -432,7 +482,7 @@ app.post('/login', async (request, response) => {
     })
     .catch(error => {
         console.log(error)
-        response.json({status: "ERROR", message: "Could not get user"})
+        response.json({status: "ERROR", message: "Error with login"})
     })
 })
 
@@ -441,68 +491,56 @@ app.get('/signup', (request, response) => {
 })
 
 app.post('/signup', async (request, response) => {
-    const username = request.body.username
-    const email = request.body.email
-    const password = request.body.password
-    const confirmpassword = request.body.confirmpassword
+    if (request.body.password !== request.body.confirmpassword) return response.json({status: "ERROR", message: "Password Missmatch"})
     const date = new Date()
-    let currentDate = date.toISOString().split("T")
-    if (password === confirmpassword) {
-        await Promise.all([databaseMethods.getOne("users", {email: email}), databaseMethods.getOne("users", {username: username})])
-        .then(async res => {
-            console.log("Check users", res)
-            if (res[0] === null && res[1] === null) {
-                const encryptedpass = cryptr.encrypt(password)
-                const user = {
-                    username: username,
-                    email: email,
-                    password: encryptedpass,
-                    verified: false,
-                    settings: {
-                        twoFactorAuth: false,
-                        darkMode: false,
-                        darkMap: false
-                    },
-                    profileImage: "/images/defaultProfile2.png",
-                    likedSpots: [],
-                    dateCreated: currentDate[0]
-                }
-                await databaseMethods.addOne("users", user)
-                .then(async userResponse => {
-                    console.log("User response", userResponse)
-                    request.session.user = username
-                    request.session.userID = userResponse.insertedId.toString()
-                    request.session.email = email
-                    // response.redirect("/profile")
-                    let token = appFuncs.generateToken(7)
-                    request.session.verifyToken = token
-                    let currentTime = new Date()
-                    request.session.tokenExpiry = currentTime.getTime() + 180000
-                    let content = `<h1>Verify Account</h1> <p>Your Skate App verification token is ${token}</p>`
-                    let mailresult = await appFuncs.sendPrimaryMail(email, "Skate App Account Verification", content)
-                    console.log(mailresult)
-                    console.log(mailresult.messageId)
-                    response.json({status: "SUCCESS", message: "Created user", email: email})
-                })
-                .catch(error => {
-                    console.log(error)
-                    response.json({status: "ERROR", message: "There was an error creating account"})
-                })
-            } else if (res[0] !== null) {
-                console.log("This email already exists")
-                response.json({status: "ERROR", message: "This email already exists"})
-            } else if (res[1] !== null) {
-                console.log("This username already exists")
-                response.json({status: "ERROR", message: "This username already exists"})
-            }
-        })
-        .catch(error => {
-            response.json({status: "ERROR", message: "Error getting user"})
-        })
-    } else {
-        console.log("Password Missmatch")
-        response.json({status: "ERROR", message: "Password Missmatch"})
-    }
+    await Promise.all([databaseMethods.getOne("users", {email: request.body.email}), databaseMethods.getOne("users", {username: request.body.username})])
+    .then(async res => {
+        console.log("Check users", res)
+        if (res[0] !== null) return response.json({status: "ERROR", message: "This email already exists"})
+        if (res[1] !== null) return response.json({status: "ERROR", message: "This username already exists"})
+
+        let currentDate = date.toISOString().split("T")
+        const hashedPass = await bcrypt.hash(request.body.password, saltRounds)
+        const user = {
+            username: request.body.username,
+            email: request.body.email,
+            password: hashedPass,
+            verified: false,
+            settings: {
+                twoFactorAuth: false,
+                darkMode: false,
+                darkMap: false
+            },
+            profileImage: "/images/defaultProfile2.png",
+            likedSpots: [],
+            dateCreated: currentDate[0]
+        }
+        return user
+    })
+    .then(async res => {
+        return databaseMethods.addOne("users", res)
+    })
+    .then(async res => {
+        console.log("User response", res)
+        request.session.user = request.body.username
+        request.session.userID = res.insertedId.toString()
+        request.session.email = request.body.email
+        request.session.darkMode = "false"
+        // response.redirect("/profile")
+        let token = appFuncs.generateToken(7)
+        request.session.verifyToken = token
+        let currentTime = new Date()
+        request.session.tokenExpiry = currentTime.getTime() + 180000
+        let content = `<h1>Verify Account</h1> <p>Your Skate App verification token is ${token}</p>`
+        let mailresult = await appFuncs.sendPrimaryMail(request.body.email, "Skate App Account Verification", content)
+        console.log(mailresult.messageId)
+        console.log(mailresult)
+        response.json({status: "SUCCESS", message: "Created user", email: request.body.email})
+    })
+    .catch(error => {
+        console.log(error)
+        response.json({status: "ERROR", message: "Error getting user"})
+    })
 })
 
 app.get("/verify", (request, response) => {
@@ -570,8 +608,6 @@ app.post("/verify", async (request, response) => {
             duration = request.session.tokenExpiry - currentTime.getTime()
             let content = `<h1>Verify Account</h1> <p>Your Skate App verification token is ${token}</p>`
             let mailresult = await appFuncs.sendPrimaryMail("darrylandrew22@gmail.com", "Skate App Account Verification", content)
-            console.log(mailresult)
-            console.log(mailresult.messageId)
             response.json({status: "SUCCESS", duration: duration})
         }
     }

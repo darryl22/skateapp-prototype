@@ -987,23 +987,36 @@
             })
         })
         $('#spotImages').on('change', function() {
-            let images = document.getElementById('spotImages')
+            let images = document.getElementById("spotImages")
             let totalSize = 0
             for (let x = 0; x < images.files.length; x++) {
                 totalSize = totalSize + images.files[x].size
             }
-            sizeInMB = totalSize / 1000000
+            let sizeInMB = totalSize / 1000000
+            if (sizeInMB > 10) {
+                $('#fileSizeSpan').css("color", "red")
+            } else {
+                $('#fileSizeSpan').css("color", "green")
+            }
             $('#fileSizeSpan').html(sizeInMB.toFixed(2))
         })
         $('#addSpotForm').submit(function(e) {
             e.preventDefault()
-            $("#spinnerContainer").css("display", "block")
             let images = document.getElementById("spotImages")
             let image64Promises = []
+            let totalSize = 0
             for (let x = 0; x < images.files.length; x++) {
                 image64Promises.push(filesToBase64(images.files[x]))
+                totalSize = totalSize + images.files[x].size
             }
 
+            let sizeInMB = totalSize / 1000000
+            if (sizeInMB > 10) {
+                addNewAlert("ERROR", "Files are too large")
+                return
+            }
+
+            $("#spinnerContainer").css("display", "block")
             Promise.all(image64Promises)
             .then(fileResults => {
                 let sendData = {

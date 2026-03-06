@@ -19,7 +19,7 @@
 
 :root {
     --lightblue: #116dff;
-    --bg-color-secondary: #defbff;
+    --bg-color-secondary: #defaff;
     --bg-color: #f3f3f3;
     --transparent-background: rgba(0, 0, 0, 0);
     --transparent-dark: rgba(243, 243, 243, 0.3);
@@ -1145,6 +1145,10 @@ a{
     flex-direction: column;
     width: 50%;
     margin-top: 2em;
+}
+
+.hidden{
+    display: none;
 }
 
 @media screen and (max-width: 900px) {
