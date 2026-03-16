@@ -36,18 +36,121 @@
                 <p class="profile-title">Details</p>
                 <div class="underline"></div>
 
-                <p class="profile-detail-title">Name</p>
-                <p class="profile-detail-info">Test name</p>
-
-                <p class="profile-detail-title">Email</p>
-                <p class="profile-detail-info">testemail@gmail.com</p>
-
-                <div style="display: flex; align-items: center; gap: 5px; margin-top: 1em;">
-                    <p>Verified</p>
-                    <div class="verified-tick-div">
-                        <img src="/logos/checkLight.png" alt="tick" style="height: 9px;">
+                <div style="width: 100%;">
+                    <div style="position: relative;">
+                        <p class="profile-detail-title">Username</p>
+                        <p class="profile-detail-info" id="usernameValue"><%= user.username %></p>
+                        <img src="/logos/pen.png" alt="" class="edit-profile-detail-pen image-invert" id="usernameEdit">
+                    </div>
+                    <div class="edit-profile-detail hidden" id="usernameEditDiv">
+                        <div class="edit-profile-detail-input-div">
+                            <input type="text" class="edit-profile-detail-input" value="<%= user.username %>" id="usernameInput" data-param="username">
+                            <div class="rounded-close" id="usernameCloseInput">
+                                <img src="/logos/closeLight.png" alt="" class="image-invert" style="height: 10px;">
+                            </div>
+                        </div>
+                        <button class="purple-button" style="padding: 0.5em; height: fit-content;" id="usernameConfirm">Confirm</button>
                     </div>
                 </div>
+
+                <div style="width: 100%;">
+                    <div style="position: relative;">
+                        <p class="profile-detail-title">Email</p>
+                        <p class="profile-detail-info" id="emailValue"><%= user.email %></p>
+                        <img src="/logos/pen.png" alt="" class="edit-profile-detail-pen image-invert" id="emailEdit">
+                    </div>
+                    <div class="edit-profile-detail hidden" id="emailEditDiv">
+                        <div class="edit-profile-detail-input-div">
+                            <input type="text" class="edit-profile-detail-input" value="<%= user.email %>" id="emailInput" data-param="email">
+                            <div class="rounded-close" id="emailCloseInput">
+                                <img src="/logos/closeLight.png" alt="" class="image-invert" style="height: 10px;">
+                            </div>
+                        </div>
+                        <button class="purple-button" style="padding: 0.5em; height: fit-content;" id="emailConfirm">Confirm</button>
+                    </div>
+                </div>
+                <script>
+                    //change email
+                    document.getElementById("emailEdit").addEventListener("click", function() {
+                        document.getElementById("emailValue").classList.toggle("hidden")
+                        document.getElementById("emailEditDiv").classList.toggle("hidden")
+                        this.classList.toggle("hidden")
+                    })
+
+                    document.getElementById("emailCloseInput").addEventListener("click", function() {
+                        document.getElementById("emailValue").classList.toggle("hidden")
+                        document.getElementById("emailEditDiv").classList.toggle("hidden")
+                        document.getElementById("emailEdit").classList.toggle("hidden")
+                    })
+
+                    document.getElementById("emailConfirm").addEventListener("click", async function() {
+                        await fetch("/updateProfileInfo", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json"
+                            },
+                            body: JSON.stringify({
+                                paramName: "email",
+                                inputValue: document.getElementById("emailInput").value
+                            })
+                        })
+                        .then(async res => {
+                            let resData = await res.json()
+                            console.log(resData)
+                            if (res.status === "SUCCESS") {
+                                document.getElementById("emailValue").classList.toggle("hidden")
+                                document.getElementById("emailEditDiv").classList.toggle("hidden")
+                                document.getElementById("emailEdit").classList.toggle("hidden")
+                            }
+                        })
+                    })
+
+                    //change username
+                    document.getElementById("usernameEdit").addEventListener("click", function() {
+                        document.getElementById("usernameValue").classList.toggle("hidden")
+                        document.getElementById("usernameEditDiv").classList.toggle("hidden")
+                        this.classList.toggle("hidden")
+                    })
+
+                    document.getElementById("usernameCloseInput").addEventListener("click", function() {
+                        document.getElementById("usernameValue").classList.toggle("hidden")
+                        document.getElementById("usernameEditDiv").classList.toggle("hidden")
+                        document.getElementById("usernameEdit").classList.toggle("hidden")
+                    })
+
+                    document.getElementById("usernameConfirm").addEventListener("click", async function() {
+                        await fetch("/updateProfileInfo", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json"
+                            },
+                            body: JSON.stringify({
+                                paramName: "username",
+                                inputValue: document.getElementById("usernameInput").value
+                            })
+                        })
+                        .then(async res => {
+                            let resData = await res.json()
+                            console.log(resData)
+                            if (res.status === "SUCCESS") {
+                                document.getElementById("usernameValue").classList.toggle("hidden")
+                                document.getElementById("usernameEditDiv").classList.toggle("hidden")
+                                document.getElementById("usernameEdit").classList.toggle("hidden")
+                            }
+                        })
+                    })
+                </script>
+
+                <% if (user.verified) { %>
+                    <div style="display: flex; align-items: center; gap: 5px; margin-top: 1em;">
+                        <p>Verified</p>
+                        <div class="verified-tick-div">
+                            <img src="/logos/checkLight.png" alt="tick" style="height: 9px;">
+                        </div>
+                    </div>
+                <% } else { %>
+                    <a href="/verify" class="purple-button" style="margin-top: 1em; padding: 0.5em;">verify Email</a>
+                <% } %>
             </div>
         </div>
         <div class="profile-divider"></div>
@@ -113,24 +216,6 @@
     </div>
 </body>
 <script>
-
-    // const swiper = new Swiper('.swiper', {
-    //     direction: 'horizontal',
-    //     // slidesPerView: 2,
-    //     loop: true,
-    //     pagination: {
-    //         el: '.swiper-pagination',
-    //     },
-    //     navigation: {
-    //         nextEl: '.swiper-button-next',
-    //         prevEl: '.swiper-button-prev',
-    //     },
-    //     scrollbar: {
-    //         el: '.swiper-scrollbar',
-    //     },
-    //     obsever: true,
-    //     observeParents: true
-    // });
 
     let user = JSON.parse('<%- JSON.stringify(user)%>')
     let twoFactorAuthPill = document.getElementById("twoFactorAuthPill")
@@ -302,6 +387,7 @@
                     if (resData.status === "SUCCESS") {
                         updateModalImages(id, resData.newImages)
                         updateModalListeners()
+                        document.getElementById(`frontImage-${id}`).style.backgroundImage = `url("${resData.newImages[0]}")`
                         addNewAlert(resData.status, resData.message)
                     } else {
                         addNewAlert(resData.status, resData.message)
@@ -353,6 +439,8 @@
                         updateModalListeners()
                         currentOpenModalID = id
                         showEditImagesSection(id)
+                        images.value = null
+                        document.getElementById(`fileSizeSpan-${id}`).innerText = "0"
                     } else {
                         addNewAlert(resData.status, resData.message)
                     }
@@ -382,6 +470,47 @@
                 
                 fileSizeSpan.innerText = sizeInMB.toFixed(2)
             }, {signal: eventSignal})
+        })
+
+        document.querySelectorAll(".delete-spot").forEach(elm => {
+            elm.addEventListener("click", function() {
+                let id = elm.getAttribute("data-id")
+                let confirmDeleteSpotDiv = document.getElementById(`confirmDeleteSpotDiv-${id}`).classList.remove("hidden")
+                elm.classList.add("hidden")
+                window.location.replace(`#confirmDeleteSpotDiv-${id}`)
+            })
+        })
+
+        document.querySelectorAll(".cancel-delete-spot").forEach(elm => {
+            elm.addEventListener("click", function() {
+                let id = elm.getAttribute("data-id")
+                let confirmDeleteSpotDiv = document.getElementById(`confirmDeleteSpotDiv-${id}`).classList.add("hidden")
+                let deleteSpot = document.getElementById(`deleteSpot-${id}`).classList.remove("hidden")
+            })
+        })
+
+        document.querySelectorAll(".confirm-delete-spot").forEach(elm => {
+            elm.addEventListener("click", async function() {
+                let id = elm.getAttribute("data-id")
+                await fetch("/deleteSpot", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        spotID: id
+                    })
+                })
+                .then(async res => {
+                    let resData = await res.json()
+                    console.log(resData)
+                    if (resData.status === "SUCCESS") {
+                        window.location.replace("/profile")
+                    } else {
+                        addNewAlert(resData.status)
+                    }
+                })
+            })
         })
     }
 
@@ -461,6 +590,9 @@
             if (resData.status === "SUCCESS") {
                 let myUploadsContainer = document.getElementById("myUploadsContainer")
                 let spotsContentDiv = document.getElementById("spotsContentDiv")
+                if (resData.myUploads.length === 0) {
+                    myUploadsContainer.insertAdjacentHTML("beforeend", "<p>No Uploads, go to <a href='/map' style='color: purple;'>map</a> to create new</p>")
+                }
                 for (let x = 0; x < resData.myUploads.length; x++) {
                     let elementNode = `<div class="profile-spot-item">
                         <div class="profile-spot-item-info">
@@ -469,7 +601,7 @@
                                 <button class="purple-button modal-button" data-toggle-modal="editSpot${resData.myUploads[x]._id}">Edit</button>
                             </div>
                         </div>
-                        <div class="background-dark-filter" style="background-image: url('${resData.myUploads[x].spotimages[0]}');"></div>
+                        <div class="background-dark-filter" style="background-image: url('${resData.myUploads[x].spotimages[0]}');" id="frontImage-${resData.myUploads[x]._id}"></div>
                     </div>`
 
                     let modalNode = `<div class="profile-modal" id="editSpot${resData.myUploads[x]._id}Outer">
@@ -512,6 +644,14 @@
                                         <option value="other">other</option>
                                     </select>
                                 </div>
+                                <div id="confirmDeleteSpotDiv-${resData.myUploads[x]._id}" class="hidden">
+                                    <p>Are you sure you wish to delete this spot?</p>
+                                    <div>
+                                        <button class="base-button cancel-delete-spot" id="cancelDeleteSpot-${resData.myUploads[x]._id}" data-id="${resData.myUploads[x]._id}">Cancel</button>
+                                        <button class="base-button confirm-delete-spot" style="border: 1px solid red; color: red;" id="confirmDeleteSpot-${resData.myUploads[x]._id}" data-id="${resData.myUploads[x]._id}">Delete Spot</button>
+                                    </div>    
+                                </div>
+                                <button class="base-button delete-spot" style="border: 1px solid red; color: red;" id="deleteSpot-${resData.myUploads[x]._id}" data-id="${resData.myUploads[x]._id}">Delete Spot</button>
                             </div>
                         </div>
                     </div>`
@@ -540,7 +680,6 @@
             } else {
                 updateModalListeners()
             }
-            console.log(resData.myUploads)
         })
         .catch(error => {
             console.log(error)
@@ -556,6 +695,9 @@
             let resData = await res.json()
             if (resData.status === "SUCCESS") {
                 let likedSpotsContainer = document.getElementById("likedSpotsContainer")
+                if (resData.myLikes.length === 0) {
+                    likedSpotsContainer.insertAdjacentHTML("beforeend", "<p>No liked spots, go to <a href='/map' style='color: purple;'>map</a> to explore</p>")
+                }
                 for (let x = 0; x < resData.myLikes.length; x++) {
                     let elementNode = `<div class="profile-spot-item">
                         <div class="profile-spot-item-info">

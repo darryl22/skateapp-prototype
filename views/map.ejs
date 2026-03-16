@@ -129,40 +129,9 @@
                 <button id="getDirections<%= spots[x]._id  %>" data-lng="<%= spots[x].longitude %>" data-lat="<%= spots[x].latitude %>" data-id="<%= spots[x]._id  %>">Get Directions</button>
                 <p id="spotDetailsTitle"><%= spots[x].description  %></p>
                 <div style="height: 1px; background-color: gray; margin: 1em 0em;"></div>
-                <div class="comments-div" id="commentsDiv<%= spots[x]._id %>">
-                    <% for(var y = 0; y < spots[x].interactions.comments.length; y++) { %>
-                    <div class="comment-container">
-                        <div style="display: flex; flex-direction: column; gap: 1em; align-self: stretch; align-items: center;">
-                            <div class="comment-profile-image" style="background-image: url('/images/defaultProfile2.png');" id="commentprofileImage<%= spots[x].interactions.comments[y].commentID %>"></div>
-                            <% if (spots[x].interactions.comments[y].replies.length > 0) {%>
-                                <div class="comment-line"></div>
-                            <% } %>
-                        </div>
-                        <div class="comment-content-div">
-                            <div class="comment-info-div">
-                                <p style="font-weight: bold; margin-top: 0;" id="commentAuthor<%= spots[x].interactions.comments[y].commentID %>">Inactive User</p>
-                                <p style="color: gray; margin-top: 0;">10/11/25</p>
-                            </div>
-                            <div class="comment-content"><%= spots[x].interactions.comments[y].content %></div>
-                            <p class="reply-button replyEvent<%= spots[x]._id %>" id="replyButton<%= spots[x].interactions.comments[y].commentID %>" data-author="<%= spots[x].interactions.comments[y].author %>" data-replyref="<%= spots[x].interactions.comments[y].commentID %>" data-spotid="<%= spots[x]._id %>">reply</p>
-                            <div class="comment-reply-container" id="repliesContainer<%= spots[x]._id %>-<%= spots[x].interactions.comments[y].commentID %>">
-                                <% for(var z = 0; z < spots[x].interactions.comments[y].replies.length; z++) { %>
-                                <div class="comment-reply-div">
-                                    <div class="comment-profile-image" style="background-image: url('/images/defaultProfile2.png');" id="replyprofileImage<%= spots[x].interactions.comments[y].replies[z].commentID %>"></div>
-                                    <div class="comment-content-div">
-                                        <div class="comment-info-div">
-                                            <p style="font-weight: bold; margin-top: 0;" id="replyAuthor<%= spots[x].interactions.comments[y].replies[z].commentID %>">Inactive User</p>
-                                            <p style="color: gray; margin-top: 0;">10/11/25</p>
-                                        </div>
-                                        <div class="comment-content"><%= spots[x].interactions.comments[y].replies[z].content %></div>
-                                        <p class="reply-button replyEvent<%= spots[x]._id %>" id="replyButton<%= spots[x].interactions.comments[y].replies[z].commentID %>" data-author="<%= spots[x].interactions.comments[y].replies[z].author %>" data-replyref="<%= spots[x].interactions.comments[y].commentID %>" data-spotid="<%= spots[x]._id %>">reply</p>
-                                    </div>
-                                </div>
-                                <% } %>
-                            </div>
-                        </div>
-                    </div>
-                    <% } %>
+                <p id="loadingComments<%= spots[x]._id %>">Loading Comments...</p>
+                <div class="comments-div" id="commentsDiv<%= spots[x]._id %>" data-loaded="false">
+                    
                 </div>
             </div>
         </div>
@@ -176,7 +145,7 @@
             input.value = ""
             commentForm.style.display = "flex"
             commentButton.style.display = "none"
-            type.value = "newComment"
+            type.value = "comment"
         })
         document.getElementById("cancelComment<%= spots[x]._id  %>").addEventListener("click", function() {
             let commentForm = document.getElementById("addCommentForm<%= spots[x]._id  %>")
@@ -184,31 +153,12 @@
             commentForm.style.display = "none"
             commentButton.style.display = "block"
         })
-
-        document.querySelectorAll(".replyEvent<%= spots[x]._id %>").forEach(elm => {
-            elm.addEventListener("click", function(e) {
-                let spotID = e.target.getAttribute("data-spotid")
-                let author = e.target.getAttribute("data-author")
-                let replyref = e.target.getAttribute("data-replyref")
-                let commentForm = document.getElementById("addCommentForm<%= spots[x]._id  %>")
-                let commentButton = document.getElementById("addCommentButton<%= spots[x]._id  %>")
-                let input = document.getElementById("commentInput<%= spots[x]._id  %>")
-                let replyID = document.getElementById("replyId<%= spots[x]._id  %>")
-                replyID.value = replyref
-                commentForm.style.display = "flex"
-                commentButton.style.display = "none"
-                let type = document.getElementById("type<%= spots[x]._id  %>")
-                type.value = "reply"
-                input.value = `@${author} `
-            })
-        })
-
         document.getElementById("addCommentForm<%= spots[x]._id  %>").addEventListener("submit", function(e) {
             e.preventDefault()
             let commentData = {
                 comment: document.getElementById("commentInput<%= spots[x]._id  %>").value,
                 type: document.getElementById("type<%= spots[x]._id  %>").value,
-                spotID: "<%= spots[x]._id  %>",
+                spotId: "<%= spots[x]._id  %>",
                 replyId: document.getElementById("replyId<%= spots[x]._id  %>").value
             }
             fetch("/updateComment", {
@@ -221,13 +171,22 @@
             })
             .then(async res => {
                 let result = await res.json()
-                // closeCommentInput()
+                console.log("result", result)
                 let commentForm = document.getElementById("addCommentForm<%= spots[x]._id  %>")
                 let commentButton = document.getElementById("addCommentButton<%= spots[x]._id  %>")
                 commentForm.style.display = "none"
                 commentButton.style.display = "block"
-                refreshComments(result.spot)
-                if (result.status === "ERROR") {
+                if (result.status === "SUCCESS") {
+                    if (result.newComment.type === "comment") {
+                        loadComments("<%= spots[x]._id  %>", [result.newComment])
+                        replyListeners("<%= spots[x]._id  %>")
+
+                    } else if(result.newComment.type === "reply"){
+                        loadReplies("<%= spots[x]._id  %>", [result.newComment])
+                        replyListeners("<%= spots[x]._id  %>")
+
+                    }
+                } else if (result.status === "ERROR") {
                     addNewAlert(res.status, res.message)
                 }
             })
@@ -349,7 +308,7 @@
         popup.remove()
     }
 
-    function showSpotDetails(id) {
+    async function showSpotDetails(id) {
         let spotDetailsModal = document.getElementById(`spotDetailsModal${id}`)
         let spotDetailsInner = document.getElementById(`spotDetailsInner${id}`)
         // spotDetailsModal.style.display = "flex"
@@ -359,6 +318,29 @@
         // popup.remove()
         detailsIsOpen = true
         openDetailsId = id
+        let commentsLoaded = document.getElementById(`commentsDiv${id}`).getAttribute("data-loaded")
+        if (commentsLoaded === "false") {
+            await fetch(`/loadComments?spotId=${id}`, {
+                method: "GET"
+            })
+            .then(async res => {
+                let resData = await res.json()
+                console.log(resData)
+                if (resData.status === "SUCCESS") {
+                    loadComments(id, resData.comments)
+                    loadReplies(id, resData.replies)
+                    replyListeners(id)
+                    console.log("users in conversation", usersInConversation)
+                    await loadCommentsInfo(id)
+                    document.getElementById(`commentsDiv${id}`).setAttribute("data-loaded", "true")
+                } else if(resData.status === "ERROR") {
+                    addNewAlert(resData.status, resData.message)
+                }
+            })
+            .catch(error => {
+                console.log(error)
+            })
+        }
     }
 
     document.addEventListener("click", function(e) {
@@ -442,138 +424,113 @@
         })
     }
 
-    function refreshComments(spot) {
-        let commentsDiv = document.getElementById(`commentsDiv${spot._id}`)
-        commentsDiv.replaceChildren()
-        for (let x = 0; x < spot.interactions.comments.length; x++) {
-            let replyNode = ""
-            for (let y = 0; y < spot.interactions.comments[x].replies.length; y++) {
-                let reply = `<div class="comment-reply-div">
-                    <div class="comment-profile-image" style="background-image: url('/images/defaultProfile2.png');" id="replyprofileImage${spot.interactions.comments[x].replies[y].commentID}"></div>
-                    <div class="comment-content-div">
-                        <div class="comment-info-div">
-                            <p style="font-weight: bold; margin-top: 0;" id="replyAuthor${spot.interactions.comments[x].replies[y].commentID}">Inactive User</p>
-                            <p style="color: gray; margin-top: 0;">10/11/25</p>
-                        </div>
-                        <div class="comment-content">${spot.interactions.comments[x].replies[y].content}</div>
-                        <p class="reply-button replyEvent${spot._id}" id="replyButton${spot.interactions.comments[x].replies[y].commentID}" data-author="${spot.interactions.comments[x].replies[y].author}" data-replyref="${spot.interactions.comments[x].commentID}" data-spotid="${spot._id}">reply</p>
-                    </div>
-                </div>
-                `
-                replyNode += reply
-            }
+    let repliesController = null
+    function replyListeners(id) {
+        if (repliesController) {
+            repliesController.abort()
+        }
+        repliesController = new AbortController()
+        const repliesSignal = repliesController.signal
+        document.querySelectorAll(`.replyEvent${id}`).forEach(elm => {
+            elm.addEventListener("click", function(e) {
+                let spotID = e.target.getAttribute("data-spotid")
+                let author = e.target.getAttribute("data-author")
+                let replyref = e.target.getAttribute("data-replyref")
+                let commentForm = document.getElementById(`addCommentForm${id}`)
+                let commentButton = document.getElementById(`addCommentButton${id}`)
+                let input = document.getElementById(`commentInput${id}`)
+                let replyID = document.getElementById(`replyId${id}`)
+                replyID.value = replyref
+                commentForm.style.display = "flex"
+                commentButton.style.display = "none"
+                let type = document.getElementById(`type${id}`)
+                type.value = "reply"
+                input.value = `@${author} `
+            }, {signal: repliesSignal})
+        })
+    }
 
+    let usersInConversation = []
+
+    function loadComments(spotId, comments, reload = "false") {
+        console.log(spotId)
+        let commentsDiv = document.getElementById(`commentsDiv${spotId}`)
+        if (reload === "true") {
+            commentsDiv.replaceChildren()
+        }
+        for (let x = 0; x < comments.length; x++) {
+            if (!usersInConversation.includes(comments[x].author)) {
+                usersInConversation.push(comments[x].author)
+            }
             let commentNode = `<div class="comment-container">
                 <div style="display: flex; flex-direction: column; gap: 1em; align-self: stretch; align-items: center;">
-                    <div class="comment-profile-image" style="background-image: url('/images/defaultProfile2.png');" id="commentprofileImage${spot.interactions.comments[x].commentID}"></div>
-                    <div class="comment-line" style="display: ${spot.interactions.comments[x].replies.length > 0 ? "block" : "none"};"></div>
+                    <div class="comment-profile-image change-comment-image-${comments[x].author}" style="background-image: url('/images/defaultProfile2.png');" id="commentprofileImage${comments[x]._id}"></div>
+                    <div class="comment-line"></div>
                 </div>
                 <div class="comment-content-div">
                     <div class="comment-info-div">
-                        <p style="font-weight: bold; margin-top: 0;" id="commentAuthor${spot.interactions.comments[x].commentID}">Inactive User</p>
-                        <p style="color: gray; margin-top: 0;">10/11/25</p>
+                        <p style="font-weight: bold; margin-top: 0;" class="change-comment-username-${comments[x].author}">User112</p>
+                        <p style="color: gray; margin-top: 0;">${comments[x].dateAdded}</p>
                     </div>
-                    <div class="comment-content">${spot.interactions.comments[x].content}</div>
-                    <p class="reply-button replyEvent${spot._id}" id="replyButton${spot.interactions.comments[x].commentID}" data-author="${spot.interactions.comments[x].author}" data-replyref="${spot.interactions.comments[x].commentID}" data-spotid="${spot._id}">reply</p>
-                    <div class="comment-reply-container" id="repliesContainer${spot._id}-${spot.interactions.comments[x].commentID}">
-                        ${replyNode}
+                    <div class="comment-content">${comments[x].content}</div>
+                    <p class="reply-button replyEvent${spotId} change-author-${comments[x].author}" id="replyButton${comments[x]._id}" data-author="User" data-replyref="${comments[x]._id}" data-spotid="${spotId}">reply</p>
+                    <div class="comment-reply-container" id="repliesContainer${spotId}-${comments[x]._id}">
                     </div>
                 </div>
             </div>`
-
             commentsDiv.insertAdjacentHTML("beforeend", commentNode)
-
-            document.querySelectorAll(`.replyEvent${spot._id}`).forEach(elm => {
-                elm.addEventListener("click", function(e) {
-                    let spotID = e.target.getAttribute("data-spotid")
-                    let author = e.target.getAttribute("data-author")
-                    let replyref = e.target.getAttribute("data-replyref")
-                    let commentForm = document.getElementById(`addCommentForm${spot._id}`)
-                    let commentButton = document.getElementById(`addCommentButton${spot._id}`)
-                    let input = document.getElementById(`commentInput${spot._id}`)
-                    let replyID = document.getElementById(`replyId${spot._id}`)
-                    replyID.value = replyref
-                    commentForm.style.display = "flex"
-                    commentButton.style.display = "none"
-                    let type = document.getElementById(`type${spot._id}`)
-                    type.value = "reply"
-                    input.value = `@${author} `
-                })
-            })
         }
-        getProfilePicture(spot)
+        document.getElementById(`loadingComments${spotId}`).style.display = "none"
     }
 
-    function interactionsCount(spot) {
-        let commentsCount = 0
-        let likesCount  = spot.interactions.likes.length
-        for (let x = 0; x < spot.interactions.comments.length; x++) {
-            commentsCount += 1
-            for (let y = 0; y < spot.interactions.comments[x].replies.length; y++) {
-                commentsCount += 1
+    function loadReplies(spotId, replies) {
+        console.log(spotId)
+        for (let x = 0; x < replies.length; x++) {
+            if (!usersInConversation.includes(replies[x].author)) {
+                usersInConversation.push(replies[x].author)
             }
+            let repliesContainer = document.getElementById(`repliesContainer${spotId}-${replies[x].replyId}`)
+            let reply = `<div class="comment-reply-div">
+                <div class="comment-profile-image change-comment-image-${replies[x].author}" style="background-image: url('/images/defaultProfile2.png');" id="replyprofileImage${replies[x]._id}"></div>
+                <div class="comment-content-div">
+                    <div class="comment-info-div">
+                        <p style="font-weight: bold; margin-top: 0;" class="change-comment-username-${replies[x].author}">User</p>
+                        <p style="color: gray; margin-top: 0;">${replies[x].dateAdded}</p>
+                    </div>
+                    <div class="comment-content">${replies[x].content}</div>
+                    <p class="reply-button replyEvent${spotId} change-author-${replies[x].author}" id="replyButton${replies[x]._id}" data-author="User" data-replyref="${replies[x].replyId}" data-spotid="${spotId}">reply</p>
+                </div>
+            </div>`
+            repliesContainer.insertAdjacentHTML("beforeend", reply)
         }
-        return commentsCount
     }
 
-    async function getProfilePicture(spot) {
-        for (let y = 0; y < spot.interactions.comments.length; y++) {
-            await fetch(`/profilePicture?user=${spot.interactions.comments[y].author}`, {
-                method: "GET"
+    async function loadCommentsInfo(spotId) {
+        await fetch("/commentUserInfo", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                usersList: usersInConversation
             })
-            .then(async res => {
-                let resData = await res.json()
-                console.log(resData)
-                if (resData.status === "SUCCESS") {
-                    let commentprofileImage = document.getElementById(`commentprofileImage${spot.interactions.comments[y].commentID}`)
-                    let commentAuthor = document.getElementById(`commentAuthor${spot.interactions.comments[y].commentID}`)
-                    let replyButton = document.getElementById(`replyButton${spot.interactions.comments[y].commentID}`)
-                    commentprofileImage.style.backgroundImage = `url("${resData.picture}")`
-                    commentAuthor.innerHTML = resData.user
-                    replyButton.setAttribute("data-author", resData.user)
-                } else {
-                    let commentprofileImage = document.getElementById(`commentprofileImage${spot.interactions.comments[y].commentID}`)
-                    let commentAuthor = document.getElementById(`commentAuthor${spot.interactions.comments[y].commentID}`)
-                    let replyButton = document.getElementById(`replyButton${spot.interactions.comments[y].commentID}`)
-                    commentprofileImage.style.backgroundImage = `url("/images/defaultProfile2.png")`
-                    // /images/defaultProfile2.png
-                    commentAuthor.innerHTML = "Inactive User"
-                    replyButton.setAttribute("data-author", "Inactive User")
-                }
-            })
-            .catch(error => {
-                // console.log(error)
-                addNewAlert("ERROR", "Failed to get replies data")
-            })
-
-            for (let z = 0; z < spot.interactions.comments[y].replies.length; z++) {
-                await fetch(`/profilePicture?user=${spot.interactions.comments[y].replies[z].author}`, {
-                    method: "GET"
+        })
+        .then(async res => {
+            let resData = await res.json()
+            console.log(resData)
+            if (resData.status === "SUCCESS") {
+                resData.data.forEach(item => {
+                    document.getElementById(`commentsDiv${spotId}`).querySelectorAll(`.change-comment-image-${item.id}`).forEach(elm => {
+                        elm.style.backgroundImage = `url("${item.profilePicture}")`
+                    })
+                    document.getElementById(`commentsDiv${spotId}`).querySelectorAll(`.change-comment-username-${item.id}`).forEach(elm => {
+                        elm.innerText = item.username
+                    })
+                    document.getElementById(`commentsDiv${spotId}`).querySelectorAll(`.change-author-${item.id}`).forEach(elm => {
+                        elm.setAttribute("data-author", item.username)
+                    })
                 })
-                .then(async res => {
-                    let resData = await res.json()
-                    if (resData.status === "SUCCESS") {
-                        let replyprofileImage = document.getElementById(`replyprofileImage${spot.interactions.comments[y].replies[z].commentID}`)
-                        let replyAuthor = document.getElementById(`replyAuthor${spot.interactions.comments[y].replies[z].commentID}`)
-                        let replyButton = document.getElementById(`replyButton${spot.interactions.comments[y].replies[z].commentID}`)
-                        replyprofileImage.style.backgroundImage = `url("${resData.picture}")`
-                        replyAuthor.innerHTML = resData.user
-                        replyButton.setAttribute("data-author", resData.user)
-                    } else {
-                        let replyprofileImage = document.getElementById(`replyprofileImage${spot.interactions.comments[y].replies[z].commentID}`)
-                        let replyAuthor = document.getElementById(`replyAuthor${spot.interactions.comments[y].replies[z].commentID}`)
-                        let replyButton = document.getElementById(`replyButton${spot.interactions.comments[y].replies[z].commentID}`)
-                        replyprofileImage.style.backgroundImage = `url("/images/defaultProfile2.png")`
-                        replyAuthor.innerHTML = "Inactive User"
-                        replyButton.setAttribute("data-author", "Inactive User")
-                    }
-                })
-                .catch(error => {
-                    // console.log(error)
-                    addNewAlert("ERROR", "Failed to get replies data")
-                })
+                usersInConversation = []
             }
-        }
+        })
     }
 
     let spotPoints = spotsData.map((item, index) => {
@@ -600,7 +557,7 @@
                                 </div>
                                 <div style="display: flex; align-items: center; gap: 0.5em">
                                     <img src="/logos/comments-light.png" style="height: 2em;"></img>
-                                    <p>${interactionsCount(item)}</p>
+                                    <p>0</p>
                                 </div>
                             </div>
                             <button class='spot-details-button' id="spotDetailsButton${item._id}" onclick="showSpotDetails('${item._id}')">Details</button>
@@ -753,7 +710,6 @@
         }
         getOneSpot('spot')
         for (let x = 0; x < spotsData.length; x++) {
-            getProfilePicture(spotsData[x])
             document.getElementById(`getDirections${spotsData[x]._id}`).addEventListener("click", function() {
                 // let directionsGeolocateControl = new mapboxgl.GeolocateControl({
                 //     positionOptions: {

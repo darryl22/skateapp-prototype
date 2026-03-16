@@ -40,11 +40,14 @@ class DatabaseMethods {
         }
     }
 
-    async getMany(col) {
+    async getMany(col, object) {
         try{
+            if (object === undefined) {
+                object = {}
+            }
             const database = client.db("skateapp")
             const collection = database.collection(col)
-            const res = await collection.find().toArray()
+            const res = await collection.find(object).toArray()
             return res
         } catch (error) {
             console.log(error)
@@ -57,6 +60,17 @@ class DatabaseMethods {
             const database = client.db("skateapp")
             const collection = database.collection(col)
             const res = await collection.updateOne(filter, update)
+            return res
+        } catch (error) {
+            console.log(error)
+        }
+    }
+
+    async makeMultipleUpdates(col, filter, update) {
+        try{
+            const database = client.db("skateapp")
+            const collection = database.collection(col)
+            const res = await collection.updateMany(filter, update)
             return res
         } catch (error) {
             console.log(error)
