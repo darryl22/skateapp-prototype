@@ -8,9 +8,9 @@
         let alertsLength = document.getElementsByClassName("alert-item-div").length
         console.log("alerts length", alertsLength)
         alertDiv.insertAdjacentHTML("beforeend", `
-            <div class="alert-item-div ${code === 'SUCCESS' ? 'alert-success': 'alert-error'}" id='alertItem${alertsLength}' onclick="closeAlert('alertItem${alertsLength}')">
+            <div class="alert-item-div ${code === 'SUCCESS' ? 'alert-success': 'alert-error'}" id='alertItem${alertsLength}'>
                 <p class="alert-message"><span class="alert-message-code">${code}:</span>${message}</p>
-                <img src="./logos/close.png" alt="close menu" class="close-alert">
+                <img src="./logos/close.png" alt="close menu" class="close-alert" onclick="closeAlert('alertItem${alertsLength}')">
             </div>
         `)
         let alertItem = document.getElementById(`alertItem${alertsLength}`)

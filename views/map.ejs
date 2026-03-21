@@ -105,7 +105,7 @@
             <img src="./logos/closelight.png" alt="close menu" class="close-menu2 image-invert" onclick="hideDetails('<%= spots[x]._id  %>')">
             <button class="add-comment" id="addCommentButton<%= spots[x]._id  %>">COMMENT</button>
             <form action="" class="add-comment-form" id="addCommentForm<%= spots[x]._id  %>">
-                <textarea name="commentInput" id="commentInput<%= spots[x]._id  %>" class="comment-input" rows="3" placeholder="Add comment"></textarea>
+                <textarea name="commentInput" id="commentInput<%= spots[x]._id  %>" class="comment-input" rows="3" placeholder="Add comment" required></textarea>
                 <input type="hidden" name="type" id="type<%= spots[x]._id  %>" value="newComment">
                 <input type="hidden" name="replyId" id="replyId<%= spots[x]._id  %>" value="">
                 <div style="display: flex; gap: 1em;">
@@ -138,6 +138,10 @@
     </div>
     <script>
         document.getElementById("addCommentButton<%= spots[x]._id  %>").addEventListener("click", function() {
+            if ("<%= isLoggedIn %>" === "false") {
+                addNewAlert("ERROR", "<a href='/login'>Login</a> required to comment")
+                return
+            }
             let commentForm = document.getElementById("addCommentForm<%= spots[x]._id  %>")
             let commentButton = document.getElementById("addCommentButton<%= spots[x]._id  %>")
             let type = document.getElementById("type<%= spots[x]._id  %>")
@@ -178,11 +182,11 @@
                 commentButton.style.display = "block"
                 if (result.status === "SUCCESS") {
                     if (result.newComment.type === "comment") {
-                        loadComments("<%= spots[x]._id  %>", [result.newComment])
+                        loadComments("<%= spots[x]._id  %>", [result.newComment], {newAdded : true})
                         replyListeners("<%= spots[x]._id  %>")
 
                     } else if(result.newComment.type === "reply"){
-                        loadReplies("<%= spots[x]._id  %>", [result.newComment])
+                        loadReplies("<%= spots[x]._id  %>", [result.newComment], {newAdded : true})
                         replyListeners("<%= spots[x]._id  %>")
 
                     }
@@ -192,6 +196,7 @@
             })
             .catch(error => {
                 addNewAlert("ERROR", "Error adding comment")
+                console.log(error)
             })
         })
     </script>
@@ -246,6 +251,7 @@
     </div>
 </body>
 <div id="spot-container" data-object="<%= JSON.stringify(spots) %>"></div>
+<div id="likes-load-container" data-object="<%= JSON.stringify(likes) %>"></div>
 <script>
     const swiper = new Swiper('.swiper', {
         direction: 'horizontal',
@@ -264,11 +270,14 @@
     });
 
     let dataContainer = document.getElementById('spot-container');
+    let likesListContainer = document.getElementById('likes-load-container')
     let spotsData = JSON.parse(dataContainer.getAttribute('data-object'));
+    let likesList = JSON.parse(likesListContainer.getAttribute('data-object'))
+    let loggedInUserID = "<%= userID %>"
     // let spotsData = JSON.parse('<%- JSON.stringify(spots)%>')
 
     async function getUser() {
-        let userRes = fetch('/getUser')
+        let userRes = await fetch('/getUser')
         .then(res => {
             console.log(res)
             return res
@@ -346,13 +355,14 @@
     document.addEventListener("click", function(e) {
         let addSpotDiv = document.getElementById("addSpotDiv")
         let optionsButton = document.getElementById("optionsButton")
-        if (!addSpotDiv.contains(e.target) && !optionsButton.contains(e.target)) {
+        let alertDiv = document.getElementById("alertDiv")
+        if (!addSpotDiv.contains(e.target) && !optionsButton.contains(e.target) && !alertDiv.contains(e.target)) {
             hideMenu()
         }
         if (detailsIsOpen) {
             let spotDetailsInner = document.getElementById(`spotDetailsInner${openDetailsId}`)
             let spotDetailsButton = document.getElementById(`spotDetailsButton${openDetailsId}`)
-            if(!spotDetailsInner.contains(e.target) && !spotDetailsButton.contains(e.target)){
+            if(!spotDetailsInner.contains(e.target) && !spotDetailsButton.contains(e.target) && !alertDiv.contains(e.target)){
                 hideDetails(openDetailsId)
             }
         }
@@ -375,8 +385,6 @@
     const map = new mapboxgl.Map({
         container: 'map',
         style: darkMap === "true" ? 'mapbox://styles/mapbox/dark-v11' : 'mapbox://styles/mapbox/streets-v12',
-        // style: 'mapbox://styles/mapbox/streets-v12',
-        // style: 'mapbox://styles/mapbox/satellite-streets-v12',
         center: [36.8219, -1.2921],
         zoom: 10
     })
@@ -388,39 +396,52 @@
     //     showUserHeading: true,
     // }));
 
+    let likeActionController = null
+    let pauseLike = false
     async function likeAction(spotID) {
+        if (pauseLike) {
+            console.log("cancel like")
+            return
+        }
+        if (likeActionController) {
+            likeActionController.abort()
+        }
+        pauseLike = true
+        likeActionController = new AbortController()
+        const likeActionSignal = likeActionController.signal
         let likeButton = document.getElementById(`likeButton${spotID}`)
         let isLiked = likeButton.getAttribute("data-isliked")
+        let likeRef = likeButton.getAttribute("data-likeref")
+        let likesCounter = document.getElementById(`spotLikesCount-${spotID}`)
+        if (isLiked === "true" && likeRef === "None") {
+            console.log("cancel like")
+            return
+        }
+        let src = isLiked === "true" ? '/logos/heart-unfilledlight.png' : '/logos/heart-filledlight.png'
+        likeButton.setAttribute("src", src)
         await fetch("/updateLiked", {
             method: "POST",
-            headers: {
-                // "Accept": "application/json",
-                "Content-Type": "application/json"
-            },
+            headers: {"Content-Type": "application/json"},
             body: JSON.stringify({
                 ID: spotID,
-                isLiked: isLiked
-            })
+                isLiked: isLiked,
+                likeRef: likeRef
+            }),
+            signal: likeActionSignal
         })
         .then(async res => {
-            let likeRes = await res.json()
-            console.log(likeRes)
-            if (isLiked === "true") {
-                likeButton.style.animationName = "unlikeAnimation"
-                setTimeout(function() {
-                    likeButton.setAttribute("src", "/logos/heart-unfilledlight.png")
-                    likeButton.setAttribute("data-isliked", "false")
-                }, 150)
-            } else {
-                likeButton.style.animationName = "likeAnimation"
-                setTimeout(function() {
-                    likeButton.setAttribute("src", "/logos/heart-filledlight.png")
-                    likeButton.setAttribute("data-isliked", "true")
-                }, 150)
+            let resData = await res.json()
+            pauseLike = false
+            if (resData.status === "SUCCESS") {
+                src = resData.isLiked ? '/logos/heart-filledlight.png' : '/logos/heart-unfilledlight.png'
+                likeButton.setAttribute("data-isliked", resData.isLiked)
+                likeButton.setAttribute("data-likeref", resData.likeRef)
+                let likesCount = parseInt(likesCounter.innerText)
+                likesCounter.innerText = resData.isLiked ? `${++likesCount}` : `${--likesCount}`
             }
         })
         .catch(error => {
-            console.log(error)
+            pauseLike = false
         })
     }
 
@@ -431,8 +452,12 @@
         }
         repliesController = new AbortController()
         const repliesSignal = repliesController.signal
-        document.querySelectorAll(`.replyEvent${id}`).forEach(elm => {
+        document.querySelectorAll(".reply-button").forEach(elm => {
             elm.addEventListener("click", function(e) {
+                if ("<%= isLoggedIn %>" === "false") {
+                    addNewAlert("ERROR", "<a href='/login'>Login</a> required to comment")
+                    return
+                }
                 let spotID = e.target.getAttribute("data-spotid")
                 let author = e.target.getAttribute("data-author")
                 let replyref = e.target.getAttribute("data-replyref")
@@ -448,63 +473,122 @@
                 input.value = `@${author} `
             }, {signal: repliesSignal})
         })
+
+        document.querySelectorAll(".delete-comment").forEach(elm => {
+            elm.addEventListener("click", async function() {
+                let idRef = elm.getAttribute("data-deleteref")
+                await fetch("/deleteComment", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({
+                        commentID: idRef
+                    })
+                })
+                .then(async res => {
+                    let resData = await res.json()
+                    if (resData.status === "SUCCESS") {
+                        let deletedElm = document.getElementById(`commentId-${idRef}`)
+                        deletedElm.remove()
+                        addNewAlert(resData.status, resData.message)
+                    } else {
+                        addNewAlert(resData.status, resData.message)
+                    }
+                })
+            }, {signal: repliesSignal})
+        })
     }
 
+    //track usercount in comment section, prevents duplicate calls
     let usersInConversation = []
 
-    function loadComments(spotId, comments, reload = "false") {
-        console.log(spotId)
+    function loadComments(spotId, comments, {reload = false, newAdded = false} = {}) {
         let commentsDiv = document.getElementById(`commentsDiv${spotId}`)
-        if (reload === "true") {
+        if (reload) {
             commentsDiv.replaceChildren()
         }
         for (let x = 0; x < comments.length; x++) {
+            console.log("<%= userID %>")
             if (!usersInConversation.includes(comments[x].author)) {
                 usersInConversation.push(comments[x].author)
             }
-            let commentNode = `<div class="comment-container">
+            let commentNode = `<div class="comment-container" id="commentId-${comments[x]._id}">
                 <div style="display: flex; flex-direction: column; gap: 1em; align-self: stretch; align-items: center;">
                     <div class="comment-profile-image change-comment-image-${comments[x].author}" style="background-image: url('/images/defaultProfile2.png');" id="commentprofileImage${comments[x]._id}"></div>
-                    <div class="comment-line"></div>
+                    <div class="comment-line" style="display: none;"></div>
                 </div>
                 <div class="comment-content-div">
                     <div class="comment-info-div">
-                        <p style="font-weight: bold; margin-top: 0;" class="change-comment-username-${comments[x].author}">User112</p>
+                        <p style="font-weight: bold; margin-top: 0;" class="change-comment-username-${comments[x].author}" id="commentUsername-${comments[x]._id}">User112</p>
                         <p style="color: gray; margin-top: 0;">${comments[x].dateAdded}</p>
                     </div>
                     <div class="comment-content">${comments[x].content}</div>
-                    <p class="reply-button replyEvent${spotId} change-author-${comments[x].author}" id="replyButton${comments[x]._id}" data-author="User" data-replyref="${comments[x]._id}" data-spotid="${spotId}">reply</p>
+                    <div style="display: flex; align-items: center; gap: 1em;">
+                        <p class="reply-button replyEvent${spotId} change-author-${comments[x].author}" id="replyButton${comments[x]._id}" data-author="User" data-replyref="${comments[x]._id}" data-spotid="${spotId}">reply</p>
+                        <p class="delete-comment" style="display: ${comments[x].author === loggedInUserID ? "block" : "none"};" data-deleteref="${comments[x]._id}">delete</p>
+                    </div>
                     <div class="comment-reply-container" id="repliesContainer${spotId}-${comments[x]._id}">
                     </div>
                 </div>
             </div>`
             commentsDiv.insertAdjacentHTML("beforeend", commentNode)
+            if (newAdded) {
+                let commentImage = document.getElementById(`commentprofileImage${comments[x]._id}`)
+                let commentUsername = document.getElementById(`commentUsername-${comments[x]._id}`)
+                let replyButton = document.getElementById(`replyButton${comments[x]._id}`)
+
+                commentImage.style.backgroundImage = `url("<%= profilePicture %>")`
+                commentUsername.innerText = "<%= user %>"
+                replyButton.setAttribute("data-author", "<%= user %>")
+            }
         }
         document.getElementById(`loadingComments${spotId}`).style.display = "none"
     }
 
-    function loadReplies(spotId, replies) {
-        console.log(spotId)
+    function loadReplies(spotId, replies, {newAdded = false} = {}) {
         for (let x = 0; x < replies.length; x++) {
             if (!usersInConversation.includes(replies[x].author)) {
                 usersInConversation.push(replies[x].author)
             }
             let repliesContainer = document.getElementById(`repliesContainer${spotId}-${replies[x].replyId}`)
-            let reply = `<div class="comment-reply-div">
+            let reply = `<div class="comment-reply-div" id="commentId-${replies[x]._id}">
                 <div class="comment-profile-image change-comment-image-${replies[x].author}" style="background-image: url('/images/defaultProfile2.png');" id="replyprofileImage${replies[x]._id}"></div>
                 <div class="comment-content-div">
                     <div class="comment-info-div">
-                        <p style="font-weight: bold; margin-top: 0;" class="change-comment-username-${replies[x].author}">User</p>
+                        <p style="font-weight: bold; margin-top: 0;" class="change-comment-username-${replies[x].author}" id="commentUsername-${replies[x]._id}">User</p>
                         <p style="color: gray; margin-top: 0;">${replies[x].dateAdded}</p>
                     </div>
                     <div class="comment-content">${replies[x].content}</div>
-                    <p class="reply-button replyEvent${spotId} change-author-${replies[x].author}" id="replyButton${replies[x]._id}" data-author="User" data-replyref="${replies[x].replyId}" data-spotid="${spotId}">reply</p>
+                    <div style="display: flex; align-items: center; gap: 1em;">
+                        <p class="reply-button replyEvent${spotId} change-author-${replies[x].author}" id="replyButton${replies[x]._id}" data-author="User" data-replyref="${replies[x].replyId}" data-spotid="${spotId}">reply</p>
+                        <p class="delete-comment" style="display: ${replies[x].author === loggedInUserID ? "block" : "none"};" data-deleteref="${replies[x]._id}">delete</p>
+                    </div>
                 </div>
             </div>`
-            repliesContainer.insertAdjacentHTML("beforeend", reply)
+            if (repliesContainer) {
+                repliesContainer.insertAdjacentHTML("beforeend", reply)
+            } else {
+                console.log("deleted comment")
+            }
+            if (newAdded) {
+                let replyImage = document.getElementById(`replyprofileImage${replies[x]._id}`)
+                let commentUsername = document.getElementById(`commentUsername-${replies[x]._id}`)
+                let replyButton = document.getElementById(`replyButton${replies[x]._id}`)
+
+                replyImage.style.backgroundImage = `url("<%= profilePicture %>")`
+                commentUsername.innerText = "<%= user %>"
+                replyButton.setAttribute("data-author", "<%= user %>")
+            }
         }
+
+        document.querySelectorAll(".comment-container").forEach(elm => {
+            let repliesCount = elm.querySelectorAll(".comment-reply-container")[0].querySelectorAll(".comment-reply-div").length
+            if (repliesCount > 0) {
+                elm.querySelectorAll(".comment-line")[0].style.display = "block"
+            }
+        })
     }
 
+    //function to load usernames and profile pictures
     async function loadCommentsInfo(spotId) {
         await fetch("/commentUserInfo", {
             method: "POST",
@@ -533,12 +617,26 @@
         })
     }
 
+    let tempLikesList = likesList
     let spotPoints = spotsData.map((item, index) => {
-        let user = "<%= userID %>"
+        let temp = []
         let isLiked = false
-        if (item.interactions.likes.includes(user)) {
-            isLiked = true
-        }
+        let likeRef = "None"
+        let LikesCount = 0
+        // console.log("likes list size", tempLikesList.length, likesList.length)
+        tempLikesList.forEach(likeItem => {
+            if (likeItem.likeUser === loggedInUserID) {
+                isLiked = true
+                likeRef = likeItem._id
+            }
+
+            if (likeItem.spotId === item._id) {
+                LikesCount++
+            } else {
+                temp.push(likeItem)
+            }
+        })
+        tempLikesList = temp
         return {
             type: 'Feature',
             properties: {
@@ -552,8 +650,8 @@
                         <div class="popup-interactions">
                             <div style="display: flex; gap: 5px">
                                 <div style="display: flex; align-items: center; gap: 0.5em">
-                                    <img src="${isLiked === true ? '/logos/heart-filledlight.png' : '/logos/heart-unfilledlight.png'}" class="like-button" id="likeButton${item._id}" data-isliked="${isLiked === true ? 'true' : 'false'}" onclick="likeAction('${item._id}')"></img>
-                                    <p>${item.interactions.likes.length}</p>
+                                    <img src="${isLiked === true ? '/logos/heart-filledlight.png' : '/logos/heart-unfilledlight.png'}" class="like-button" id="likeButton${item._id}" data-likeref="${likeRef}" data-isliked="${isLiked === true ? 'true' : 'false'}" onclick="likeAction('${item._id}')"></img>
+                                    <p class="likes-count" id="spotLikesCount-${item._id}">${LikesCount}</p>
                                 </div>
                                 <div style="display: flex; align-items: center; gap: 0.5em">
                                     <img src="/logos/comments-light.png" style="height: 2em;"></img>
@@ -590,7 +688,7 @@
             let spotData = await spotResult.json()
             if(spotData.spot) {
                 map.easeTo({
-                    center: [spotData.spot.longitude, spotData.spot.latitude],
+                    center: [spotData.spot.longitude, (spotData.spot.latitude - 0.023)],
                     zoom: 13,
                     duration: 500
                 })
@@ -694,7 +792,7 @@
                 const description = e.features[0].properties.description
                 popup.setLngLat(coordinates).setHTML(description).addTo(map);
                 map.easeTo({
-                    center: e.features[0].geometry.coordinates.slice(),
+                    center: [coordinates[0], (coordinates[1] - 0.023)],
                     zoom: 13,
                     duration: 500
                 })

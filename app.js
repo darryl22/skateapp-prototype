@@ -19,19 +19,6 @@ const store = new MongoDBStore ({
     collection: "mySessions"
 })
 
-const nodemailer = require("nodemailer")
-const transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 587,
-    secure: false,
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-    }
-})
-
-// const uri = process.env.MONGO_URI
-// const client = new MongoClient(uri)
 const DatabaseMethods = require("./dbFunctions")
 const appFunctions = require("./appFunctions")
 const { error } = require("console")
@@ -60,6 +47,7 @@ app.use((request, response, next) => {
     console.log(request.method, request.path)
     if (request.session.username === undefined) {
         request.session.username = "anonymous"
+        request.session.isLoggedIn = false
     }
     if (request.session.darkMode === undefined) {
         request.session.darkMode = "none"
@@ -72,32 +60,49 @@ app.get('/', async (request, response) => {
 })
 
 app.get('/getUser', async (request, response) => {
-    if (request.session.username === undefined) {
-        response.json({status: "Error getting user", user: "anonymous"})
-    }else {
-        // await databaseMethods.getOne("users", {username: request.session.username})
-        // .then(res => {
-        //     console.log(res)
-        // })
-        // .catch(error => {
-        //     console.log(error)
-        // })
-        response.json({user: request.session.username})
+    try{
+        if (request.session.username === undefined) return response.json({status: "ERROR", message: "Anonymous user"})
+        await databaseMethods.getOne("users", {username: request.session.username})
+        .then(res => {
+            let user = {username: res.username, profileImage: res.profileImage}
+            response.json({status: "SUCCESS", message: "User Retrieved", user: user})
+        })
+        .catch(error => {
+            console.log(error)
+            response.json({status: "ERROR", message: "Could not get user"})
+        })
+    } catch (error) {
+        console.log(error)
     }
 })
+
+// spots endpoints
 
 app.get('/map', async (request, response) => {
     let date = new Date()
     // let currentDate = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`
-    await Promise.all([databaseMethods.getMany("spots"), databaseMethods.getOne("users", {username: request.session.username})])
+    await Promise.all([databaseMethods.getMany("spots"), databaseMethods.getOne("users", {username: request.session.username}), databaseMethods.getMany("likes", {type: "spot"})])
     .then(res => {
         // console.log(res[1])
         let darkMap = "true"
+        let profilePicture = '/images/defaultProfile2.png'
         if (res[1] !== null) {
             darkMap = res[1].settings.darkMap
+            profilePicture = res[1].profileImage
+        }
+        let ctx = {
+            mapboxtoken : process.env.MAPBOX_ACCESS_TOKEN,
+            spots: res[0],
+            user: request.session.username,
+            userID: request.session.userID,
+            isLoggedIn: request.session.isLoggedIn,
+            profilePicture: profilePicture,
+            darkMode: request.session.darkMode,
+            darkMap: darkMap,
+            likes: res[2]
         }
         
-        response.render('map.ejs', {mapboxtoken : process.env.MAPBOX_ACCESS_TOKEN, spots: res[0], user: request.session.username, userID: request.session.userID, darkMode: request.session.darkMode, darkMap: darkMap})
+        response.render('map.ejs', ctx)
     })
     .catch(error => {
         console.log(error)
@@ -120,10 +125,6 @@ app.post('/addspot', async (request, response) => {
         createdAt: date,
         createdBy: request.session.username,
         createdByID: request.session.userID,
-        interactions: {
-            likes: [],
-            comments: []
-        },
         dateCreated: currentDate[0]
     }
 
@@ -165,6 +166,7 @@ app.get('/getSpot', async (request, response) => {
 
 app.post('/updateComment', async (request, response) => {
     try {
+        if (request.session.username === undefined) return response.json({status: "ERROR", message: "Login required for interactions"})
         let date = new Date()
         let currentDate = date.toISOString().split("T")
         let updateData = {
@@ -214,22 +216,20 @@ app.get("/loadComments", async (request, response) => {
 app.post("/commentUserInfo", async (request, response) => {
     try {
         let usersList = request.body.usersList
-        let usersPromises = []
+        let usersIdList = []
         for (let x = 0; x < usersList.length; x++) {
             let id = ObjectId.createFromHexString(usersList[x])
-            usersPromises.push(databaseMethods.getOne("users", {_id: id}))
+            usersIdList.push(id)
         }
-        await Promise.allSettled(usersPromises)
+        await databaseMethods.getMany("users", {_id: {$in: usersIdList}})
         .then(res => {
             let commentsData = []
             for (let x = 0; x < res.length; x++) {
-                if (res[x].status === 'fulfilled' && res[x].value !== null) {
-                    commentsData.push({
-                        id: res[x].value._id,
-                        username: res[x].value.username,
-                        profilePicture: res[x].value.profileImage,
-                    })
-                }
+                commentsData.push({
+                    id: res[x]._id,
+                    username: res[x].username,
+                    profilePicture: res[x].profileImage,
+                })
             }
             response.json({status: "SUCCESS", message: "Loaded comments info", data: commentsData})
         })
@@ -242,65 +242,74 @@ app.post("/commentUserInfo", async (request, response) => {
     }
 })
 
-app.post('/updateLiked', async (request, response) => {
-    try{
-        let spotID = ObjectId.createFromHexString(request.body.ID)
-        let likesCount = 0
-        await databaseMethods.getOne("spots", {_id: spotID})
-        .then(async res => {
-            console.log(res.interactions.likes)
-            if(request.body.isLiked === "false") {
-                let spotLikeUpdate = databaseMethods.makeUpdate("spots", {_id: spotID}, {
-                    $push: {
-                        "interactions.likes": request.session.userID
-                    }
-                })
-                return spotLikeUpdate
-            } else {
-                let tempLikes = res.interactions.likes
-                for (let x = 0; x < tempLikes.length; x++) if (tempLikes[x] === request.session.userID) tempLikes.splice(x, 1)
-                let userID = ObjectId.createFromHexString(request.session.userID)
-                // let spotLikeUpdate = databaseMethods.makeUpdate("spots", {_id: spotID}, {
-                //     $set: {
-                //         "interactions.likes": tempLikes
-                //     }
-                // })
-                let spotLikeUpdate = await Promise.all([databaseMethods.makeUpdate("spots", {_id: spotID}, {
-                    $set: {
-                        "interactions.likes": tempLikes
-                    }
-                }), databaseMethods.getOne("users", {_id: userID})])
-                return spotLikeUpdate
-            }
-        })
+app.post("/deleteComment", async (request, response) => {
+    try {
+        let commentID = ObjectId.createFromHexString(request.body.commentID)
+        console.log(commentID)
+        await databaseMethods.deleteDocument("comment", {_id: commentID})
         .then(res => {
-            console.log("spot likes Update", res)
-            let userID = ObjectId.createFromHexString(request.session.userID)
-            if (request.body.isLiked === "false") {
-                return databaseMethods.makeUpdate("users", {_id: userID}, {
-                    $push: {
-                        likedSpots: request.body.ID
-                    }
-                })
-            } else {
-                let tempLikedSpots = res[1].likedSpots
-                for (let x = 0; x < tempLikedSpots.length; x++) if (tempLikedSpots[x] === request.body.ID) tempLikedSpots.splice(x, 1)
-                return databaseMethods.makeUpdate("users", {_id: userID}, {
-                    $set: {
-                        likedSpots: tempLikedSpots
-                    }
-                })
-            }
-        })
-        .then(res => {
-            console.log("Spot user Like update", res)
-            response.json({status: "SUCCESS", message: "Like action complete"})
+            console.log(res)
+            response.json({status: "SUCCESS", message: "Comment Deleted"})
         })
         .catch(error => {
             console.log(error)
-            response.json({status: "ERROR", message: "Error with like action"})
+            response.json({status: "ERROR", message: "Error deleting comment"})
         })
-    } catch {
+    } catch(error) {
+        console.log(error)
+        response.json({status: "ERROR", message: "Error deleting comment"})
+    }
+})
+
+app.post('/updateLiked', async (request, response) => {
+    try{
+        // setTimeout(async () => {
+        //     let likePromise = []
+        //     let likeObject = {
+        //         spotId: request.body.ID,
+        //         likeUser: request.session.userID,
+        //         type: "spot"
+        //     }
+        //     if (request.body.isLiked === "false") {
+        //         likePromise.push(databaseMethods.addOne("likes", likeObject))
+        //     } else {
+        //         let likeRef = ObjectId.createFromHexString(request.body.likeRef)
+        //         likePromise.push(databaseMethods.deleteDocument("likes", {_id: likeRef}))
+        //     }
+        //     await Promise.allSettled(likePromise)
+        //     .then(res => {
+        //         console.log(res)
+        //         if (request.body.isLiked === "false") {
+        //             return response.json({status: "SUCCESS", message: "Like Updated", isLiked: true, likeRef: res[0].value.insertedId.toString()})
+        //         }
+        //         console.log("delete like")
+        //         response.json({status: "SUCCESS", message: "Like Updated", isLiked: false, likeRef: "None"})
+        //     })
+        // }, 3000);
+
+        let likePromise = []
+        let likeObject = {
+            spotId: request.body.ID,
+            likeUser: request.session.userID,
+            type: "spot"
+        }
+        if (request.body.isLiked === "false") {
+            likePromise.push(databaseMethods.addOne("likes", likeObject))
+        } else {
+            let likeRef = ObjectId.createFromHexString(request.body.likeRef)
+            likePromise.push(databaseMethods.deleteDocument("likes", {_id: likeRef}))
+        }
+        await Promise.allSettled(likePromise)
+        .then(res => {
+            console.log(res)
+            if (request.body.isLiked === "false") {
+                return response.json({status: "SUCCESS", message: "Like Updated", isLiked: true, likeRef: res[0].value.insertedId.toString()})
+            }
+            console.log("delete like")
+            response.json({status: "SUCCESS", message: "Like Updated", isLiked: false, likeRef: "none"})
+        })
+    } catch (error) {
+        console.log(error)
         response.json({status: "ERROR", message: "Error adding like"})
     }
 })
@@ -326,6 +335,8 @@ app.get('/profilePicture', async (request, response) => {
 app.get('/info', (request, response) => {
     response.render('info.ejs')
 })
+
+// profile endpoints
 
 app.get('/profile', async (request, response) => {
     if (request.session.username === undefined || request.session.username === "anonymous") {
@@ -419,19 +430,14 @@ app.get('/getMyUploads', async (request, response) => {
 })
 
 app.get('/getLikedSpots', async (request, response) => {
-    let userID = ObjectId.createFromHexString(request.session.userID)
-    await databaseMethods.getOne("users", {_id: userID})
+    await databaseMethods.getMany("likes", {likeUser: request.session.userID, type: "spot"})
     .then(res => {
-        let myLikes = []
-        for (let x = 0; x < res.likedSpots.length; x++) {
-            try {
-                let likedId = ObjectId.createFromHexString(res.likedSpots[x])
-                myLikes.push(databaseMethods.getOne("spots", {_id: likedId}))
-            } catch(error) {
-                console.log("Cannot get value")
-            }
+        let spotIdList = []
+        for (let x = 0; x < res.length; x++) {
+            spotIdList.push(ObjectId.createFromHexString(res[x].spotId))
         }
-        return Promise.allSettled(myLikes)
+        console.log(spotIdList)
+        return databaseMethods.getMany("spots", {_id: {$in: spotIdList}})
     })
     .then(res => {
         console.log(res)
@@ -523,6 +529,8 @@ app.post('/updateProfileImage', async (request, response) => {
     })
 })
 
+// auth endpoints
+
 app.get('/login', (request, response) => {
     response.render('login.ejs', {user: request.session.username, darkMode: request.session.darkMode})
 })
@@ -538,7 +546,8 @@ app.post('/login', async (request, response) => {
             request.session.username = res.username
             request.session.userID = res._id.toString()
             request.session.email = res.email
-            request.session.darkMode = res.darkMode ? "true" : "false"
+            request.session.isLoggedIn = true
+            request.session.darkMode = res.settings.darkMode ? "true" : "false"
             response.json({status: "SUCCESS", message: "Login successful"})
         } else {
             response.json({status: "ERROR", message: "Password missmatch"})
@@ -590,6 +599,7 @@ app.post('/signup', async (request, response) => {
         request.session.userID = res.insertedId.toString()
         request.session.email = request.body.email
         request.session.darkMode = "false"
+        request.session.isLoggedIn = true
         // response.redirect("/profile")
         let token = appFuncs.generateToken(7)
         request.session.verifyToken = token
@@ -688,7 +698,6 @@ app.post("/verify", async (request, response) => {
 })
 
 app.get("/logout", (request, response) => {
-    // request.session.username = "anonymous"
     request.session.destroy()
     response.redirect("/login")
 })

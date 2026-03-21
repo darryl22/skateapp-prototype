@@ -87,6 +87,17 @@ class DatabaseMethods {
             console.log(error)
         }
     }
+
+    async deleteManyDocuments(col, filter) {
+        try{
+            const database = client.db("skateapp")
+            const collection = database.collection(col)
+            const res = await collection.deleteMany(filter)
+            return res
+        } catch(error) {
+            console.log(error)
+        }
+    }
 }
 
 module.exports = DatabaseMethods

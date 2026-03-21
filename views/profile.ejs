@@ -518,7 +518,8 @@
     document.addEventListener("click", function(e) {
         if (currentOpenModal) {
             let modal = document.getElementById(`${currentOpenModal}Inner`)
-            if (!modal.contains(e.target) && !e.target.classList.contains("modal-button")) {
+            let alertDiv = document.getElementById("alertDiv")
+            if (!modal.contains(e.target) && !e.target.classList.contains("modal-button") && !alertDiv.contains(e.target)) {
                 hideModal(currentOpenModal)
                 if (currentOpenModalID) {
                     try{
@@ -702,10 +703,10 @@
                     let elementNode = `<div class="profile-spot-item">
                         <div class="profile-spot-item-info">
                             <div style="margin: 1em;">
-                                <a class="purple-button" href="/map?spot=${resData.myLikes[x].value._id}" style="display: block;">View</a>
+                                <a class="purple-button" href="/map?spot=${resData.myLikes[x]._id}" style="display: block;">View</a>
                             </div>
                         </div>
-                        <div class="background-dark-filter" style="background-image: url('${resData.myLikes[x].value.spotimages[0]}');"></div>
+                        <div class="background-dark-filter" style="background-image: url('${resData.myLikes[x].spotimages[0]}');"></div>
                     </div>`
                     likedSpotsContainer.insertAdjacentHTML("beforeend", elementNode)
                 }

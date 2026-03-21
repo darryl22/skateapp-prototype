@@ -277,6 +277,20 @@ a{
     color: rgb(157, 0, 0);
 }
 
+.alert-success a {
+    color: rgb(0, 83, 0);
+    font-weight: bold;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+}
+
+.alert-error a {
+    color: rgb(157, 0, 0);
+    font-weight: bold;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+}
+
 .close-alert{
     cursor: pointer;
     height: 1em;
@@ -663,6 +677,7 @@ a{
     display: flex;
     align-items: start;
     gap: 1em;
+    margin-top: 1em;
 }
 
 .comment-line{
@@ -681,6 +696,12 @@ a{
 .reply-button{
     color: rgb(0, 106, 255);
     cursor: pointer;
+    margin-top: 5px;
+}
+
+.delete-comment{
+    color: red;
+    margin-top: 5px;
 }
 
 .comment-reply-div{
@@ -1276,5 +1297,11 @@ a{
         top: auto;
         bottom: 30px;
         left: 10px;
+    }
+
+    .spot-details-modal-inner, .profile-modal-inner, .addspot-div{
+        width: 100%;
+        height: 100%;
+        padding: 1em;
     }
 }
