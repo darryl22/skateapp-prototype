@@ -186,14 +186,14 @@
                 <div class="underline"></div>
                 <button class="base-button modal-button" style="margin-right: 1em;" data-toggle-modal="likedSpots">Liked spots</button>
                 <button class="base-button modal-button" data-toggle-modal="myUploads">My Uploads</button>
-                <div class="profile-modal" id="likedSpotsOuter">
-                    <div class="profile-modal-inner" id="likedSpotsInner">
+                <div class="base-modal" id="likedSpots">
+                    <div class="base-modal-inner" id="likedSpotsInner">
                         <img src="./logos/closelight.png" alt="close menu" class="close-menu2 image-invert close-modal" data-toggle-modal="likedSpots">
                         <div class="profile-spots-container" id="likedSpotsContainer"></div>
                     </div>
                 </div>
-                <div class="profile-modal" id="myUploadsOuter">
-                    <div class="profile-modal-inner" id="myUploadsInner">
+                <div class="base-modal" id="myUploads">
+                    <div class="base-modal-inner" id="myUploadsInner">
                         <img src="./logos/closelight.png" alt="close menu" class="close-menu2 image-invert close-modal" data-toggle-modal="myUploads">
                         <div class="profile-spots-container" id="myUploadsContainer"></div>
                     </div>
@@ -251,12 +251,21 @@
     let eventController = null
 
     function hideModal(id) {
-        let modalOuter = document.getElementById(`${id}Outer`)
-        let modalInner= document.getElementById(`${id}Inner`)
+        let modalOuter = document.getElementById(`${id}`)
+        let modalInner = modalOuter.querySelectorAll(".base-modal-inner")[0]
         modalOuter.style.opacity = "0"
         modalOuter.style.pointerEvents = "none"
         modalInner.style.transform = "translateY(-20px)"
         currentOpenModal = null
+    }
+
+    function showModal(id) {
+        let modalOuter = document.getElementById(`${id}`)
+        let modalInner = modalOuter.querySelectorAll(".base-modal-inner")[0]
+        modalOuter.style.opacity = "1"
+        modalOuter.style.pointerEvents = "auto"
+        modalInner.style.transform = "translateY(0)"
+        currentOpenModal = id
     }
 
     function hideEditImagesSection(id) {
@@ -264,15 +273,6 @@
         document.getElementById(`editPicturesDiv-${id}`).classList.add("hidden")
         document.getElementById(`cancelEditImagesButton-${id}`).classList.add("hidden")
         document.getElementById(`editImagesButton-${id}`).classList.remove("hidden")
-    }
-
-    function showModal(id) {
-        let modalOuter = document.getElementById(`${id}Outer`)
-        let modalInner= document.getElementById(`${id}Inner`)
-        modalOuter.style.opacity = "1"
-        modalOuter.style.pointerEvents = "auto"
-        modalInner.style.transform = "translateY(0)"
-        currentOpenModal = id
     }
 
     function showEditImagesSection(id) {
@@ -517,7 +517,7 @@
     //close modal when clicked outside
     document.addEventListener("click", function(e) {
         if (currentOpenModal) {
-            let modal = document.getElementById(`${currentOpenModal}Inner`)
+            let modal = document.getElementById(`${currentOpenModal}`).querySelectorAll(".base-modal-inner")[0]
             let alertDiv = document.getElementById("alertDiv")
             if (!modal.contains(e.target) && !e.target.classList.contains("modal-button") && !alertDiv.contains(e.target)) {
                 hideModal(currentOpenModal)
@@ -605,8 +605,8 @@
                         <div class="background-dark-filter" style="background-image: url('${resData.myUploads[x].spotimages[0]}');" id="frontImage-${resData.myUploads[x]._id}"></div>
                     </div>`
 
-                    let modalNode = `<div class="profile-modal" id="editSpot${resData.myUploads[x]._id}Outer">
-                        <div class="profile-modal-inner" id="editSpot${resData.myUploads[x]._id}Inner">
+                    let modalNode = `<div class="base-modal" id="editSpot${resData.myUploads[x]._id}">
+                        <div class="base-modal-inner" id="editSpot${resData.myUploads[x]._id}Inner">
                             <img src="./logos/closelight.png" alt="close menu" class="close-menu2 image-invert close-modal" data-toggle-modal="editSpot${resData.myUploads[x]._id}">
                             <div class="edit-pictures-container">
                                 <div class="edit-pictures-div hidden" id="editPicturesDiv-${resData.myUploads[x]._id}"></div>

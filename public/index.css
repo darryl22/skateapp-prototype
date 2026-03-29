@@ -27,6 +27,7 @@
     --text-color-primary: black;
     --purple-background: rgb(118, 0, 164);
     --purple-gradient: linear-gradient(#f3f3f3, #f3f3f3) padding-box, linear-gradient(to right, purple, rgb(230, 0, 230), purple) border-box;
+    --purple-light: rgb(227, 0, 227);
 }
 
 .image-invert{
@@ -448,7 +449,7 @@ a{
     padding: 1.5em;
     overflow-y: scroll;
     display: none;
-    z-index: 12;
+    z-index: 10;
     color: var(--text-color-primary);
 }
 
@@ -490,7 +491,8 @@ a{
 }
 
 .mapboxgl-popup-content{
-    background-color: var(--transparent-dark);
+    /* background-color: var(--transparent-dark); */
+    background-color: rgba(2, 21, 38, 0.7);
     backdrop-filter: blur(5px);
     color: var(--text-color-primary);
     max-height: 70vh;
@@ -517,6 +519,23 @@ a{
     justify-content: space-between;
     gap: 1em;
     margin-top: 2em;
+    color: white;
+}
+
+.menu-interactions{
+    display: flex;
+    align-items: center;
+    justify-content: start;
+    gap: 1em;
+    margin-top: 2em;
+    color: var(--text-color-primary);
+    /* flex-direction: column; */
+    align-items: flex-end;
+    /* height: 100%; */
+    width: 100%;
+    /* justify-content: flex-end; */
+    margin-bottom: 1em;
+    font-size: 0.8em;
 }
 
 .spot-details-button{
@@ -530,11 +549,6 @@ a{
     cursor: pointer;
     transition: 200ms;
     justify-self: flex-end;
-}
-
-.spot-details-button:hover{
-    background-color: white;
-    color: black;
 }
 
 .spot-details-image{
@@ -583,9 +597,11 @@ a{
     z-index: 10;
     cursor: pointer;
     border-radius: 5px;
+    border: none;
+    font-size: 1em;
 }
 
-.map-inner-sidebar-content, .spot-details-modal, .profile-modal{
+.base-modal{
     position: fixed;
     width: 100vw;
     height: 100vh;
@@ -602,10 +618,35 @@ a{
     pointer-events: none;
 }
 
-.spot-details-modal-content{
-    overflow-y: scroll;
-    height: 90%;
+.base-modal-inner{
+    width: 85%;
+    /* background-color: var(--bg-color-secondary); */
+    background-image: linear-gradient(to bottom, var(--bg-color), var(--bg-color-secondary));
+    color: var(--text-color-primary);
+    height: 90vh;
+    transform: translateY(-20%);
+    transition: 200ms;
+    padding: 2em;
+    overflow: hidden;
+    border-radius: 10px;
+}
+
+.base-modal-content{
+    overflow-y: auto;
+    height: 100%;
     padding-bottom: 40px;
+}
+
+.spots-list{
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+    /* height: 70vh; */
+    overflow-y: auto;
+    border: 2px solid var(--border-color);
+    border-radius: 10px;
+    padding: 15px;
+    width: 98%;
 }
 
 .comments-div{
@@ -718,33 +759,6 @@ a{
     border: 1px solid var(--border-color);
 }
 
-.spot-details-modal-inner, .profile-modal-inner{
-    width: 85%;
-    /* background-color: var(--bg-color-secondary); */
-    background-image: linear-gradient(to bottom, var(--bg-color), var(--bg-color-secondary));
-    color: var(--text-color-primary);
-    height: 90vh;
-    transform: translateY(-20%);
-    transition: 200ms;
-    padding: 2em;
-    overflow: hidden;
-    border-radius: 10px;
-}
-
-.addspot-div{
-    width: 85%;
-    height: 80vh;
-    /* background-color: var(--bg-color); */
-    background-image: linear-gradient(to bottom, var(--bg-color), var(--bg-color-secondary));
-    color: var(--text-color-primary);
-    padding: 2em;
-    overflow-y: scroll;
-    border-radius: 15px;
-    position: relative;
-    transform: translateY(-20%);
-    transition: 200ms;
-}
-
 .close-menu{
     width: 2em;
     position: absolute;
@@ -767,21 +781,10 @@ a{
     margin-bottom: 1em;
 }
 
-.spots-list{
-    display: flex;
-    flex-direction: column;
-    gap: 1em;
-    height: 70vh;
-    overflow-y: scroll;
-    border: 2px solid var(--border-color);
-    border-radius: 10px;
-    padding: 15px;
-    width: 100%;
-}
-
 .spot-list-item{
     display: flex;
     gap: 1em;
+    height: 100%;
 }
 
 .spot-list-item-image{
@@ -792,6 +795,15 @@ a{
     background-size: cover;
     background-repeat: no-repeat;
     border-radius: 5px;
+}
+
+.spot-list-item-details{
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    justify-content: space-between;
+    /* height: 100%; */
+    width: 100%;
 }
 
 .default-button{
@@ -1299,7 +1311,7 @@ a{
         left: 10px;
     }
 
-    .spot-details-modal-inner, .profile-modal-inner, .addspot-div{
+    .spot-details-modal-inner, .base-modal-inner, .addspot-div{
         width: 100%;
         height: 100%;
         padding: 1em;

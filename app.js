@@ -48,6 +48,7 @@ app.use((request, response, next) => {
     if (request.session.username === undefined) {
         request.session.username = "anonymous"
         request.session.isLoggedIn = false
+        request.session.userID = null
     }
     if (request.session.darkMode === undefined) {
         request.session.darkMode = "none"
@@ -115,25 +116,33 @@ app.post('/addspot', async (request, response) => {
     let currentDate = date.toISOString().split("T")
     const options = { xss: true, noSql: true, sql: true, level: 5 }
     let sanitizedDesc = ExpressSanitizer.sanitize.prepareSanitize(request.body.description, options)
-    console.log(sanitizedDesc)
+    // console.log(sanitizedDesc)
     let data = {
         description: sanitizedDesc,
         spottype: request.body.spottype,
         longitude: request.body.lng,
         latitude: request.body.lat,
-        spotimages: request.body.spotimages,
         createdAt: date,
         createdBy: request.session.username,
         createdByID: request.session.userID,
         dateCreated: currentDate[0]
     }
-
+    let insertId = null
+    let uploads = [...request.body.spotimages]
     await databaseMethods.addOne("spots", data)
     .then(res => {
-        return databaseMethods.getOne("spots", {_id: res.insertedId})
+        insertId = res.insertedId
+        for (let x = 0; x < request.body.spotimages.length; x++) {
+            uploads[x]["spotId"] = res.insertedId
+        }
+        console.log(uploads)
+        return databaseMethods.addMultiple("spotimages", uploads)
     })
-    .then(spot => {
-        response.json({status: "SUCCESS", message: "New spot added", newSpot: spot._id})
+    .then(res => {
+        return databaseMethods.getOne("spots", {_id: insertId})
+    })
+    .then(res => {
+        response.json({status: "SUCCESS", message: "New spot added", newSpot: res._id})
     })
     .catch(error => {
         console.log(error)
@@ -152,7 +161,7 @@ app.get('/getSpot', async (request, response) => {
             if(res !== null) {
                 response.json({status: "SUCCESS", message: "Reference received", spot: res})
             } else {
-                response.json({status: "ERROR", message: "Spot not found", spot: res})
+                response.json({status: "ERROR", message: "Spot not found"})
             }
         })
         .catch(error => {
@@ -162,6 +171,21 @@ app.get('/getSpot', async (request, response) => {
     } catch(error) {
         response.json({status: "ERROR", message: "Invalid reference"})
     }
+})
+
+app.post("/getSpotImages", async (request, response) => {
+    let spotId = ObjectId.createFromHexString(request.body.spotId)
+    let query = {
+        spotId: spotId
+    }
+    if (request.body.action === "first") query["position"] = 0
+    await databaseMethods.getMany("spotimages", query)
+    .then(res => {
+        response.json({status: "SUCCESS", message: "Loaded Spot Images", images: res})
+    })
+    .catch(error => {
+        response.json({status: "ERROR", message: "Error loading spot images"})
+    })
 })
 
 app.post('/updateComment', async (request, response) => {
@@ -301,8 +325,9 @@ app.post('/updateLiked', async (request, response) => {
         }
         await Promise.allSettled(likePromise)
         .then(res => {
-            console.log(res)
+            // console.log(res)
             if (request.body.isLiked === "false") {
+                console.log("add like")
                 return response.json({status: "SUCCESS", message: "Like Updated", isLiked: true, likeRef: res[0].value.insertedId.toString()})
             }
             console.log("delete like")

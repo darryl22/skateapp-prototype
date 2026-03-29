@@ -18,7 +18,9 @@
     <!-- for the search bar -->
     <script id="search-js" defer src="https://api.mapbox.com/search-js/v1.1.0/web.js"></script>
     <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css" type="text/css">
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <!-- <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script> -->
+
+    <script src="https://cdn.jsdelivr.net/gh/WangYuLue/image-conversion/build/conversion.js"></script>
     <title>Skatespot App</title>
     <link rel="stylesheet" href="/index.css">
     <style>
@@ -45,64 +47,10 @@
     <%- include('templates/nav.ejs') %>
     <%- include('templates/alert.ejs') %>
     <%- include('templates/theme.ejs') %>
-    <div class="map-inner-sidebar-content" id="menuContent">
-        <!-- <img src="./logos/closelight.png" alt="close menu" class="close-menu" onclick="hideMenu()"> -->
-        <div class="addspot-div" id="addSpotDiv">
-            <img src="./logos/closelight.png" alt="close menu" class="close-menu2 image-invert" onclick="hideMenu()">
-            <button class="add-spot-button" id="addNewSpotButton">Add new spot</button>
-            <div id="spotInformation" style="margin-top: 2em;">
-                <p>Filters</p>
-                <div>
-                    <div class="map-filters">
-                        <div style="display: flex; flex-direction: column;">
-                            <label for="typeFilter">Spot type</label>
-                            <select name="typefilter" id="typeFilter" style="padding: 0.3em; margin-top: 0.5em; border: 1px solid gray; border-radius: 4px;" onchange="handleSpotFilters()">
-                                <option value="" selected disabled>select</option>
-                                <option value="all">all</option>
-                                <option value="ledge">ledge</option>
-                                <option value="rail">rail</option>
-                                <option value="stairs">stairs</option>
-                                <option value="park">park</option>
-                                <option value="other">other</option>
-                            </select>
-                        </div>
-                        <div style="display: flex; flex-direction: column;">
-                            <label for="sortByFilter">Sort By</label>
-                            <select name="sortBy" id="sortByFilter" style="padding: 0.3em; margin-top: 0.5em; border: 1px solid gray; border-radius: 4px;" onchange="handleSpotFilters()">
-                                <option value="" selected disabled>select</option>
-                                <option value="popular">Popularity</option>
-                                <option value="recent">most recent</option>
-                            </select>
-                        </div>
-                        
-                    </div>
-                    <div style="margin-bottom: 1em;">
-                        <input type="checkbox" name="yourFavouritesCheck" id="yourFavouritesCheck" onchange="handleSpotFilters()">
-                        <label for="yourFavouritesCheck">Your favourites</label>
-                    </div>
-                    <div>
-                        <input type="checkbox" name="savedSpotsCheck" id="savedSpotsCheck" onchange="handleSpotFilters()">
-                        <label for="savedSpotsCheck">Saved Spots</label>
-                    </div>
-                </div>
-                <p style="margin-top: 2em;">Results</p>
-                <div class="spots-list">
-                    <% for(var x = 0; x < spots.length; x++) { %>
-                    <div class="spot-list-item">
-                        <div class="spot-list-item-image" style="background-image: url('<%= spots[x].spotimages[0] %>');"></div>
-                        <div class="spot-list-item-details">
-                            <p><%= spots[x].description %></p>
-                        </div>
-                    </div>
-                    <% } %>
-                </div>
-            </div>
-        </div>
-    </div>
     <% for(var x = 0; x < spots.length; x++) { %>
-    <div class="spot-details-modal" id="spotDetailsModal<%= spots[x]._id  %>">
-        <div class="spot-details-modal-inner" id="spotDetailsInner<%= spots[x]._id  %>">
-            <img src="./logos/closelight.png" alt="close menu" class="close-menu2 image-invert" onclick="hideDetails('<%= spots[x]._id  %>')">
+    <div class="base-modal spot-details-modal" id="spotDetailsModal<%= spots[x]._id  %>" data-spotid="<%= spots[x]._id  %>">
+        <div class="base-modal-inner" id="spotDetailsInner<%= spots[x]._id  %>">
+            <img src="./logos/closelight.png" alt="close menu" class="close-menu2 image-invert close-modal" data-toggle-modal="spotDetailsModal<%= spots[x]._id  %>">
             <button class="add-comment" id="addCommentButton<%= spots[x]._id  %>">COMMENT</button>
             <form action="" class="add-comment-form" id="addCommentForm<%= spots[x]._id  %>">
                 <textarea name="commentInput" id="commentInput<%= spots[x]._id  %>" class="comment-input" rows="3" placeholder="Add comment" required></textarea>
@@ -113,14 +61,12 @@
                     <button class="cancel-comment-button" type="button" id="cancelComment<%= spots[x]._id  %>">CANCEL</button>
                 </div>
             </form>
-            <div class="spot-details-modal-content">
+            <div class="base-modal-content">
                 <div class="swiper" style="height: 60vh;">
-                    <div class="swiper-wrapper">
-                        <% for(var y = 0; y < spots[x].spotimages.length; y++) { %>
-                        <div class="swiper-slide">
-                            <div class="carousel-image" style="background-image: url('<%= spots[x].spotimages[y]  %>'); background-size: contain;"></div>
+                    <div class="swiper-wrapper" data-loaded="false">
+                        <div class="swiper-slide" style="display: flex; align-items: center; justify-content: center;">
+                            <img src="/logos/skateboardlight.png" alt="spinner" class="spinner">
                         </div>
-                        <% } %>
                     </div>
                     <div class="swiper-pagination"></div>
                     <div class="swiper-button-prev"></div>
@@ -203,9 +149,83 @@
     <% } %>
 
     <div class="map-outer-div">
-        <div class="map-inner-sidebar" onclick="showMenu()" id="optionsButton">
-            <!-- <img src="/logos/menu.png" alt="menulogo" class="menu-logo"> -->
-            <p style="margin: 0; color: black;">OPTIONS</p>
+        <button class="map-inner-sidebar modal-button" data-toggle-modal="menuContent">Options</button>
+        <div class="base-modal" id="menuContent">
+            <div class="base-modal-inner" id="addSpotDiv">
+                <img src="./logos/closelight.png" alt="close menu" class="close-menu2 image-invert close-modal" data-toggle-modal="menuContent">
+                <div id="spotInformation" style="margin-top: 2em;" class="base-modal-content">
+                    <button class="add-spot-button" id="addNewSpotButton">Add new spot</button>
+                    <p>Filters</p>
+                    <div>
+                        <div class="map-filters">
+                            <div style="display: flex; flex-direction: column;">
+                                <label for="typeFilter">Spot type</label>
+                                <select name="typefilter" id="typeFilter" style="padding: 0.3em; margin-top: 0.5em; border: 1px solid gray; border-radius: 4px;" onchange="handleSpotFilters()">
+                                    <option value="" selected disabled>select</option>
+                                    <option value="all">all</option>
+                                    <option value="ledge">ledge</option>
+                                    <option value="rail">rail</option>
+                                    <option value="stairs">stairs</option>
+                                    <option value="park">park</option>
+                                    <option value="other">other</option>
+                                </select>
+                            </div>
+                            <div style="display: flex; flex-direction: column;">
+                                <label for="sortByFilter">Sort By</label>
+                                <select name="sortBy" id="sortByFilter" style="padding: 0.3em; margin-top: 0.5em; border: 1px solid gray; border-radius: 4px;" onchange="handleSpotFilters()">
+                                    <option value="" selected disabled>select</option>
+                                    <option value="popular">Popularity</option>
+                                    <option value="recent">most recent</option>
+                                </select>
+                            </div>
+                            
+                        </div>
+                        <div style="margin-bottom: 1em;">
+                            <input type="checkbox" name="yourFavouritesCheck" id="yourFavouritesCheck" onchange="handleSpotFilters()">
+                            <label for="yourFavouritesCheck">Your favourites</label>
+                        </div>
+                        <div>
+                            <input type="checkbox" name="savedSpotsCheck" id="savedSpotsCheck" onchange="handleSpotFilters()">
+                            <label for="savedSpotsCheck">Saved Spots</label>
+                        </div>
+                    </div>
+                    <p style="margin-top: 2em;">Results</p>
+                    <div class="spots-list">
+                        <% if (spots.length === 0) {%>
+                            <p style="margin: 0;">No Data to show</p>    
+                        <%} %>
+                        <% for(var x = 0; x < spots.length; x++) { %>
+                        <div class="spot-list-item">
+                            <div class="spot-list-item-image" style="background-image: url('/images/carouselimage1.jpg');" id="spotListImage<%= spots[x]._id %>"></div>
+                            <div class="spot-list-item-details">
+                                <p><%= spots[x].description %></p>
+                                <div style="width: 100%;">
+                                    <div class="menu-interactions">
+                                        <div style="display: flex; gap: 5px">
+                                            <div style="display: flex; align-items: center; gap: 0.5em">
+                                                <img src="/logos/heart-unfilledlight.png" class="like-button likeButton<%= spots[x]._id %>" data-likeref="" data-isliked="" onclick="likeAction(this, '<%= spots[x]._id %>')"></img>
+                                                <p class="likes-count spotLikesCount-<%= spots[x]._id %>">0</p>
+                                            </div>
+                                            <div style="display: flex; align-items: center; gap: 0.5em">
+                                                <img src="/logos/comments-light.png" style="height: 2em;"></img>
+                                                <p>0</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                                        <button class='base-button modal-button' data-toggle-modal="spotDetailsModal<%= spots[x]._id %>">Details</button>
+                                        <div style="width: fit-content;">
+                                            <p style="font-size: 0.8em; margin: 0;">Type: <%= spots[x].spottype %></p>
+                                            <p style="font-size: 0.8em; margin: 0;">Uploaded by: <%= spots[x].createdBy %></p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <% } %>
+                    </div>
+                </div>
+            </div>
         </div>
         <div class="directions-detail-container" id="directionsDetails">
             <img src="/logos/closelight.png" style="height: 1em; cursor: pointer; float: right;" alt="" onclick="closeDirectionsDetails()">
@@ -225,8 +245,6 @@
                 <input type="hidden" value="0" name="longitude" id="longitude">
                 <input type="hidden" value="0" name="latitude" id="latitude">
                 <mapbox-search-box access-token="<%= mapboxtoken %>" proximity="0, 0" style="margin-bottom: 1em;"></mapbox-search-box>
-                <!-- <label for="serachArea">Search</label> -->
-                <!-- <input type="text" name="searchArea" id="searchArea"> -->
                 <label for="description" style="margin-bottom: 0.5em;">Description</label>
                 <textarea name="description" id="description" style="margin-bottom: 1em; height: 4em; border-radius: 5px; padding: 5px; background-color: rgba(0, 0, 0, 0); color: white;"></textarea>
 
@@ -247,6 +265,16 @@
 
                 <button class="spot-confirm">Confirm</button>
             </form>
+        </div>
+        <div class="base-modal" id="editUploadImages">
+            <div class="base-modal-inner">
+                <img src="./logos/closelight.png" alt="close menu" class="close-menu2 image-invert close-modal" data-toggle-modal="editUploadImages">
+                <div class="base-modal-content">
+                    <div class="edit-pictures-div" id="editUploadImagesDiv">
+                    </div>
+                    <button class="base-button" style="color: red; border: 1px solid red; margin-top: 1em;">Clear</button>
+                </div>
+            </div>
         </div>
     </div>
 </body>
@@ -284,86 +312,82 @@
         })
     }
 
-    function showMenu() {
-        let menuContent = document.getElementById("menuContent")
-        let addSpotDiv = document.getElementById("addSpotDiv")
-        addSpotDiv.style.transform = "translateY(0)"
-        // menuContent.style.display = "flex"
-        menuContent.style.opacity = "1"
-        menuContent.style.pointerEvents = "auto"
+    let currentOpenModal = null
+
+    function hideModal(id) {
+        let modalOuter = document.getElementById(`${id}`)
+        let modalInner = modalOuter.querySelectorAll(".base-modal-inner")[0]
+        modalOuter.style.opacity = "0"
+        modalOuter.style.pointerEvents = "none"
+        modalInner.style.transform = "translateY(-20px)"
+        currentOpenModal = null
+    }
+
+    async function showModal(id) {
+        let modalOuter = document.getElementById(`${id}`)
+        let modalInner = modalOuter.querySelectorAll(".base-modal-inner")[0]
+        modalOuter.style.opacity = "1"
+        modalOuter.style.pointerEvents = "auto"
+        modalInner.style.transform = "translateY(0)"
+        currentOpenModal = id
+        console.log("open modal")
         // popup.remove()
-    }
-
-    function hideMenu() {
-        let menuContent = document.getElementById("menuContent")
-        // menuContent.style.display = "none"
-        menuContent.style.opacity = "0"
-        menuContent.style.pointerEvents = "none"
-        addSpotDiv.style.transform = "translateY(-20%)"
-    }
-
-    let detailsIsOpen = false
-    let openDetailsId = null
-
-    function hideDetails(id) {
-        let spotDetailsModal = document.getElementById(`spotDetailsModal${id}`)
-        let spotDetailsInner = document.getElementById(`spotDetailsInner${id}`)
-        // spotDetailsModal.style.display = "none"
-        spotDetailsModal.style.opacity = "0"
-        spotDetailsInner.style.transform = "translateY(-20%)"
-        spotDetailsModal.style.pointerEvents = "none"
-        detailsIsOpen = false
-        openDetailsId = null
-        popup.remove()
-    }
-
-    async function showSpotDetails(id) {
-        let spotDetailsModal = document.getElementById(`spotDetailsModal${id}`)
-        let spotDetailsInner = document.getElementById(`spotDetailsInner${id}`)
-        // spotDetailsModal.style.display = "flex"
-        spotDetailsModal.style.opacity = "1"
-        spotDetailsInner.style.transform = "translateY(0)"
-        spotDetailsModal.style.pointerEvents = "auto"
-        // popup.remove()
-        detailsIsOpen = true
-        openDetailsId = id
-        let commentsLoaded = document.getElementById(`commentsDiv${id}`).getAttribute("data-loaded")
-        if (commentsLoaded === "false") {
-            await fetch(`/loadComments?spotId=${id}`, {
-                method: "GET"
-            })
-            .then(async res => {
-                let resData = await res.json()
-                console.log(resData)
-                if (resData.status === "SUCCESS") {
-                    loadComments(id, resData.comments)
-                    loadReplies(id, resData.replies)
-                    replyListeners(id)
-                    console.log("users in conversation", usersInConversation)
-                    await loadCommentsInfo(id)
-                    document.getElementById(`commentsDiv${id}`).setAttribute("data-loaded", "true")
-                } else if(resData.status === "ERROR") {
-                    addNewAlert(resData.status, resData.message)
-                }
-            })
-            .catch(error => {
-                console.log(error)
-            })
+        if (modalOuter.classList.contains("spot-details-modal")) {
+            let spotId = modalOuter.getAttribute("data-spotid")
+            let commentsLoaded = modalOuter.querySelectorAll(".comments-div")[0].getAttribute("data-loaded")
+            // let spotCarousel = modalOuter.querySelectorAll(".swiper-wrapper")[0]
+            // if (spotCarousel.getAttribute("data-loaded") === "false") {
+            //     loadSpotImages(spotId, "all")
+            // }
+            if (commentsLoaded === "false") {
+                await fetch(`/loadComments?spotId=${spotId}`, {
+                    method: "GET"
+                })
+                .then(async res => {
+                    let resData = await res.json()
+                    console.log(resData)
+                    if (resData.status === "SUCCESS") {
+                        loadComments(spotId, resData.comments)
+                        loadReplies(spotId, resData.replies)
+                        replyListeners(spotId)
+                        console.log("users in conversation", usersInConversation)
+                        await loadCommentsInfo(spotId)
+                        document.getElementById(`commentsDiv${spotId}`).setAttribute("data-loaded", "true")
+                    } else if(resData.status === "ERROR") {
+                        addNewAlert(resData.status, resData.message)
+                    }
+                })
+                .catch(error => {
+                    console.log(error)
+                })
+            }
         }
     }
+
+    document.querySelectorAll(".modal-button").forEach(elm => {
+        elm.addEventListener("click", function() {
+            console.log("open")
+            if(currentOpenModal !== null) {
+                hideModal(currentOpenModal)
+            }
+            let id = this.getAttribute("data-toggle-modal")
+            showModal(id)
+        })
+    })
+
+    document.querySelectorAll(".close-modal").forEach(elm => {
+        elm.addEventListener("click", function() {
+            let id = this.getAttribute("data-toggle-modal")
+            hideModal(id)
+        })
+    })
 
     document.addEventListener("click", function(e) {
-        let addSpotDiv = document.getElementById("addSpotDiv")
-        let optionsButton = document.getElementById("optionsButton")
-        let alertDiv = document.getElementById("alertDiv")
-        if (!addSpotDiv.contains(e.target) && !optionsButton.contains(e.target) && !alertDiv.contains(e.target)) {
-            hideMenu()
-        }
-        if (detailsIsOpen) {
-            let spotDetailsInner = document.getElementById(`spotDetailsInner${openDetailsId}`)
-            let spotDetailsButton = document.getElementById(`spotDetailsButton${openDetailsId}`)
-            if(!spotDetailsInner.contains(e.target) && !spotDetailsButton.contains(e.target) && !alertDiv.contains(e.target)){
-                hideDetails(openDetailsId)
+        if (currentOpenModal) {
+            let modal = document.getElementById(currentOpenModal).querySelectorAll(".base-modal-inner")[0]
+            let alertDiv = document.getElementById("alertDiv")
+            if (!modal.contains(e.target) && !e.target.classList.contains("modal-button") && !alertDiv.contains(e.target)) {
+                hideModal(currentOpenModal)
             }
         }
     })
@@ -398,27 +422,36 @@
 
     let likeActionController = null
     let pauseLike = false
-    async function likeAction(spotID) {
+    console.log("logged in user <%= isLoggedIn %>", )
+    async function likeAction(elm, spotID) {
+        console.log(elm)
         if (pauseLike) {
-            console.log("cancel like")
+            console.log("like hold")
             return
         }
         if (likeActionController) {
+            console.log("like abort")
             likeActionController.abort()
+        }
+        if ("<%= isLoggedIn %>" === "false") {
+            addNewAlert("ERROR", "<a href='/login'>Login</a> required for interactions")
+            return
         }
         pauseLike = true
         likeActionController = new AbortController()
         const likeActionSignal = likeActionController.signal
-        let likeButton = document.getElementById(`likeButton${spotID}`)
-        let isLiked = likeButton.getAttribute("data-isliked")
-        let likeRef = likeButton.getAttribute("data-likeref")
-        let likesCounter = document.getElementById(`spotLikesCount-${spotID}`)
+        // let likeButton = this.getElementById(`likeButton${spotID}`)
+        let isLiked = elm.getAttribute("data-isliked")
+        let likeRef = elm.getAttribute("data-likeref")
+        let likesCounter = document.querySelectorAll(`.spotLikesCount-${spotID}`)
         if (isLiked === "true" && likeRef === "None") {
             console.log("cancel like")
             return
         }
         let src = isLiked === "true" ? '/logos/heart-unfilledlight.png' : '/logos/heart-filledlight.png'
-        likeButton.setAttribute("src", src)
+        // elm.setAttribute("src", src)
+        document.querySelectorAll(`.likeButton${spotID}`).forEach(item => {item.setAttribute("src", src)})
+        let currentData = spotDetailsMap.get(`spot-${spotID}`)
         await fetch("/updateLiked", {
             method: "POST",
             headers: {"Content-Type": "application/json"},
@@ -433,11 +466,20 @@
             let resData = await res.json()
             pauseLike = false
             if (resData.status === "SUCCESS") {
-                src = resData.isLiked ? '/logos/heart-filledlight.png' : '/logos/heart-unfilledlight.png'
-                likeButton.setAttribute("data-isliked", resData.isLiked)
-                likeButton.setAttribute("data-likeref", resData.likeRef)
-                let likesCount = parseInt(likesCounter.innerText)
-                likesCounter.innerText = resData.isLiked ? `${++likesCount}` : `${--likesCount}`
+                // src = resData.isLiked ? '/logos/heart-filledlight.png' : '/logos/heart-unfilledlight.png'
+                document.querySelectorAll(`.likeButton${spotID}`).forEach(item => {
+                    item.setAttribute("data-isliked", resData.isLiked)
+                    item.setAttribute("data-likeref", resData.likeRef)
+                })
+                let likesCount = parseInt(likesCounter[0].innerText)
+                let newLikesCount = resData.isLiked ? `${++likesCount}` : `${--likesCount}`
+                likesCounter.forEach(item => item.innerText = newLikesCount)
+                spotDetailsMap.set(`spot-${spotID}`, {
+                    ...currentData,
+                    likeRef: resData.likeRef,
+                    likesCount: newLikesCount,
+                    isLiked: resData.isLiked,
+                })
             }
         })
         .catch(error => {
@@ -590,6 +632,7 @@
 
     //function to load usernames and profile pictures
     async function loadCommentsInfo(spotId) {
+        console.log("loading comments info")
         await fetch("/commentUserInfo", {
             method: "POST",
             headers: {"Content-Type": "application/json"},
@@ -599,7 +642,6 @@
         })
         .then(async res => {
             let resData = await res.json()
-            console.log(resData)
             if (resData.status === "SUCCESS") {
                 resData.data.forEach(item => {
                     document.getElementById(`commentsDiv${spotId}`).querySelectorAll(`.change-comment-image-${item.id}`).forEach(elm => {
@@ -617,62 +659,48 @@
         })
     }
 
-    let tempLikesList = likesList
-    let spotPoints = spotsData.map((item, index) => {
-        let temp = []
-        let isLiked = false
-        let likeRef = "None"
-        let LikesCount = 0
-        // console.log("likes list size", tempLikesList.length, likesList.length)
-        tempLikesList.forEach(likeItem => {
-            if (likeItem.likeUser === loggedInUserID) {
-                isLiked = true
-                likeRef = likeItem._id
-            }
-
-            if (likeItem.spotId === item._id) {
-                LikesCount++
-            } else {
-                temp.push(likeItem)
+    async function loadSpotImages(spotId, action) {
+        console.log("loading images")
+        await fetch("/getSpotImages", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                spotId: spotId,
+                action: action
+            })
+        })
+        .then(async res => {
+            let resData = await res.json()
+            if (resData.status === "SUCCESS") {
+                let modalCarousel = document.getElementById(`spotDetailsModal${spotId}`).querySelectorAll(".swiper-wrapper")[0]
+                let spotPopupImage = document.getElementById(`spotPopupImage${spotId}`)
+                let spotListImage = document.getElementById(`spotListImage${spotId}`)
+                let currentData = spotDetailsMap.get(`spot-${spotId}`)
+                spotDetailsMap.set(`spot-${spotId}`, {
+                    ...currentData,
+                    imageUrl: resData.images[0].imageUrl
+                })
+                if (spotPopupImage) spotPopupImage.setAttribute("src", resData.images[0].imageUrl)
+                spotListImage.style.backgroundImage = `url("${resData.images[0].imageUrl}")`
+                let images = ""
+                resData.images.forEach(item => {
+                    let swiperSlide = `<div class="swiper-slide">
+                        <div class="carousel-image" style="background-image: url('${item.imageUrl}'); background-size: contain;"></div>
+                    </div>`
+                    images = images + swiperSlide
+                })
+                modalCarousel.replaceChildren()
+                modalCarousel.insertAdjacentHTML("beforeend", images)
+                modalCarousel.setAttribute("data-loaded", "true")
             }
         })
-        tempLikesList = temp
-        return {
-            type: 'Feature',
-            properties: {
-                description:
-                `<div>
-                    <img class="spot-details-image" src="${item.spotimages[0]}"></img>
-                    <div style="padding: 1em;" class="popup-details">
-                        <p style="font-weight: bold; font-size: 1em; margin-bottom: 0px; margin-top: 0em; color: gray;">Type: ${item.spottype}</p>
-                        <p style="font-size: 1.3em; margin-top: 0.5em; margin-bottom: 0.5em;">${item.description}</p>
-                        <p style="font-size: 1.3em; color: var(--lightblue); margin: 0;">Uploaded by: ${item.createdBy}</p>
-                        <div class="popup-interactions">
-                            <div style="display: flex; gap: 5px">
-                                <div style="display: flex; align-items: center; gap: 0.5em">
-                                    <img src="${isLiked === true ? '/logos/heart-filledlight.png' : '/logos/heart-unfilledlight.png'}" class="like-button" id="likeButton${item._id}" data-likeref="${likeRef}" data-isliked="${isLiked === true ? 'true' : 'false'}" onclick="likeAction('${item._id}')"></img>
-                                    <p class="likes-count" id="spotLikesCount-${item._id}">${LikesCount}</p>
-                                </div>
-                                <div style="display: flex; align-items: center; gap: 0.5em">
-                                    <img src="/logos/comments-light.png" style="height: 2em;"></img>
-                                    <p>0</p>
-                                </div>
-                            </div>
-                            <button class='spot-details-button' id="spotDetailsButton${item._id}" onclick="showSpotDetails('${item._id}')">Details</button>
-                        </div>    
-                    </div>
-                </div>`
-            },
-            geometry: {
-                type: 'Point',
-                coordinates: [item.longitude, item.latitude]
-            },
-            spotID: item._id,
-            spotType: item.spottype
-        }
-    })
+        .catch(error => {
+            console.log(error)
+        })
+    }
 
-    // console.log('spot points', spotPoints)
+    let tempLikesList = likesList
+    let spotDetailsMap = new Map()
     let spotCategories = {
         ledge: [],
         rail: [],
@@ -680,43 +708,133 @@
         park: [],
         other: [],
     }
+    let spotPoints = spotsData.map((item, index) => {
+        let temp = []
+        let isLiked = false
+        let likeRef = "None"
+        let likesCount = 0
+        console.log("likes list size", tempLikesList.length, likesList.length)
+        tempLikesList.forEach(likeItem => {
+            if (likeItem.spotId === item._id) {
+                likesCount++
+                if (likeItem.likeUser === loggedInUserID) {
+                    isLiked = true
+                    likeRef = likeItem._id
+                }
+            } else {
+                temp.push(likeItem)
+            }
+        })
+        tempLikesList = temp
+        document.querySelectorAll(`.spotLikesCount-${item._id}`).forEach(item => item.innerHTML = likesCount)
+        document.querySelectorAll(`.likeButton${item._id}`).forEach(item => {
+            let src = isLiked ? '/logos/heart-filledlight.png' : '/logos/heart-unfilledlight.png'
+            item.setAttribute("src", src)
+            item.setAttribute("data-isliked", isLiked)
+            item.setAttribute("data-likeref", likeRef)
+        })
+        spotDetailsMap.set(`spot-${item._id}`, {
+            isLiked: isLiked,
+            imageUrl: "/images/loading.png",
+            likesCount: likesCount,
+            description: item.description,
+            index: index,
+            likeRef: likeRef,
+            createdBy: item.createdBy,
+            spotType: item.spottype
+        })
+        spotCategories[`${item.spottype}`].push({
+            type: 'Feature',
+            properties: {
+                spotId: item._id,
+                spotType: item.spottype
+            },
+            geometry: {
+                type: 'Point',
+                coordinates: [item.longitude, item.latitude]
+            },
+            spotID: item._id,
+            spotType: item.spottype
+        })
+        // return {
+        //     type: 'Feature',
+        //     properties: {
+        //         spotId: item._id,
+        //         spotType: item.spottype
+        //     },
+        //     geometry: {
+        //         type: 'Point',
+        //         coordinates: [item.longitude, item.latitude]
+        //     },
+        //     spotID: item._id,
+        //     spotType: item.spottype
+        // }
+    })
+
+    console.log('spot points', spotCategories)
+
+    function setPopupHtml(spotId) {
+        let currentData = spotDetailsMap.get(`spot-${spotId}`)
+        let desc = `<div id="spotPopupDiv${spotId}" data-index="${currentData.index}">
+            <img class="spot-details-image" src="${currentData.imageUrl}" id="spotPopupImage${spotId}">
+            <div style="padding: 1em;" class="popup-details">
+                <p style="font-weight: bold; font-size: 1em; margin-bottom: 0px; margin-top: 0em;">Type: ${currentData.spotType}</p>
+                <p style="font-size: 1.3em; margin: 0;">Uploaded by: ${currentData.createdBy}</p>
+                <div class="popup-interactions">
+                    <div style="display: flex; gap: 5px">
+                        <div style="display: flex; align-items: center; gap: 0.5em">
+                            <img src="${currentData.isLiked === true ? '/logos/heart-filledlight.png' : '/logos/heart-unfilledlight.png'}" class="like-button likeButton${spotId}" data-likeref="${currentData.likeRef}" data-isliked="${currentData.isLiked === true ? 'true' : 'false'}" onclick="likeAction(this, '${spotId}')"></img>
+                            <p class="likes-count spotLikesCount-${spotId}">${currentData.likesCount}</p>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5em">
+                            <img src="/logos/comments-light.png" style="height: 2em;"></img>
+                            <p>0</p>
+                        </div>
+                    </div>
+                    <button class='spot-details-button modal-button' data-toggle-modal="spotDetailsModal${spotId}" onclick="showModal('spotDetailsModal${spotId}')">Details</button>
+                </div>
+            </div>
+        </div>`
+        return desc
+    }
     async function getOneSpot(paramName) {
         let searchParams = new URLSearchParams(window.location.search)
         if (searchParams.has(paramName)) {
-            let spotID = searchParams.get(paramName)
-            let spotResult = await fetch(`/getSpot?spotID=${spotID}`)
-            let spotData = await spotResult.json()
-            if(spotData.spot) {
-                map.easeTo({
-                    center: [spotData.spot.longitude, (spotData.spot.latitude - 0.023)],
-                    zoom: 13,
-                    duration: 500
-                })
-                for (x of spotPoints) {
-                    if (x.spotID === spotID) {
-                        popup.setLngLat([spotData.spot.longitude, spotData.spot.latitude]).setHTML(x.properties.description).addTo(map);
-                        
-                    }
+            let spotId = searchParams.get(paramName)
+            await fetch(`/getSpot?spotID=${spotId}`)
+            .then(async res => {
+                let spotData = await res.json()
+                if(spotData.status === "SUCCESS") {
+                    let description = setPopupHtml(spotId)
+                    popup.setLngLat([spotData.spot.longitude, spotData.spot.latitude]).setHTML(description).addTo(map);
+                    map.easeTo({
+                        center: [spotData.spot.longitude, (spotData.spot.latitude - 0.023)],
+                        zoom: 13,
+                        duration: 500
+                    })
+                } else {
+                    addNewAlert(spotData.status, spotData.message)
                 }
-            } else {
-                addNewAlert(spotData.status, spotData.message)
-            }
+            })
+            .catch(error => {
+                console.log(error)
+            })
         }
     }
 
-    for (x of spotPoints) {
-        if (x.spotType === "ledge") {
-            spotCategories.ledge.push(x)
-        } else if (x.spotType === "rail") {
-            spotCategories.rail.push(x)
-        } else if (x.spotType === "stairs") {
-            spotCategories.stairs.push(x)
-        } else if (x.spotType === "park") {
-            spotCategories.park.push(x)
-        } else {
-            spotCategories.other.push(x)
-        }
-    }
+    // for (x of spotPoints) {
+    //     if (x.spotType === "ledge") {
+    //         spotCategories.ledge.push(x)
+    //     } else if (x.spotType === "rail") {
+    //         spotCategories.rail.push(x)
+    //     } else if (x.spotType === "stairs") {
+    //         spotCategories.stairs.push(x)
+    //     } else if (x.spotType === "park") {
+    //         spotCategories.park.push(x)
+    //     } else {
+    //         spotCategories.other.push(x)
+    //     }
+    // }
 
     let categoryEntries = Object.entries(spotCategories)
     console.log(categoryEntries)
@@ -729,57 +847,30 @@
             let pointColor = ""
             if (categoryEntries[x][0] === "stairs") {
                 pointColor = "green"
-                map.loadImage("/logos/stairs.png", (error, image) => {
-                    if (error) throw error
-                    map.addImage("stairsImage", image)
-                })
             } else if (categoryEntries[x][0] === "rail") {
                 pointColor = "blue"
-                map.loadImage("/logos/rail.png", (error, image) => {
-                    if (error) throw error
-                    map.addImage("railImage", image)
-                })
             } else if (categoryEntries[x][0] === "park") {
                 pointColor = "purple"
-                map.loadImage("/logos/park.png", (error, image) => {
-                    if (error) throw error
-                    map.addImage("parkImage", image)
-                })
             } else if (categoryEntries[x][0] === "ledge") {
                 pointColor = "red"
-                map.loadImage("/logos/ledge.png", (error, image) => {
-                    if (error) throw error
-                    map.addImage("ledgeImage", image)
-                })
             } else {
                 pointColor = "gray"
-                map.loadImage("/logos/star.png", (error, image) => {
-                    if (error) throw error
-                    map.addImage("otherImage", image)
-                })
             }
             map.addSource(`spotsSource${categoryEntries[x][0]}`, {
                 'type': 'geojson',
                 'data': {
                     'type': 'FeatureCollection',
                     'features': categoryEntries[x][1]
-                }
+                },
+                // 'dynamic': true
             })
 
             map.addLayer({
                 'id': `spotsLayer${categoryEntries[x][0]}`,
-                // 'type': 'symbol',
                 'type': 'circle',
                 'source': `spotsSource${categoryEntries[x][0]}`,
-                // 'layout': {
-                //     'icon-image': `${categoryEntries[x][0]}Image`,
-                //     // 'icon-image': 'heart',
-                //     'icon-size': 0.05,
-                //     'icon-allow-overlap': true
-                // },
                 'paint': {
                     'circle-color': pointColor,
-                    // 'circle-color': categoryEntries[x][0] === "stairs" ? '#021526' : "red",
                     'circle-radius': 8,
                     'circle-stroke-width': 2,
                     'circle-stroke-color': '#ffffff'
@@ -788,16 +879,23 @@
 
             map.on("click", `spotsLayer${categoryEntries[x][0]}`, (e) => {
                 map.getCanvas().style.cursor = "pointer"
+                // console.log(e.features[0].properties)
                 const coordinates = e.features[0].geometry.coordinates.slice()
-                const description = e.features[0].properties.description
+                const spotId = e.features[0].properties.spotId
+                const spotType = e.features[0].properties.spotType
+                // const description = popupHtmlList[`spot-${spotId}`]
+                let currentData = spotDetailsMap.get(`spot-${spotId}`)
+                let description = setPopupHtml(spotId)
                 popup.setLngLat(coordinates).setHTML(description).addTo(map);
+                let spotCarousel = document.getElementById(`spotDetailsModal${spotId}`).querySelectorAll(".swiper-wrapper")[0]
+                if (spotCarousel.getAttribute("data-loaded") === "false") {
+                    loadSpotImages(spotId, "all")
+                }
                 map.easeTo({
                     center: [coordinates[0], (coordinates[1] - 0.023)],
                     zoom: 13,
                     duration: 500
                 })
-                // let getLayer = map.getLayer(`spotsLayer${categoryEntries[x][0]}`, 'id')
-                // console.log("Layer property", getLayer)
             })
             map.on("mouseover", `spotsLayer${categoryEntries[x][0]}`, e => {
                 map.getCanvas().style.cursor = "pointer"
@@ -864,7 +962,9 @@
                         map.getSource("route").setData(json.routes[0].geometry)
                         console.log(json.routes[0].distance)
                         document.getElementById("directionsDistance").innerText = parseInt(json.routes[0].distance)
-                        hideDetails(id)
+                        // hideDetails(id)
+                        popup.remove()
+                        hideModal(currentOpenModal)
                     } else {
                         map.addLayer({
                             id: 'route',
@@ -887,7 +987,8 @@
                                 'line-opacity': 1
                             }
                         })
-                        hideDetails(id)
+                        popup.remove()
+                        hideModal(currentOpenModal)
                         map.easeTo({
                             center: [position.coords.longitude, position.coords.latitude],
                             zoom: 13
@@ -928,58 +1029,13 @@
                 map.setLayoutProperty(`spotsLayer${x[0]}`, "visibility", "none")
             }
         }
-        hideMenu()
+        // hideMenu()
+        hideModal(currentOpenModal)
         // map.easeTo({
         //     center: [36.8219, -1.2921],
         //     zoom: 10
         // })
     }
-
-    const addSpotMarker = new mapboxgl.Marker({color: "red", draggable: true})
-    // addSpotMarker.setRotation(45)
-    let markerCoordinates = []
-    let longitude = document.getElementById("longitude")
-    let latitude = document.getElementById("latitude")
-    addSpotMarker.on('dragend', function(e) {
-        let lngLat = e.target.getLngLat()
-        markerCoordinates = [lngLat.lng, lngLat.lat]
-        longitude.value = lngLat.lng
-        latitude.value = lngLat.lat
-        console.log(markerCoordinates)
-    })
-
-    const addNewSpotButton = document.getElementById("addNewSpotButton")
-    const cancelNewSpotButton = document.getElementById("cancelNewSpotButton")
-    const addSpotForm = document.getElementById("addSpotForm")
-    const spotInformation = document.getElementById("spotInformation")
-
-    addNewSpotButton.addEventListener('click', function() {
-        hideMenu()
-        addSpotForm.style.display = "block"
-        // spotInformation.style.display = "none"
-        // addNewSpotButton.style.display = "none"
-
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(function (position) {
-                console.log(position.coords.latitude, position.coords.longitude, position)
-                markerCoordinates = [position.coords.longitude, position.coords.latitude]
-                longitude.value = position.coords.longitude
-                latitude.value = position.coords.latitude
-                map.easeTo({
-                    center: [position.coords.longitude, position.coords.latitude],
-                    zoom: 13
-                })
-                addSpotMarker.setLngLat([position.coords.longitude, position.coords.latitude]).addTo(map)
-            }, function() {
-                addNewAlert("ERROR", "Could not get current position, manually drag red marker to spot.")
-                map.easeTo({
-                    center: [36.8219, -1.2921],
-                    zoom: 13
-                })
-                addSpotMarker.setLngLat([36.8219, -1.2921]).addTo(map)
-            })
-        }
-    })
 
     const searchResult = document.getElementById("search-js")
     searchResult.onload = function () {
@@ -1004,6 +1060,53 @@
         })
     }
 
+    const addSpotMarker = new mapboxgl.Marker({color: "red", draggable: true})
+    // addSpotMarker.setRotation(45)
+    let markerCoordinates = []
+    let longitude = document.getElementById("longitude")
+    let latitude = document.getElementById("latitude")
+    addSpotMarker.on('dragend', function(e) {
+        let lngLat = e.target.getLngLat()
+        markerCoordinates = [lngLat.lng, lngLat.lat]
+        longitude.value = lngLat.lng
+        latitude.value = lngLat.lat
+        console.log(markerCoordinates)
+    })
+
+    const addNewSpotButton = document.getElementById("addNewSpotButton")
+    const cancelNewSpotButton = document.getElementById("cancelNewSpotButton")
+    const addSpotForm = document.getElementById("addSpotForm")
+    const spotInformation = document.getElementById("spotInformation")
+
+    addNewSpotButton.addEventListener('click', function() {
+        // hideMenu()
+        hideModal(currentOpenModal)
+        addSpotForm.style.display = "block"
+        // spotInformation.style.display = "none"
+        // addNewSpotButton.style.display = "none"
+
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function (position) {
+                console.log(position.coords.latitude, position.coords.longitude, position)
+                markerCoordinates = [position.coords.longitude, position.coords.latitude]
+                longitude.value = position.coords.longitude
+                latitude.value = position.coords.latitude
+                map.easeTo({
+                    center: [position.coords.longitude, position.coords.latitude],
+                    zoom: 13
+                })
+                addSpotMarker.setLngLat([position.coords.longitude, position.coords.latitude]).addTo(map)
+            }, function() {
+                addNewAlert("ERROR", "Could not get current user position, drag red marker to spot location.")
+                map.easeTo({
+                    center: [36.8219, -1.2921],
+                    zoom: 13
+                })
+                addSpotMarker.setLngLat([36.8219, -1.2921]).addTo(map)
+            })
+        }
+    })
+
     cancelNewSpotButton.addEventListener('click', function() {
         addSpotForm.style.display = "none"
         addSpotMarker.remove()
@@ -1020,98 +1123,106 @@
             reader.onload = () => resolve(reader.result)
             reader.onerror = reject
             reader.readAsDataURL(img)
+            // reader.readAsArrayBuffer(img)
+            // reader.readAsText(img)
         })
     }
 
-    $(document).ready(() => {
-        $("#searchArea").on("input", function() {
-            let searchText = $("#searchArea").val()
-            let token = "<%= mapboxtoken %>"
-            console.log($("#searchArea").val())
-            $.ajax({
-                method: "get",
-                url: `https://api.mapbox.com/search/searchbox/v1/suggest?q=${searchText}&access_token=${token}&session_token=XQRVteWe`,
-                data: {},
-                success: function(res) {
-                    console.log(res)
-                },
-                error: function(err) {
-                    console.log(err)
-                }
+    let editUploadImagesDiv = document.getElementById("editUploadImagesDiv")
+    function clearSelections(id) {
+        let editPicturesDiv = document.getElementById(`editPicturesDiv-${id}`)
+        document.getElementById(`confirmEditImagesButton-${id}`).classList.add("hidden")
+        editPicturesDiv.querySelectorAll(".edit-pictures-item").forEach(elm => {
+            let check = elm.querySelectorAll(".edit-pictures-check")[0]
+            check.classList.add("hide-check")
+            selectedImages[`spot-${id}`].imageList.forEach(elm => {
+                elm.isSelected = false
             })
         })
-        $('#spotImages').on('change', function() {
-            let images = document.getElementById("spotImages")
-            let totalSize = 0
-            for (let x = 0; x < images.files.length; x++) {
-                totalSize = totalSize + images.files[x].size
-            }
-            let sizeInMB = totalSize / 1000000
-            if (sizeInMB > 10) {
-                $('#fileSizeSpan').css("color", "red")
-            } else {
-                $('#fileSizeSpan').css("color", "green")
-            }
-            $('#fileSizeSpan').html(sizeInMB.toFixed(2))
-        })
-        $('#addSpotForm').submit(function(e) {
-            e.preventDefault()
-            let images = document.getElementById("spotImages")
-            let image64Promises = []
-            let totalSize = 0
-            for (let x = 0; x < images.files.length; x++) {
-                image64Promises.push(filesToBase64(images.files[x]))
-                totalSize = totalSize + images.files[x].size
-            }
-
-            let sizeInMB = totalSize / 1000000
-            if (sizeInMB > 10) {
-                addNewAlert("ERROR", "Files are too large")
-                return
-            }
-
-            $("#spinnerContainer").css("display", "block")
-            Promise.all(image64Promises)
-            .then(fileResults => {
-                let sendData = {
-                    description: $('#description').val(),
-                    spottype: $('#spottype').val(),
-                    lng: markerCoordinates[0],
-                    lat: markerCoordinates[1],
-                    spotimages: fileResults
-                }
-
-                $.ajax({
-                    method: "post",
-                    url: "/addspot",
-                    data: sendData,
-                    success: function(res) {
-                        $("#spinnerContainer").css("display", "none")
-                        addNewAlert(res.status, res.message)
-                        map.easeTo({
-                            center: [36.8219, -1.2921],
-                            zoom: 10
-                        })
-                        addSpotForm.style.display = "none"
-                        spotInformation.style.display = "block"
-                        cancelNewSpotButton.style.display = "none"
-                        addNewSpotButton.style.display = "block"
-                        addSpotMarker.remove()
-                        addSpotForm.style.display = "none"
-                        window.location.replace(`/map?spot=${res.newSpot}`)
-
-                    },
-                    error: function(error) {
-                        $("#spinnerContainer").css("display", "none")
-                        console.log("error on request", error)
-                    }
+    }
+    let spotImageList = []
+    let sizeInMB = 0
+    document.getElementById("spotImages").addEventListener("change", async function() {
+        let images = document.getElementById("spotImages")
+        let totalSize = 0
+        let imageNodesList = ''
+        for (let x = 0; x < images.files.length; x++) {
+            // console.log(images.files[x])
+            const compressedImage = await imageConversion.compressAccurately(images.files[x], 400)
+            await filesToBase64(compressedImage)
+            .then(res => {
+                console.log("compressedImage", compressedImage)
+                totalSize = totalSize + compressedImage.size
+                let imageNode = `<div class="edit-pictures-item" style="background-image: url('${res}');" data-picture-index="${x}">
+                    <div class="edit-pictures-check hide-check">
+                        <img src="/logos/checkLight.png" alt="" style="width: 80%;">
+                    </div>
+                    <div class="edit-check-circle"></div>
+                </div>`
+                imageNodesList = imageNodesList + imageNode
+                spotImageList.push({
+                    position: x,
+                    imageUrl: res,
                 })
             })
-            .catch(err => {
-                console.log(err)
+        }
+        console.log(spotImageList)
+        // this.value = null
+        // console.log(this.value)
+        sizeInMB = totalSize / 1048576
+        if (sizeInMB > 10) {
+            document.getElementById("fileSizeSpan").style.color = "red"
+        } else {
+            document.getElementById("fileSizeSpan").style.color = "green"
+            editUploadImagesDiv.replaceChildren()
+            editUploadImagesDiv.insertAdjacentHTML("beforeend", imageNodesList)
+            document.querySelectorAll(".edit-pictures-item").forEach(elm => {
+                elm.addEventListener("click", function() {
+                    let index = parseInt(elm.getAttribute("data-picture-index"))
+                    let check = elm.querySelectorAll(".edit-pictures-check")[0]
+                    check.classList.toggle("hide-check")
+                    console.log("toggled index", index)
+                })
+            })
+            showModal("editUploadImages")
+        }
+        document.getElementById("fileSizeSpan").innerText = sizeInMB.toFixed(2)
+    })
+
+    document.getElementById("addSpotForm").addEventListener("submit", async function(e) {
+        e.preventDefault()
+        if (sizeInMB > 10) {
+            addNewAlert("ERROR", "Files are too large")
+            return
+        }
+        if (spotImageList.length === 0) {
+            addNewAlert("ERROR", "No files selected")
+            return
+        }
+        document.getElementById("spinnerContainer").style.display = "block"
+        await fetch("/addspot", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                description: document.getElementById("description").value,
+                spottype: document.getElementById("spottype").value,
+                lng: markerCoordinates[0],
+                lat: markerCoordinates[1],
+                spotimages: spotImageList,
             })
         })
-
+        .then(async res => {
+            let resData = await res.json()
+            if (resData.status === "SUCCESS") {
+                window.location.replace(`/map?spot=${resData.newSpot}`)
+            } else if (resData.status === "ERROR") {
+                document.getElementById("spinnerContainer").style.display = "none"
+            }
+        })
+        .catch(error => {
+            console.log(error)
+            document.getElementById("spinnerContainer").style.display = "none"
+        })
     })
 </script>
 </html>
