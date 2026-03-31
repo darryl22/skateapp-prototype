@@ -55,6 +55,21 @@ class DatabaseMethods {
         }
     }
 
+    async getManySorted(col, object, sort) {
+        try{
+            if (object === undefined) {
+                object = {}
+            }
+            const database = client.db("skateapp")
+            const collection = database.collection(col)
+            const res = await collection.find(object).sort(sort).toArray()
+            return res
+        } catch (error) {
+            console.log(error)
+            return {}
+        }
+    }
+
     async makeUpdate(col, filter, update) {
         try{
             const database = client.db("skateapp")

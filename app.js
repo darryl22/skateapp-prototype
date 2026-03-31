@@ -124,7 +124,7 @@ app.post('/addspot', async (request, response) => {
         latitude: request.body.lat,
         createdAt: date,
         createdBy: request.session.username,
-        createdByID: request.session.userID,
+        createdByID: ObjectId.createFromHexString(request.session.userID),
         dateCreated: currentDate[0]
     }
     let insertId = null
@@ -134,6 +134,7 @@ app.post('/addspot', async (request, response) => {
         insertId = res.insertedId
         for (let x = 0; x < request.body.spotimages.length; x++) {
             uploads[x]["spotId"] = res.insertedId
+            uploads[x]["user"] = ObjectId.createFromHexString(request.session.userID)
         }
         console.log(uploads)
         return databaseMethods.addMultiple("spotimages", uploads)
@@ -175,11 +176,11 @@ app.get('/getSpot', async (request, response) => {
 
 app.post("/getSpotImages", async (request, response) => {
     let spotId = ObjectId.createFromHexString(request.body.spotId)
-    let query = {
-        spotId: spotId
-    }
-    if (request.body.action === "first") query["position"] = 0
-    await databaseMethods.getMany("spotimages", query)
+    let query = {spotId: spotId}
+    let sort = {}
+    if (request.body.action === "first") {query["position"] = 0}
+    if (request.body.action === "all") {sort["position"] = 1}
+    await databaseMethods.getManySorted("spotimages", query, sort)
     .then(res => {
         response.json({status: "SUCCESS", message: "Loaded Spot Images", images: res})
     })
@@ -313,8 +314,8 @@ app.post('/updateLiked', async (request, response) => {
 
         let likePromise = []
         let likeObject = {
-            spotId: request.body.ID,
-            likeUser: request.session.userID,
+            spotId: ObjectId.createFromHexString(request.body.ID),
+            likeUser: ObjectId.createFromHexString(request.session.userID),
             type: "spot"
         }
         if (request.body.isLiked === "false") {
@@ -444,8 +445,10 @@ app.post("/updateProfileInfo", async (request, response) => {
 })
 
 app.get('/getMyUploads', async (request, response) => {
+    // await Promise.all([databaseMethods.getMany("spots", {createdBy: request.session.username}), databaseMethods.getMany("spotimages", {user: ObjectId.createFromHexString(request.session.userID)})])
     await databaseMethods.getMany("spots", {createdBy: request.session.username})
     .then(res => {
+        // console.log(res[1].map(item => item.position))
         response.json({status: "SUCCESS", message: "spots retrieved", myUploads: res})
     })
     .catch(error => {
@@ -455,22 +458,22 @@ app.get('/getMyUploads', async (request, response) => {
 })
 
 app.get('/getLikedSpots', async (request, response) => {
-    await databaseMethods.getMany("likes", {likeUser: request.session.userID, type: "spot"})
+    let Id = ObjectId.createFromHexString(request.session.userID)
+    await databaseMethods.getMany("likes", {likeUser: Id, type: "spot"})
     .then(res => {
         let spotIdList = []
         for (let x = 0; x < res.length; x++) {
-            spotIdList.push(ObjectId.createFromHexString(res[x].spotId))
+            spotIdList.push(res[x].spotId)
         }
-        console.log(spotIdList)
+        // return Promise.all([databaseMethods.getMany("spots", {_id: {$in: spotIdList}})])
         return databaseMethods.getMany("spots", {_id: {$in: spotIdList}})
     })
     .then(res => {
-        console.log(res)
         response.json({status: "SUCCESS", message: "spots retrieved", myLikes: res})
     })
     .catch(error => {
         console.log(error)
-        response.json({status: "ERROR", message: "Could not retrieve uploads"})
+        response.json({status: "ERROR", message: "Could not retrieve likes"})
     })
 })
 

@@ -62,7 +62,7 @@
                 </div>
             </form>
             <div class="base-modal-content">
-                <div class="swiper" style="height: 60vh;">
+                <div class="swiper swiper<%= spots[x]._id  %>" style="height: 60vh;">
                     <div class="swiper-wrapper" data-loaded="false">
                         <div class="swiper-slide" style="display: flex; align-items: center; justify-content: center;">
                             <img src="/logos/skateboardlight.png" alt="spinner" class="spinner">
@@ -76,9 +76,7 @@
                 <p id="spotDetailsTitle"><%= spots[x].description  %></p>
                 <div style="height: 1px; background-color: gray; margin: 1em 0em;"></div>
                 <p id="loadingComments<%= spots[x]._id %>">Loading Comments...</p>
-                <div class="comments-div" id="commentsDiv<%= spots[x]._id %>" data-loaded="false">
-                    
-                </div>
+                <div class="comments-div" id="commentsDiv<%= spots[x]._id %>" data-loaded="false"></div>
             </div>
         </div>
     </div>
@@ -162,12 +160,12 @@
                                 <label for="typeFilter">Spot type</label>
                                 <select name="typefilter" id="typeFilter" style="padding: 0.3em; margin-top: 0.5em; border: 1px solid gray; border-radius: 4px;" onchange="handleSpotFilters()">
                                     <option value="" selected disabled>select</option>
-                                    <option value="all">all</option>
-                                    <option value="ledge">ledge</option>
-                                    <option value="rail">rail</option>
-                                    <option value="stairs">stairs</option>
-                                    <option value="park">park</option>
-                                    <option value="other">other</option>
+                                    <option value="all" style="color: black;">all (<span id="typeFilter-all">0</span>)</option>
+                                    <option value="ledge" style="color: red;">ledge (<span id="typeFilter-ledge">0</span>)</option>
+                                    <option value="rail" style="color: blue;">rail (<span id="typeFilter-rail">0</span>)</option>
+                                    <option value="stairs" style="color: green;">stairs (<span id="typeFilter-stairs">0</span>)</option>
+                                    <option value="park" style="color: purple;">park (<span id="typeFilter-park">0</span>)</option>
+                                    <option value="other" style="color: gray;">other (<span id="typeFilter-other">0</span>)</option>
                                 </select>
                             </div>
                             <div style="display: flex; flex-direction: column;">
@@ -195,7 +193,7 @@
                             <p style="margin: 0;">No Data to show</p>    
                         <%} %>
                         <% for(var x = 0; x < spots.length; x++) { %>
-                        <div class="spot-list-item">
+                        <div class="spot-list-item" data-index="<%= x %>" data-id="<%= spots[x]._id %>">
                             <div class="spot-list-item-image" style="background-image: url('/images/carouselimage1.jpg');" id="spotListImage<%= spots[x]._id %>"></div>
                             <div class="spot-list-item-details">
                                 <p><%= spots[x].description %></p>
@@ -281,21 +279,23 @@
 <div id="spot-container" data-object="<%= JSON.stringify(spots) %>"></div>
 <div id="likes-load-container" data-object="<%= JSON.stringify(likes) %>"></div>
 <script>
-    const swiper = new Swiper('.swiper', {
-        direction: 'horizontal',
-        // slidesPerView: 2,
-        loop: true,
-        pagination: {
-            el: '.swiper-pagination',
-        },
-        navigation: {
-            nextEl: '.swiper-button-next',
-            prevEl: '.swiper-button-prev',
-        },
-        scrollbar: {
-            el: '.swiper-scrollbar',
-        },
-    });
+    // const swiper = new Swiper('.swiper', {
+    //     direction: 'horizontal',
+    //     // slidesPerView: 2,
+    //     loop: true,
+    //     pagination: {
+    //         el: '.swiper-pagination',
+    //     },
+    //     navigation: {
+    //         nextEl: '.swiper-button-next',
+    //         prevEl: '.swiper-button-prev',
+    //     },
+    //     scrollbar: {
+    //         el: '.swiper-scrollbar',
+    //     },
+    // });
+    // const swiperF = document.querySelector('.swiper').swiper;
+    // let swiper = null
 
     let dataContainer = document.getElementById('spot-container');
     let likesListContainer = document.getElementById('likes-load-container')
@@ -303,6 +303,31 @@
     let likesList = JSON.parse(likesListContainer.getAttribute('data-object'))
     let loggedInUserID = "<%= userID %>"
     // let spotsData = JSON.parse('<%- JSON.stringify(spots)%>')
+    // let isvisible = null
+    let spotsListObserverContainer = document.getElementById("addSpotDiv")
+    let spotListItems = document.querySelectorAll(".spot-list-item")
+    const spotListCallback = (entries, observer) => {
+        entries.forEach(item => {
+            console.log(item.isIntersecting)
+            console.log(item.target.getAttribute("data-index"))
+            let spotId = item.target.getAttribute("data-id")
+            if(item.isIntersecting){
+                loadSpotImages(spotId, "all")
+                observer.unobserve(item.target)
+            }
+        })
+    }
+
+    let spotsListObserver = new IntersectionObserver(spotListCallback, {
+        root: spotsListObserverContainer,
+        threshold: 1,
+        // trackVisibility: true,
+        // delay: 100
+    })
+    spotListItems.forEach(item => {
+        spotsListObserver.observe(item)
+    })
+    // spotsListObserver.observe(spotListItems[0])
 
     async function getUser() {
         let userRes = await fetch('/getUser')
@@ -335,10 +360,6 @@
         if (modalOuter.classList.contains("spot-details-modal")) {
             let spotId = modalOuter.getAttribute("data-spotid")
             let commentsLoaded = modalOuter.querySelectorAll(".comments-div")[0].getAttribute("data-loaded")
-            // let spotCarousel = modalOuter.querySelectorAll(".swiper-wrapper")[0]
-            // if (spotCarousel.getAttribute("data-loaded") === "false") {
-            //     loadSpotImages(spotId, "all")
-            // }
             if (commentsLoaded === "false") {
                 await fetch(`/loadComments?spotId=${spotId}`, {
                     method: "GET"
@@ -661,6 +682,20 @@
 
     async function loadSpotImages(spotId, action) {
         console.log("loading images")
+        let currentData = spotDetailsMap.get(`spot-${spotId}`)
+        let modalCarousel = document.getElementById(`spotDetailsModal${spotId}`).querySelectorAll(".swiper-wrapper")[0]
+        if (modalCarousel.getAttribute("data-loaded") === "true") {
+            console.log("images loaded already")
+            return
+        }
+        if (currentData.isLoadingImages) {
+            console.log("currently loading images")
+            return
+        }
+        spotDetailsMap.set(`spot-${spotId}`, {
+            ...currentData,
+            isLoadingImages: true
+        })
         await fetch("/getSpotImages", {
             method: "POST",
             headers: {"Content-Type": "application/json"},
@@ -672,17 +707,17 @@
         .then(async res => {
             let resData = await res.json()
             if (resData.status === "SUCCESS") {
-                let modalCarousel = document.getElementById(`spotDetailsModal${spotId}`).querySelectorAll(".swiper-wrapper")[0]
                 let spotPopupImage = document.getElementById(`spotPopupImage${spotId}`)
                 let spotListImage = document.getElementById(`spotListImage${spotId}`)
-                let currentData = spotDetailsMap.get(`spot-${spotId}`)
                 spotDetailsMap.set(`spot-${spotId}`, {
                     ...currentData,
-                    imageUrl: resData.images[0].imageUrl
+                    imageUrl: resData.images[0].imageUrl,
+                    isLoadingImages: false
                 })
                 if (spotPopupImage) spotPopupImage.setAttribute("src", resData.images[0].imageUrl)
                 spotListImage.style.backgroundImage = `url("${resData.images[0].imageUrl}")`
                 let images = ""
+                console.log(resData.images)
                 resData.images.forEach(item => {
                     let swiperSlide = `<div class="swiper-slide">
                         <div class="carousel-image" style="background-image: url('${item.imageUrl}'); background-size: contain;"></div>
@@ -692,6 +727,22 @@
                 modalCarousel.replaceChildren()
                 modalCarousel.insertAdjacentHTML("beforeend", images)
                 modalCarousel.setAttribute("data-loaded", "true")
+                const swiper = new Swiper(`.swiper${spotId}`, {
+                    direction: 'horizontal',
+                    // slidesPerView: 2,
+                    loop: true,
+                    pagination: {
+                        el: '.swiper-pagination',
+                    },
+                    navigation: {
+                        nextEl: '.swiper-button-next',
+                        prevEl: '.swiper-button-prev',
+                    },
+                    scrollbar: {
+                        el: '.swiper-scrollbar',
+                    },
+                });
+                // console.log(swiper.slideNext('2000ms'))
             }
         })
         .catch(error => {
@@ -708,7 +759,7 @@
         park: [],
         other: [],
     }
-    let spotPoints = spotsData.map((item, index) => {
+    spotsData.forEach((item, index) => {
         let temp = []
         let isLiked = false
         let likeRef = "None"
@@ -741,7 +792,8 @@
             index: index,
             likeRef: likeRef,
             createdBy: item.createdBy,
-            spotType: item.spottype
+            spotType: item.spottype,
+            isLoadingImages: false
         })
         spotCategories[`${item.spottype}`].push({
             type: 'Feature',
@@ -822,20 +874,6 @@
         }
     }
 
-    // for (x of spotPoints) {
-    //     if (x.spotType === "ledge") {
-    //         spotCategories.ledge.push(x)
-    //     } else if (x.spotType === "rail") {
-    //         spotCategories.rail.push(x)
-    //     } else if (x.spotType === "stairs") {
-    //         spotCategories.stairs.push(x)
-    //     } else if (x.spotType === "park") {
-    //         spotCategories.park.push(x)
-    //     } else {
-    //         spotCategories.other.push(x)
-    //     }
-    // }
-
     let categoryEntries = Object.entries(spotCategories)
     console.log(categoryEntries)
 
@@ -847,14 +885,19 @@
             let pointColor = ""
             if (categoryEntries[x][0] === "stairs") {
                 pointColor = "green"
+                document.getElementById(`typeFilter-stairs`).innerText = categoryEntries[x][1].length
             } else if (categoryEntries[x][0] === "rail") {
                 pointColor = "blue"
+                document.getElementById(`typeFilter-rail`).innerText = categoryEntries[x][1].length
             } else if (categoryEntries[x][0] === "park") {
                 pointColor = "purple"
+                document.getElementById(`typeFilter-park`).innerText = categoryEntries[x][1].length
             } else if (categoryEntries[x][0] === "ledge") {
                 pointColor = "red"
+                document.getElementById(`typeFilter-ledge`).innerText = categoryEntries[x][1].length
             } else {
                 pointColor = "gray"
+                document.getElementById(`typeFilter-other`).innerText = categoryEntries[x][1].length
             }
             map.addSource(`spotsSource${categoryEntries[x][0]}`, {
                 'type': 'geojson',
@@ -904,6 +947,7 @@
                 map.getCanvas().style.cursor = '';
             });
         }
+        document.getElementById(`typeFilter-all`).innerText = spotsData.length
         getOneSpot('spot')
         for (let x = 0; x < spotsData.length; x++) {
             document.getElementById(`getDirections${spotsData[x]._id}`).addEventListener("click", function() {
@@ -1146,6 +1190,11 @@
         let images = document.getElementById("spotImages")
         let totalSize = 0
         let imageNodesList = ''
+        if (images.files.length > 10) {
+            addNewAlert("ERROR", "Up to 10 pictures can be uploaded")
+            this.value = null
+            return
+        }
         for (let x = 0; x < images.files.length; x++) {
             // console.log(images.files[x])
             const compressedImage = await imageConversion.compressAccurately(images.files[x], 400)

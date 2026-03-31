@@ -1044,7 +1044,7 @@ a{
     grid-template-columns: 1fr 1fr 1fr;
     gap: 1em;
     overflow-y: auto;
-    height: 90%;
+    /* height: 90%; */
     width: 100%;
     padding-right: 2em;
     padding-bottom: 2em;

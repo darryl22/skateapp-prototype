@@ -7,6 +7,7 @@
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"/>
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/WangYuLue/image-conversion/build/conversion.js"></script>
 
     <title>Skatespot App</title>
     <link rel="stylesheet" href="/index.css">
@@ -186,16 +187,20 @@
                 <div class="underline"></div>
                 <button class="base-button modal-button" style="margin-right: 1em;" data-toggle-modal="likedSpots">Liked spots</button>
                 <button class="base-button modal-button" data-toggle-modal="myUploads">My Uploads</button>
-                <div class="base-modal" id="likedSpots">
+                <div class="base-modal" id="likedSpots" data-likes-loaded="false">
                     <div class="base-modal-inner" id="likedSpotsInner">
                         <img src="./logos/closelight.png" alt="close menu" class="close-menu2 image-invert close-modal" data-toggle-modal="likedSpots">
-                        <div class="profile-spots-container" id="likedSpotsContainer"></div>
+                        <div class="base-modal-content" id="likesObserverContainer">
+                            <div class="profile-spots-container" id="likedSpotsContainer"></div>
+                        </div>
                     </div>
                 </div>
-                <div class="base-modal" id="myUploads">
+                <div class="base-modal" id="myUploads" data-uploads-loaded="false">
                     <div class="base-modal-inner" id="myUploadsInner">
                         <img src="./logos/closelight.png" alt="close menu" class="close-menu2 image-invert close-modal" data-toggle-modal="myUploads">
-                        <div class="profile-spots-container" id="myUploadsContainer"></div>
+                        <div class="base-modal-content" id="myUploadsObserverContainer">
+                            <div class="profile-spots-container" id="myUploadsContainer"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -246,6 +251,42 @@
         })
     }
 
+    let likesObserverContainer = document.getElementById("likesObserverContainer")
+    let myUploadsObserverContainer = document.getElementById("myUploadsObserverContainer")
+
+    const likesObserverCallback = (entries, observer) => {
+        entries.forEach(item => {
+            console.log(item.isIntersecting)
+            console.log(item.target.getAttribute("data-spotid"))
+            if (item.isIntersecting) {
+                observer.unobserve(item.target)
+                let spotId = item.target.getAttribute("data-spotid")
+                getLikesImages(spotId)
+            }
+        })
+    }
+
+    const myUploadsObserverCallback = (entries, observer) => {
+        entries.forEach(item => {
+            console.log(item.isIntersecting)
+            console.log(item.target.getAttribute("data-spotid"))
+            if (item.isIntersecting) {
+                observer.unobserve(item.target)
+                getUploadImages(item.target.getAttribute("data-spotid"))
+            }
+        })
+    }
+
+    const likesObserver = new IntersectionObserver(likesObserverCallback, {
+        root: likesObserverContainer,
+        threshold: 1
+    })
+
+    const myUploadsObserver = new IntersectionObserver(myUploadsObserverCallback, {
+        root: myUploadsObserverContainer,
+        threshold: 1
+    })
+
     let currentOpenModal = null
     let currentOpenModalID = null
     let eventController = null
@@ -259,13 +300,27 @@
         currentOpenModal = null
     }
 
-    function showModal(id) {
+    async function showModal(id) {
         let modalOuter = document.getElementById(`${id}`)
         let modalInner = modalOuter.querySelectorAll(".base-modal-inner")[0]
         modalOuter.style.opacity = "1"
         modalOuter.style.pointerEvents = "auto"
         modalInner.style.transform = "translateY(0)"
         currentOpenModal = id
+        if (modalOuter.hasAttribute("data-uploads-loaded")) {
+            if (modalOuter.getAttribute("data-uploads-loaded") === "false") {
+                console.log("Uploads loading")
+                modalOuter.setAttribute("data-uploads-loaded", "true")
+                retrieveUploads()
+            }
+        }
+        if (modalOuter.hasAttribute("data-likes-loaded")) {
+            if (modalOuter.getAttribute("data-likes-loaded") === "false") {
+                console.log("Likes Loading")
+                modalOuter.setAttribute("data-likes-loaded", "true")
+                retrieveLikes()
+            }
+        }
     }
 
     function hideEditImagesSection(id) {
@@ -387,7 +442,7 @@
                     if (resData.status === "SUCCESS") {
                         updateModalImages(id, resData.newImages)
                         updateModalListeners()
-                        document.getElementById(`frontImage-${id}`).style.backgroundImage = `url("${resData.newImages[0]}")`
+                        document.getElementById(`frontImageEdit-${id}`).style.backgroundImage = `url("${resData.newImages[0]}")`
                         addNewAlert(resData.status, resData.message)
                     } else {
                         addNewAlert(resData.status, resData.message)
@@ -407,8 +462,9 @@
                 let totalSize = 0
                 let imagesPromise = []
                 for (let x = 0; x < images.files.length; x++) {
-                    totalSize = totalSize + images.files[x].size
-                    imagesPromise.push(filesToBase64(images.files[x]))
+                    const compressedImage = await imageConversion.compressAccurately(images.files[x], 400)
+                    totalSize = totalSize + compressedImage.size
+                    imagesPromise.push(filesToBase64(compressedImage))
                 }
                 let sizeInMB = totalSize / 1000000
                 if (sizeInMB > 10) {
@@ -425,7 +481,8 @@
                         },
                         body: JSON.stringify({
                             imagesData: res,
-                            spotID: id
+                            spotID: id,
+                            action: "addnew"
                         })
                     })
 
@@ -513,6 +570,7 @@
             })
         })
     }
+    updateModalListeners()
 
     //close modal when clicked outside
     document.addEventListener("click", function(e) {
@@ -534,6 +592,7 @@
     })
 
     let selectedImages = {}
+    let imagesMap = new Map()
 
     function updateModalImages(id, images) {
         let editPicturesDiv = document.getElementById(`editPicturesDiv-${id}`)
@@ -546,7 +605,7 @@
         }
 
         for (let x = 0; x < images.length; x++) {
-            let image = `<div class="edit-pictures-item" style="background-image: url('${images[x]}');" data-picture-index="${x}" data-id="${id}">
+            let image = `<div class="edit-pictures-item" style="background-image: url('${images[x].imageUrl}');" data-picture-index="${x}" data-id="${id}" draggable="true">
                 <div class="edit-pictures-check hide-check">
                     <img src="/logos/checkLight.png" alt="" style="width: 80%;">
                 </div>
@@ -554,20 +613,44 @@
             </div>`
 
             let cNode = `<div class="swiper-slide">
-                <div class="carousel-image" style="background-image: url('${images[x]}'); background-size: contain;"></div>
+                <div class="carousel-image" style="background-image: url('${images[x].imageUrl}'); background-size: contain;"></div>
             </div>`
 
             imageNodes = imageNodes + image
             carouselNodes = carouselNodes + cNode
             selectedImages[`spot-${id}`].imageList.push({
                 isSelected: false,
+                position: images[x].position,
+                imageId: images[x]._id,
+                spotId: images[x].spotId
             })
         }
+
+        console.log("spot images are", selectedImages)
 
         editPicturesDiv.replaceChildren()
         editPicturesDiv.insertAdjacentHTML("beforeend",imageNodes)
         spotPicturesCarousel.replaceChildren()
         spotPicturesCarousel.insertAdjacentHTML("beforeend",carouselNodes)
+        const swiper = new Swiper(`.swiper${id}`, {
+            direction: 'horizontal',
+            loop: true,
+            pagination: {
+                el: '.swiper-pagination',
+            },
+            navigation: {
+                nextEl: '.swiper-button-next',
+                prevEl: '.swiper-button-prev',
+            },
+            scrollbar: {
+                el: '.swiper-scrollbar',
+            },
+            obsever: true,
+            observeParents: true
+        });
+        // swiper.appendSlide(`<div class="swiper-slide">
+        //     <div class="carousel-image" style="background-image: url('/images/loading.png'); background-size: contain;"></div>
+        // </div>`)
     }
 
     function clearSelections(id) {
@@ -595,14 +678,14 @@
                     myUploadsContainer.insertAdjacentHTML("beforeend", "<p>No Uploads, go to <a href='/map' style='color: purple;'>map</a> to create new</p>")
                 }
                 for (let x = 0; x < resData.myUploads.length; x++) {
-                    let elementNode = `<div class="profile-spot-item">
+                    let elementNode = `<div class="profile-spot-item uploads-front-banner" id="uploadsFrontBanner${resData.myUploads[x]._id}" data-spotid="${resData.myUploads[x]._id}">
                         <div class="profile-spot-item-info">
                             <div style="margin: 1em; display: flex; align-items: center; gap: 0.5em;">
                                 <a class="purple-button" href="/map?spot=${resData.myUploads[x]._id}" style="display: block;">View</a>
                                 <button class="purple-button modal-button" data-toggle-modal="editSpot${resData.myUploads[x]._id}">Edit</button>
                             </div>
                         </div>
-                        <div class="background-dark-filter" style="background-image: url('${resData.myUploads[x].spotimages[0]}');" id="frontImage-${resData.myUploads[x]._id}"></div>
+                        <div class="background-dark-filter" style="background-image: url('/images/loading.png');" id="frontImageEdit-${resData.myUploads[x]._id}"></div>
                     </div>`
 
                     let modalNode = `<div class="base-modal" id="editSpot${resData.myUploads[x]._id}">
@@ -611,7 +694,7 @@
                             <div class="edit-pictures-container">
                                 <div class="edit-pictures-div hidden" id="editPicturesDiv-${resData.myUploads[x]._id}"></div>
 
-                                <div class="swiper" style="height: 60vh;" id="spotPicturesCarousel-${resData.myUploads[x]._id}">
+                                <div class="swiper swiper${resData.myUploads[x]._id}" style="height: 60vh;" id="spotPicturesCarousel-${resData.myUploads[x]._id}">
                                     <div class="swiper-wrapper"></div>
                                     <div class="swiper-pagination"></div>
                                     <div class="swiper-button-prev"></div>
@@ -658,33 +741,38 @@
                     </div>`
                     myUploadsContainer.insertAdjacentHTML("beforeend", elementNode)
                     spotsContentDiv.insertAdjacentHTML("beforeend", modalNode)
-
-                    updateModalImages(resData.myUploads[x]._id, resData.myUploads[x].spotimages)
                 }
                 updateModalListeners()
-                const swiper = new Swiper('.swiper', {
-                    direction: 'horizontal',
-                    loop: true,
-                    pagination: {
-                        el: '.swiper-pagination',
-                    },
-                    navigation: {
-                        nextEl: '.swiper-button-next',
-                        prevEl: '.swiper-button-prev',
-                    },
-                    scrollbar: {
-                        el: '.swiper-scrollbar',
-                    },
-                    obsever: true,
-                    observeParents: true
-                });
+                document.querySelectorAll(".uploads-front-banner").forEach(item => {
+                    myUploadsObserver.observe(item)
+                })
             } else {
                 updateModalListeners()
+                addNewAlert("ERROR", "Could not get Uploads")
             }
         })
         .catch(error => {
             console.log(error)
             updateModalListeners()
+        })
+    }
+
+    async function getUploadImages(spotId) {
+        await fetch("/getSpotImages", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                spotId: spotId,
+                action: "all"
+            })
+        })
+        .then(async res => {
+            let resData = await res.json()
+            console.log(resData)
+            if (resData.status === "SUCCESS") {
+                document.getElementById(`uploadsFrontBanner${spotId}`).querySelector(".background-dark-filter").style.backgroundImage = `url('${resData.images[0].imageUrl}')`
+                updateModalImages(spotId, resData.images)
+            }
         })
     }
 
@@ -694,28 +782,52 @@
         })
         .then(async res => {
             let resData = await res.json()
+            console.log(resData)
             if (resData.status === "SUCCESS") {
                 let likedSpotsContainer = document.getElementById("likedSpotsContainer")
                 if (resData.myLikes.length === 0) {
                     likedSpotsContainer.insertAdjacentHTML("beforeend", "<p>No liked spots, go to <a href='/map' style='color: purple;'>map</a> to explore</p>")
                 }
                 for (let x = 0; x < resData.myLikes.length; x++) {
-                    let elementNode = `<div class="profile-spot-item">
+                    // let frontImage = ""
+                    // for (let item of resData.frontImage) {
+                    //     if (item.spotId === resData.myLikes[x]._id) {frontImage = item.imageUrl; break;}
+                    // }
+                    let elementNode = `<div class="profile-spot-item likes-front-banner" id="likesFrontBanner${resData.myLikes[x]._id}" data-spotid="${resData.myLikes[x]._id}">
                         <div class="profile-spot-item-info">
                             <div style="margin: 1em;">
                                 <a class="purple-button" href="/map?spot=${resData.myLikes[x]._id}" style="display: block;">View</a>
                             </div>
                         </div>
-                        <div class="background-dark-filter" style="background-image: url('${resData.myLikes[x].spotimages[0]}');"></div>
+                        <div class="background-dark-filter" style="background-image: url('/images/loading.png');"></div>
                     </div>`
                     likedSpotsContainer.insertAdjacentHTML("beforeend", elementNode)
                 }
+                document.querySelectorAll(".likes-front-banner").forEach(item => {
+                    likesObserver.observe(item)
+                })
             }
-            console.log(resData)
         })
     }
-    retrieveUploads()
-    retrieveLikes()
+    // retrieveLikes()
+    async function getLikesImages(spotId) {
+        await fetch("/getSpotImages", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                spotId: spotId,
+                action: "first"
+            })
+        })
+        .then(async res => {
+            let resData = await res.json()
+            console.log(resData)
+            if (resData.status === "SUCCESS") {
+                // updateModalImages(spotId, resData.images)
+                document.getElementById(`likesFrontBanner${spotId}`).querySelector(".background-dark-filter").style.backgroundImage = `url('${resData.images[0].imageUrl}')`
+            }
+        })
+    }
 
     let profilePictureInput = document.getElementById("profilePictureInput")
     let profilePreview = ""
