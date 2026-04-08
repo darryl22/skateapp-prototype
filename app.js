@@ -477,29 +477,33 @@ app.get('/getLikedSpots', async (request, response) => {
     })
 })
 
-app.post("/deleteImages", async (request, response) => {
-    console.log(request.body.imageList)
-    let ID = ObjectId.createFromHexString(request.body.id)
-    await databaseMethods.getOne("spots", {_id: ID})
-    .then(res => {
-        let tempImages = []
-        for (let x = 0; x < res.spotimages.length; x++) {
-            if (request.body.imageList[x].isSelected === false) {
-                tempImages.push(res.spotimages[x])
-            }
+app.post("/modifyImages", async (request, response) => {
+    // console.log(request.body.imageList)
+    let imageList = request.body.imageList
+    let imagePromises = []
+    let spotId = ObjectId.createFromHexString(imageList[0].spotId)
+    let newPosition = 0
+    for (let x = 0; x < imageList.length; x++) {
+        if (imageList[x].isSelected) {
+            let imageId = ObjectId.createFromHexString(imageList[x].imageId)
+            imagePromises.push(databaseMethods.deleteDocument("spotimages", {_id: imageId}))
+        } else {
+            let imageId = ObjectId.createFromHexString(imageList[x].imageId)
+            imagePromises.push(databaseMethods.makeUpdate("spotimages", {_id: imageId}, {
+                $set: {
+                    position: newPosition
+                }
+            }))
+            newPosition = newPosition + 1
         }
-        console.log(tempImages.length)
-        return databaseMethods.makeUpdate("spots", {_id: ID}, {
-            $set: {
-                spotimages: tempImages
-            }
-        })
+    }
+    await Promise.all(imagePromises)
+    .then(res => {
+        console.log(res)
+        return databaseMethods.getManySorted("spotimages", {spotId: spotId}, {position: 1})
     })
     .then(res => {
-        return databaseMethods.getOne("spots", {_id: ID})
-    })
-    .then(res => {
-        response.json({status: "SUCCESS", message: "Images Deleted", newImages: res.spotimages})
+        response.json({status: "SUCCESS", message: "Images Modified", newImages: res})
     })
     .catch(error => {
         console.log(error)
@@ -508,21 +512,37 @@ app.post("/deleteImages", async (request, response) => {
 })
 
 app.post('/addSpotImages', async (request, response) => {
-    console.log(request.body.imagesData.length)
-    let ID = ObjectId.createFromHexString(request.body.spotID)
-    await databaseMethods.makeUpdate("spots", {_id: ID}, {
-        $push: {
-            spotimages: {$each : request.body.imagesData}
+    // console.log(request.body.imagesData)
+    let images = request.body.imagesData
+    let Id = ObjectId.createFromHexString(request.session.userID)
+    let sendData = []
+    let spotId = ObjectId.createFromHexString(images[0].spotId)
+    for (let x = 0; x < images.length; x++) {
+        sendData.push({
+            ...images[x],
+            spotId: spotId,
+            user: Id
+        })
+    }
+    // console.log(sendData)
+    // response.json({status: "SUCCESS", message: "New images added"})
+    await databaseMethods.addMultiple("spotimages", sendData)
+    .then(res => {
+        console.log(res)
+        let newImageIds = []
+        for (let x = 0; x < images.length; x++) {
+            newImageIds.push(res.insertedIds[x])
         }
+        console.log(newImageIds)
+        return databaseMethods.getMany("spotimages", {_id: {$in: newImageIds}})
     })
     .then(res => {
-        return databaseMethods.getOne("spots", {_id: ID})
-    })
-    .then(res => {
-        response.json({status: "SUCCESS", message: "New images added", newImages: res.spotimages})
+        console.log(res)
+        response.json({status: "SUCCESS", message: "New images added", newImages: res})
     })
     .catch(error => {
         console.log(error)
+        response.json({status: "ERROR", message: "Error adding new images"})
     })
 })
 

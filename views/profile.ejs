@@ -219,6 +219,7 @@
             <button class="default-button" style="justify-self: flex-end;" id="confirmProfileImageUpdate">CONFIRM</button>
         </div>
     </div>
+    <div class="drag-image-position"></div>
 </body>
 <script>
 
@@ -256,8 +257,6 @@
 
     const likesObserverCallback = (entries, observer) => {
         entries.forEach(item => {
-            console.log(item.isIntersecting)
-            console.log(item.target.getAttribute("data-spotid"))
             if (item.isIntersecting) {
                 observer.unobserve(item.target)
                 let spotId = item.target.getAttribute("data-spotid")
@@ -268,8 +267,6 @@
 
     const myUploadsObserverCallback = (entries, observer) => {
         entries.forEach(item => {
-            console.log(item.isIntersecting)
-            console.log(item.target.getAttribute("data-spotid"))
             if (item.isIntersecting) {
                 observer.unobserve(item.target)
                 getUploadImages(item.target.getAttribute("data-spotid"))
@@ -385,56 +382,177 @@
         })
 
         document.querySelectorAll(".edit-pictures-item").forEach(elm => {
+            let isDragging = false
             elm.addEventListener("click", function() {
+                if (isDragging) {
+                    // isDragging = false
+                    return
+                }
                 let id = elm.getAttribute("data-id")
-                let index = parseInt(elm.getAttribute("data-picture-index"))
+                let imageId = elm.getAttribute("data-imageid")
                 let check = elm.querySelectorAll(".edit-pictures-check")[0]
-                if (selectedImages[`spot-${id}`].imageList[index].isSelected === false) {
-                    selectedImages[`spot-${id}`].imageList[index].isSelected = true
+                let imageItem = selectedImages.get(`spot-${id}`).get(`list-${imageId}`)
+                if (imageItem.isSelected === false) {
+                    selectedImages.get(`spot-${id}`).set(`list-${imageId}`, {
+                        ...imageItem,
+                        isSelected: true
+                    })
                     check.classList.remove("hide-check")
 
                 } else {
-                    selectedImages[`spot-${id}`].imageList[index].isSelected = false
+                    selectedImages.get(`spot-${id}`).set(`list-${imageId}`, {
+                        ...imageItem,
+                        isSelected: false
+                    })
                     check.classList.add("hide-check")
-
                 }
-
+                // console.log(selectedImages.get(`spot-${id}`))
                 let noneSelected = true
-                selectedImages[`spot-${id}`].imageList.forEach(item => {
+                let newPositions = false
+                selectedImages.get(`spot-${id}`).forEach((item, key) => {
                     if (item.isSelected === true) {
                         noneSelected = false
                     }
+                    if (item.newPosition === true) {
+                        newPositions = true
+                    }
                 })
-                if (noneSelected) {
-                    document.getElementById(`confirmEditImagesButton-${id}`).classList.add("hidden")
-                } else {
-                    document.getElementById(`confirmEditImagesButton-${id}`).classList.remove("hidden")
+                if (!newPositions) {
+                    if (noneSelected) {
+                        document.getElementById(`confirmEditImagesButton-${id}`).classList.add("hidden")
+                    } else {
+                        document.getElementById(`confirmEditImagesButton-${id}`).classList.remove("hidden")
+                    }
                 }
+            }, {signal: eventSignal})
+
+            elm.addEventListener("pointerdown", function(e) {
+                e.preventDefault()
+                // elm.style.touchAction = "none"
+                let initX = e.clientX
+                let initY = e.clientY
+                isDragging = false
+                let id = elm.getAttribute("data-id")
+                let imageId = elm.getAttribute("data-imageid")
+                let initImage = selectedImages.get(`spot-${id}`).get(`list-${imageId}`)
+                let editPicturesDiv = document.getElementById(`editPicturesDiv-${id}`)
+                let dragImagePlaceholder = document.querySelector(".drag-image-position")
+                let draggingElm = e.target
+                dragImagePlaceholder.style.display = "block"
+                dragImagePlaceholder.style.backgroundImage = `${elm.style.backgroundImage}`
+
+                function dragEvent(drag) {
+                    // isDragging = true
+                    dragImagePlaceholder.style.top = `${drag.clientY - 50}px`
+                    dragImagePlaceholder.style.left = `${drag.clientX - 50}px`
+                }
+
+                function hoverIn(hover) {
+                    if (hover.target.classList.contains("edit-pictures-item")) {
+                        hover.target.classList.add("edit-pictures-item-draghover")
+                    }
+                }
+
+                function hoverOut(hover) {
+                    if (hover.target.classList.contains("edit-pictures-item")){
+                        hover.target.classList.remove("edit-pictures-item-draghover")
+                    }
+                }
+
+                function stopDrag(stop) {
+                    console.log((stop.clientX - initX), (stop.clientY - initY))
+                    // click start and stop position offset, differentiate between click and drag
+                    if (Math.abs(stop.clientX - initX) > 10 || Math.abs(stop.clientY - initY) > 10) {
+                        isDragging = true
+                        if (stop.target.classList.contains("edit-pictures-item")) {
+                            stop.target.classList.remove("edit-pictures-item-draghover")
+                            if (stop.target !== draggingElm) {
+                                let currentImageId = stop.target.getAttribute("data-imageid")
+                                let currentImage = selectedImages.get(`spot-${id}`).get(`list-${currentImageId}`)
+                                let tempBgImage = stop.target.style.backgroundImage
+                                stop.target.style.backgroundImage = `${draggingElm.style.backgroundImage}`
+                                draggingElm.style.backgroundImage = `${tempBgImage}`
+                                stop.target.setAttribute("data-imageid", initImage.imageId)
+                                draggingElm.setAttribute("data-imageid", currentImage.imageId)
+                                initImage.isSelected ? stop.target.querySelectorAll(".edit-pictures-check")[0].classList.remove("hide-check") : stop.target.querySelectorAll(".edit-pictures-check")[0].classList.add("hide-check")
+                                currentImage.isSelected ? draggingElm.querySelectorAll(".edit-pictures-check")[0].classList.remove("hide-check") : draggingElm.querySelectorAll(".edit-pictures-check")[0].classList.add("hide-check")
+                                let tempCurrent = {
+                                    position: currentImage.position,
+                                    // isSelected: currentImage.isSelected,
+                                    // imageUrl: currentImage.imageUrl
+                                }
+                                selectedImages.get(`spot-${id}`).set(`list-${currentImageId}`, {
+                                    ...currentImage,
+                                    position: initImage.position,
+                                    newPosition: true,
+                                    // isSelected: initImage.isSelected,
+                                    // imageUrl: initImage.imageUrl
+                                })
+
+                                selectedImages.get(`spot-${id}`).set(`list-${imageId}`, {
+                                    ...initImage,
+                                    position: tempCurrent.position,
+                                    newPosition: true,
+                                    // isSelected: tempCurrent.isSelected,
+                                    // imageUrl: tempCurrent.imageUrl
+                                })
+                                selectedImages.get(`spot-${id}`).forEach(item => {
+                                    console.log("position", item.position)
+                                })
+                                document.getElementById(`confirmEditImagesButton-${id}`).classList.remove("hidden")
+                            }
+                        }
+                    }
+                    dragImagePlaceholder.style.display = "none"
+                    dragImagePlaceholder.style.top = "-100%"
+                    dragImagePlaceholder.style.left = "-100%"
+                    // document.removeEventListener("pointermove", dragEvent)
+                    // document.removeEventListener("pointerup", stopDrag)
+                    editPicturesDiv.removeEventListener("pointermove", dragEvent)
+                    editPicturesDiv.removeEventListener("pointerup", stopDrag)
+                    editPicturesDiv.removeEventListener("pointerover", hoverIn)
+                    editPicturesDiv.removeEventListener("pointerout", hoverOut)
+                }
+                // document.addEventListener("pointermove", dragEvent)
+                // document.addEventListener("pointerup", stopDrag)
+                editPicturesDiv.addEventListener("pointerover", hoverIn)
+                editPicturesDiv.addEventListener("pointerout", hoverOut)
+                editPicturesDiv.addEventListener("pointermove", dragEvent)
+                editPicturesDiv.addEventListener("pointerup", stopDrag)
             }, {signal: eventSignal})
         })
 
         document.querySelectorAll(".confirm-edit-images-button").forEach(elm => {
             elm.addEventListener("click", async () => {
                 let id = elm.getAttribute("data-id")
-                let sendData = selectedImages[`spot-${id}`]
+                let sendData = []
+                let listSize = selectedImages.get(`spot-${id}`).size
                 let selectedLength = 0
-                sendData.imageList.forEach(item => {
-                    if (item.isSelected) {
-                        selectedLength++
-                    }
-                })
+                for (let x = 0; x < listSize; x++) {
+                    selectedImages.get(`spot-${id}`).forEach((item, key) => {
+                        if (item.position === x) {
+                            sendData.push(item)
+                            if (item.isSelected) {
+                                selectedLength = selectedLength + 1
+                            }
+                        }
+                    })
+                }
+                console.log(sendData)
 
-                if (selectedLength === sendData.imageList.length) {
+                if (selectedLength === sendData.length) {
                     addNewAlert("ERROR", "At least one image needed in spot")
                     return
                 }
-                await fetch("/deleteImages", {
+                await fetch("/modifyImages", {
                     method: "POST",
                         headers: {
                         // "Accept": "application/json",
                         "Content-Type": "application/json"
                     },
-                    body: JSON.stringify(sendData)
+                    body: JSON.stringify({
+                        imageList: sendData
+                    })
                 })
                 .then(async res => {
                     let resData = await res.json()
@@ -442,7 +560,7 @@
                     if (resData.status === "SUCCESS") {
                         updateModalImages(id, resData.newImages)
                         updateModalListeners()
-                        document.getElementById(`frontImageEdit-${id}`).style.backgroundImage = `url("${resData.newImages[0]}")`
+                        document.getElementById(`frontImageEdit-${id}`).style.backgroundImage = `url("${resData.newImages[0].imageUrl}")`
                         addNewAlert(resData.status, resData.message)
                     } else {
                         addNewAlert(resData.status, resData.message)
@@ -457,42 +575,51 @@
         document.querySelectorAll(".add-new-images").forEach(elm => {
             elm.addEventListener("submit", async function(e) {
                 e.preventDefault()
+                console.log("new images")
                 let id = elm.getAttribute("data-id")
                 let images = document.getElementById(`addSpotImages-${id}`)
+                if ((images.length + selectedImages.get(`spot-${id}`).size) > 10) {
+                    addNewAlert("ERROR", "Can't add more than 10 images")
+                    images.value = null
+                    return
+                }
                 let totalSize = 0
-                let imagesPromise = []
+                let currentPosition = selectedImages.get(`spot-${id}`).size
+                let newImages = []
                 for (let x = 0; x < images.files.length; x++) {
                     const compressedImage = await imageConversion.compressAccurately(images.files[x], 400)
+                    await filesToBase64(compressedImage)
+                    .then(res => {
+                        newImages.push({
+                            position: currentPosition,
+                            imageUrl: res,
+                            spotId: id
+                        })
+                    })
+                    currentPosition = currentPosition + 1
                     totalSize = totalSize + compressedImage.size
-                    imagesPromise.push(filesToBase64(compressedImage))
                 }
-                let sizeInMB = totalSize / 1000000
+                let sizeInMB = totalSize / 1048576
                 if (sizeInMB > 10) {
                     addNewAlert("ERROR", "Files are too large")
                     return
                 }
-                await Promise.all(imagesPromise)
-                .then(res => {
-                    console.log(res)
-                    return fetch('/addSpotImages', {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json"
-                        },
-                        body: JSON.stringify({
-                            imagesData: res,
-                            spotID: id,
-                            action: "addnew"
-                        })
+                await fetch('/addSpotImages', {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        imagesData: newImages,
+                        action: "addnew"
                     })
-
                 })
                 .then(async res => {
                     let resData = await res.json()
                     console.log(resData)
                     if (resData.status === "SUCCESS") {
                         addNewAlert(resData.status, resData.message)
-                        updateModalImages(id, resData.newImages)
+                        updateModalImages(id, resData.newImages, "addnew")
                         updateModalListeners()
                         currentOpenModalID = id
                         showEditImagesSection(id)
@@ -511,11 +638,12 @@
         })
 
         document.querySelectorAll(".add-new-images-input").forEach(elm => {
-            elm.addEventListener("change", function() {
+            elm.addEventListener("change", async function() {
                 let id = elm.getAttribute("data-id")
                 let fileSizeSpan = document.getElementById(`fileSizeSpan-${id}`)
                 let totalSize = 0
                 for (let x = 0; x < elm.files.length; x++) {
+                    const compressedImage = await imageConversion.compressAccurately(elm.files[x], 400)
                     totalSize = totalSize + elm.files[x].size
                 }
                 let sizeInMB = totalSize / 1000000
@@ -591,23 +719,40 @@
         }
     })
 
-    let selectedImages = {}
+    let selectedImages = new Map()
     let imagesMap = new Map()
 
-    function updateModalImages(id, images) {
+    function updateModalImages(id, images, action="reset") {
         let editPicturesDiv = document.getElementById(`editPicturesDiv-${id}`)
         let spotPicturesCarousel = document.getElementById(`spotPicturesCarousel-${id}`).querySelectorAll(".swiper-wrapper")[0]
         let imageNodes = ''
         let carouselNodes = ''
-        selectedImages[`spot-${id}`] = {
-            imageList: [],
-            id: id
-        }
+        let imageList = new Map()
 
         for (let x = 0; x < images.length; x++) {
-            let image = `<div class="edit-pictures-item" style="background-image: url('${images[x].imageUrl}');" data-picture-index="${x}" data-id="${id}" draggable="true">
+            if (action === "reset") {
+                imageList.set(`list-${images[x]._id}`, {
+                    spotId: images[x].spotId,
+                    imageId: images[x]._id,
+                    imageUrl: images[x].imageUrl,
+                    position: images[x].position,
+                    isSelected: false,
+                    newPosition: false
+                })
+            } else if (action === "addnew") {
+                selectedImages.get(`spot-${id}`).set(`list-${images[x]._id}`, {
+                    spotId: images[x].spotId,
+                    imageId: images[x]._id,
+                    imageUrl: images[x].imageUrl,
+                    position: images[x].position,
+                    isSelected: false,
+                    newPosition: false
+                })
+            }
+            // <img src="/logos/checkLight.png" alt="" style="width: 80%;"> check green
+            let image = `<div class="edit-pictures-item" style="background-image: url('${images[x].imageUrl}');" id="editItem${images[x]._id}" data-picture-index="${images[x].position}" data-id="${id}" data-imageid="${images[x]._id}" data-imageidoriginal="${images[x]._id}">
                 <div class="edit-pictures-check hide-check">
-                    <img src="/logos/checkLight.png" alt="" style="width: 80%;">
+                    <p style="margin: 0;">X</p>
                 </div>
                 <div class="edit-check-circle"></div>
             </div>`
@@ -618,19 +763,15 @@
 
             imageNodes = imageNodes + image
             carouselNodes = carouselNodes + cNode
-            selectedImages[`spot-${id}`].imageList.push({
-                isSelected: false,
-                position: images[x].position,
-                imageId: images[x]._id,
-                spotId: images[x].spotId
-            })
         }
-
+        if (action === "reset") {
+            editPicturesDiv.replaceChildren()
+            spotPicturesCarousel.replaceChildren()
+            selectedImages.set(`spot-${id}`, imageList)
+        }
+        console.log("action is", action)
         console.log("spot images are", selectedImages)
-
-        editPicturesDiv.replaceChildren()
         editPicturesDiv.insertAdjacentHTML("beforeend",imageNodes)
-        spotPicturesCarousel.replaceChildren()
         spotPicturesCarousel.insertAdjacentHTML("beforeend",carouselNodes)
         const swiper = new Swiper(`.swiper${id}`, {
             direction: 'horizontal',
@@ -648,6 +789,7 @@
             obsever: true,
             observeParents: true
         });
+        updateModalListeners()
         // swiper.appendSlide(`<div class="swiper-slide">
         //     <div class="carousel-image" style="background-image: url('/images/loading.png'); background-size: contain;"></div>
         // </div>`)
@@ -656,11 +798,24 @@
     function clearSelections(id) {
         let editPicturesDiv = document.getElementById(`editPicturesDiv-${id}`)
         document.getElementById(`confirmEditImagesButton-${id}`).classList.add("hidden")
+        // let positionReset = 0
         editPicturesDiv.querySelectorAll(".edit-pictures-item").forEach(elm => {
+            console.log("picture index", elm.getAttribute("data-picture-index"))
             let check = elm.querySelectorAll(".edit-pictures-check")[0]
+            // let imageId = elm.getAttribute("data-imageid")
+            let imageId = elm.getAttribute("data-imageidoriginal")
+            elm.setAttribute("data-imageid", imageId)
             check.classList.add("hide-check")
-            selectedImages[`spot-${id}`].imageList.forEach(elm => {
-                elm.isSelected = false
+            let currentImage = selectedImages.get(`spot-${id}`).get(`list-${imageId}`)
+            if(currentImage.newPosition) {
+                elm.style.backgroundImage = `url("${currentImage.imageUrl}")`
+            }
+            console.log("new index", currentImage.position)
+            selectedImages.get(`spot-${id}`).set(`list-${imageId}`, {
+                ...currentImage,
+                isSelected: false,
+                newPosition: false,
+                position: parseInt(elm.getAttribute("data-picture-index"))
             })
         })
     }
@@ -704,7 +859,7 @@
                                 <div style="display: flex; align-items: center; gap: 1em; margin-top: 2em;">
                                     <button class="base-button edit-images-button" data-toggle-edit="${resData.myUploads[x]._id}" id="editImagesButton-${resData.myUploads[x]._id}">Edit Images</button>
                                     <button class="base-button cancel-edit-images-button hidden" data-toggle-edit="${resData.myUploads[x]._id}" id="cancelEditImagesButton-${resData.myUploads[x]._id}">Cancel</button>
-                                    <button class="base-button confirm-edit-images-button hidden" style="border: 1px solid red; color: red;" id="confirmEditImagesButton-${resData.myUploads[x]._id}" data-id="${resData.myUploads[x]._id}">Delete</button>
+                                    <button class="base-button confirm-edit-images-button hidden" id="confirmEditImagesButton-${resData.myUploads[x]._id}" data-id="${resData.myUploads[x]._id}">Confirm</button>
                                 </div>
 
                                 <form action="" class="add-new-images" data-id="${resData.myUploads[x]._id}" style="margin-top: 2em; display: flex; flex-direction: column; align-items: start;">
@@ -753,6 +908,7 @@
         })
         .catch(error => {
             console.log(error)
+            addNewAlert("ERROR", "Could not get Uploads")
             updateModalListeners()
         })
     }
@@ -767,8 +923,9 @@
             })
         })
         .then(async res => {
+            // console.log("response", res)
             let resData = await res.json()
-            console.log(resData)
+            // console.log(resData)
             if (resData.status === "SUCCESS") {
                 document.getElementById(`uploadsFrontBanner${spotId}`).querySelector(".background-dark-filter").style.backgroundImage = `url('${resData.images[0].imageUrl}')`
                 updateModalImages(spotId, resData.images)
@@ -821,7 +978,7 @@
         })
         .then(async res => {
             let resData = await res.json()
-            console.log(resData)
+            // console.log(resData)
             if (resData.status === "SUCCESS") {
                 // updateModalImages(spotId, resData.images)
                 document.getElementById(`likesFrontBanner${spotId}`).querySelector(".background-dark-filter").style.backgroundImage = `url('${resData.images[0].imageUrl}')`
