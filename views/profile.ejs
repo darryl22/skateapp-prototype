@@ -428,6 +428,11 @@
 
             elm.addEventListener("pointerdown", function(e) {
                 e.preventDefault()
+                elm.style.touchAction = "none"
+                if (navigator.maxTouchPoints > 0) {
+                    return
+                }
+                console.log("drag start", e.pointerType)
                 // elm.style.touchAction = "none"
                 let initX = e.clientX
                 let initY = e.clientY
@@ -436,6 +441,7 @@
                 let imageId = elm.getAttribute("data-imageid")
                 let initImage = selectedImages.get(`spot-${id}`).get(`list-${imageId}`)
                 let editPicturesDiv = document.getElementById(`editPicturesDiv-${id}`)
+                editPicturesDiv.style.touchAction = "none"
                 let dragImagePlaceholder = document.querySelector(".drag-image-position")
                 let draggingElm = e.target
                 dragImagePlaceholder.style.display = "block"
@@ -443,6 +449,7 @@
 
                 function dragEvent(drag) {
                     // isDragging = true
+                    console.log("window drag")
                     dragImagePlaceholder.style.top = `${drag.clientY - 50}px`
                     dragImagePlaceholder.style.left = `${drag.clientX - 50}px`
                 }
@@ -460,7 +467,7 @@
                 }
 
                 function stopDrag(stop) {
-                    console.log((stop.clientX - initX), (stop.clientY - initY))
+                    console.log("drag stop")
                     // click start and stop position offset, differentiate between click and drag
                     if (Math.abs(stop.clientX - initX) > 10 || Math.abs(stop.clientY - initY) > 10) {
                         isDragging = true
@@ -475,6 +482,77 @@
                                 stop.target.setAttribute("data-imageid", initImage.imageId)
                                 draggingElm.setAttribute("data-imageid", currentImage.imageId)
                                 initImage.isSelected ? stop.target.querySelectorAll(".edit-pictures-check")[0].classList.remove("hide-check") : stop.target.querySelectorAll(".edit-pictures-check")[0].classList.add("hide-check")
+                                currentImage.isSelected ? draggingElm.querySelectorAll(".edit-pictures-check")[0].classList.remove("hide-check") : draggingElm.querySelectorAll(".edit-pictures-check")[0].classList.add("hide-check")
+                                let tempCurrent = currentImage.position
+                                selectedImages.get(`spot-${id}`).set(`list-${currentImageId}`, {
+                                    ...currentImage,
+                                    position: initImage.position,
+                                    newPosition: true,
+                                })
+
+                                selectedImages.get(`spot-${id}`).set(`list-${imageId}`, {
+                                    ...initImage,
+                                    position: tempCurrent,
+                                    newPosition: true,
+                                })
+                                document.getElementById(`confirmEditImagesButton-${id}`).classList.remove("hidden")
+                            }
+                        }
+                    }
+                    dragImagePlaceholder.style.display = "none"
+                    dragImagePlaceholder.style.top = "-100%"
+                    dragImagePlaceholder.style.left = "-100%"
+                    editPicturesDiv.removeEventListener("pointermove", dragEvent)
+                    editPicturesDiv.removeEventListener("pointerup", stopDrag)
+                    editPicturesDiv.removeEventListener("pointerover", hoverIn)
+                    editPicturesDiv.removeEventListener("pointerout", hoverOut)
+                }
+                editPicturesDiv.addEventListener("pointerover", hoverIn)
+                editPicturesDiv.addEventListener("pointerout", hoverOut)
+                editPicturesDiv.addEventListener("pointermove", dragEvent)
+                editPicturesDiv.addEventListener("pointerup", stopDrag)
+            }, {signal: eventSignal})
+
+            elm.addEventListener("touchstart", function(e) {
+                // e.preventDefault()
+                elm.style.touchAction = "none"
+                console.log(navigator.maxTouchPoints, 'ontouchstart' in window)
+                console.log("touch start", e)
+                let initX = e.touches[0].clientX
+                let initY = e.touches[0].clientY
+                isDragging = false
+                let id = elm.getAttribute("data-id")
+                let imageId = elm.getAttribute("data-imageid")
+                let initImage = selectedImages.get(`spot-${id}`).get(`list-${imageId}`)
+                let editPicturesDiv = document.getElementById(`editPicturesDiv-${id}`)
+                editPicturesDiv.style.touchAction = "none"
+                let dragImagePlaceholder = document.querySelector(".drag-image-position")
+                let draggingElm = e.target
+                dragImagePlaceholder.style.display = "block"
+                dragImagePlaceholder.style.backgroundImage = `${elm.style.backgroundImage}`
+
+                function dragEvent(drag) {
+                    dragImagePlaceholder.style.top = `${drag.touches[0].clientY - 50}px`
+                    dragImagePlaceholder.style.left = `${drag.touches[0].clientX - 50}px`
+                }
+
+                function stopDrag(stop) {
+                    console.log("touch stop")
+                    let endTarget = document.elementFromPoint(stop.changedTouches[0].clientX, stop.changedTouches[0].clientY)
+                    // click start and stop position offset, differentiate between click and drag
+                    if (Math.abs(stop.changedTouches[0].clientX - initX) > 10 || Math.abs(stop.changedTouches[0].clientY - initY) > 10) {
+                        isDragging = true
+                        if (endTarget.classList.contains("edit-pictures-item")) {
+                            endTarget.classList.remove("edit-pictures-item-draghover")
+                            if (endTarget !== draggingElm) {
+                                let currentImageId = endTarget.getAttribute("data-imageid")
+                                let currentImage = selectedImages.get(`spot-${id}`).get(`list-${currentImageId}`)
+                                let tempBgImage = endTarget.style.backgroundImage
+                                endTarget.style.backgroundImage = `${draggingElm.style.backgroundImage}`
+                                draggingElm.style.backgroundImage = `${tempBgImage}`
+                                endTarget.setAttribute("data-imageid", initImage.imageId)
+                                draggingElm.setAttribute("data-imageid", currentImage.imageId)
+                                initImage.isSelected ? endTarget.querySelectorAll(".edit-pictures-check")[0].classList.remove("hide-check") : endTarget.querySelectorAll(".edit-pictures-check")[0].classList.add("hide-check")
                                 currentImage.isSelected ? draggingElm.querySelectorAll(".edit-pictures-check")[0].classList.remove("hide-check") : draggingElm.querySelectorAll(".edit-pictures-check")[0].classList.add("hide-check")
                                 let tempCurrent = {
                                     position: currentImage.position,
@@ -496,9 +574,6 @@
                                     // isSelected: tempCurrent.isSelected,
                                     // imageUrl: tempCurrent.imageUrl
                                 })
-                                selectedImages.get(`spot-${id}`).forEach(item => {
-                                    console.log("position", item.position)
-                                })
                                 document.getElementById(`confirmEditImagesButton-${id}`).classList.remove("hidden")
                             }
                         }
@@ -506,19 +581,11 @@
                     dragImagePlaceholder.style.display = "none"
                     dragImagePlaceholder.style.top = "-100%"
                     dragImagePlaceholder.style.left = "-100%"
-                    // document.removeEventListener("pointermove", dragEvent)
-                    // document.removeEventListener("pointerup", stopDrag)
-                    editPicturesDiv.removeEventListener("pointermove", dragEvent)
-                    editPicturesDiv.removeEventListener("pointerup", stopDrag)
-                    editPicturesDiv.removeEventListener("pointerover", hoverIn)
-                    editPicturesDiv.removeEventListener("pointerout", hoverOut)
+                    editPicturesDiv.removeEventListener("touchmove", dragEvent)
+                    editPicturesDiv.removeEventListener("touchend", stopDrag)
                 }
-                // document.addEventListener("pointermove", dragEvent)
-                // document.addEventListener("pointerup", stopDrag)
-                editPicturesDiv.addEventListener("pointerover", hoverIn)
-                editPicturesDiv.addEventListener("pointerout", hoverOut)
-                editPicturesDiv.addEventListener("pointermove", dragEvent)
-                editPicturesDiv.addEventListener("pointerup", stopDrag)
+                editPicturesDiv.addEventListener("touchmove", dragEvent)
+                editPicturesDiv.addEventListener("touchend", stopDrag)
             }, {signal: eventSignal})
         })
 
@@ -558,6 +625,7 @@
                     let resData = await res.json()
                     console.log(resData)
                     if (resData.status === "SUCCESS") {
+                        document.getElementById(`confirmEditImagesButton-${id}`).classList.add("hidden")
                         updateModalImages(id, resData.newImages)
                         updateModalListeners()
                         document.getElementById(`frontImageEdit-${id}`).style.backgroundImage = `url("${resData.newImages[0].imageUrl}")`
@@ -663,7 +731,7 @@
                 let confirmDeleteSpotDiv = document.getElementById(`confirmDeleteSpotDiv-${id}`).classList.remove("hidden")
                 elm.classList.add("hidden")
                 window.location.replace(`#confirmDeleteSpotDiv-${id}`)
-            })
+            }, {signal: eventSignal})
         })
 
         document.querySelectorAll(".cancel-delete-spot").forEach(elm => {
@@ -671,7 +739,7 @@
                 let id = elm.getAttribute("data-id")
                 let confirmDeleteSpotDiv = document.getElementById(`confirmDeleteSpotDiv-${id}`).classList.add("hidden")
                 let deleteSpot = document.getElementById(`deleteSpot-${id}`).classList.remove("hidden")
-            })
+            }, {signal: eventSignal})
         })
 
         document.querySelectorAll(".confirm-delete-spot").forEach(elm => {
@@ -683,7 +751,7 @@
                         "Content-Type": "application/json"
                     },
                     body: JSON.stringify({
-                        spotID: id
+                        spotId: id
                     })
                 })
                 .then(async res => {
@@ -695,7 +763,7 @@
                         addNewAlert(resData.status)
                     }
                 })
-            })
+            }, {signal: eventSignal})
         })
     }
     updateModalListeners()

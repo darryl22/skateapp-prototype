@@ -197,7 +197,7 @@ app.post('/updateComment', async (request, response) => {
         let updateData = {
             content: request.body.comment,
             type: request.body.type,
-            spotId: request.body.spotId,
+            spotId: ObjectId.createFromHexString(request.body.spotId),
             replyId: request.body.replyId,
             author: request.session.userID,
             dateAdded: currentDate[0]
@@ -222,7 +222,7 @@ app.post('/updateComment', async (request, response) => {
 
 app.get("/loadComments", async (request, response) => {
     try{
-        let id = request.query.spotId
+        let id = ObjectId.createFromHexString(request.query.spotId)
         await Promise.allSettled([databaseMethods.getMany("comment", {spotId: id, type: "comment"}), databaseMethods.getMany("comment", {spotId: id, type: "reply"})])
         .then(res => {
             let commentsList = [...res[0].value]
@@ -548,8 +548,8 @@ app.post('/addSpotImages', async (request, response) => {
 
 app.post("/deleteSpot", async (request, response) => {
     console.log(request.body)
-    let id = ObjectId.createFromHexString(request.body.spotID)
-    await databaseMethods.deleteDocument("spots", {_id: id})
+    let id = ObjectId.createFromHexString(request.body.spotId)
+    await Promise.all([databaseMethods.deleteDocument("spots", {_id: id}), databaseMethods.deleteManyDocuments("spotimages", {spotId: id}), databaseMethods.deleteManyDocuments("comment", {spotId: id}), databaseMethods.deleteManyDocuments("likes", {spotId: id})])
     .then(res => {
         console.log(res)
         response.json({status: "SUCCESS", message: "Spot Deleted"})

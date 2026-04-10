@@ -26,7 +26,6 @@
     <style>
         .nav-div{
             box-shadow: none;
-            /* border-bottom: none; */
         }
 
         .swiper {
@@ -72,7 +71,10 @@
                     <div class="swiper-button-prev"></div>
                     <div class="swiper-button-next"></div>
                 </div>
-                <button id="getDirections<%= spots[x]._id  %>" data-lng="<%= spots[x].longitude %>" data-lat="<%= spots[x].latitude %>" data-id="<%= spots[x]._id  %>">Get Directions</button>
+                <div style="display: flex; align-items: center; gap: 1em; margin-top: 2em;">
+                    <button class="base-button" style="padding: 10px; font-size: 1em;" id="getDirections<%= spots[x]._id  %>" data-lng="<%= spots[x].longitude %>" data-lat="<%= spots[x].latitude %>" data-id="<%= spots[x]._id  %>">Get Directions</button>
+                    <a href="https://www.google.com/maps/search/?api=1&query=<%= spots[x].latitude %>,<%= spots[x].longitude %>" class="secondary-button" style="padding: 10px; display: block; font-size: 1em;">Open in Google maps</a>
+                </div>
                 <p id="spotDetailsTitle"><%= spots[x].description  %></p>
                 <div style="height: 1px; background-color: gray; margin: 1em 0em;"></div>
                 <p id="loadingComments<%= spots[x]._id %>">Loading Comments...</p>
@@ -146,12 +148,12 @@
     </script>
     <% } %>
 
+    <button class="map-inner-sidebar modal-button" data-toggle-modal="menuContent">Options</button>
     <div class="map-outer-div">
-        <button class="map-inner-sidebar modal-button" data-toggle-modal="menuContent">Options</button>
         <div class="base-modal" id="menuContent">
             <div class="base-modal-inner" id="addSpotDiv">
                 <img src="./logos/closelight.png" alt="close menu" class="close-menu2 image-invert close-modal" data-toggle-modal="menuContent">
-                <div id="spotInformation" style="margin-top: 2em;" class="base-modal-content">
+                <div id="spotInformation" class="base-modal-content">
                     <button class="add-spot-button" id="addNewSpotButton">Add new spot</button>
                     <p>Filters</p>
                     <div>
@@ -196,7 +198,7 @@
                         <div class="spot-list-item" data-index="<%= x %>" data-id="<%= spots[x]._id %>">
                             <div class="spot-list-item-image" style="background-image: url('/images/carouselimage1.jpg');" id="spotListImage<%= spots[x]._id %>"></div>
                             <div class="spot-list-item-details">
-                                <p><%= spots[x].description %></p>
+                                <p class="spot-description-short"><%= spots[x].description %></p>
                                 <div style="width: 100%;">
                                     <div class="menu-interactions">
                                         <div style="display: flex; gap: 5px">
@@ -244,10 +246,10 @@
                 <input type="hidden" value="0" name="latitude" id="latitude">
                 <mapbox-search-box access-token="<%= mapboxtoken %>" proximity="0, 0" style="margin-bottom: 1em;"></mapbox-search-box>
                 <label for="description" style="margin-bottom: 0.5em;">Description</label>
-                <textarea name="description" id="description" style="margin-bottom: 1em; height: 4em; border-radius: 5px; padding: 5px; background-color: rgba(0, 0, 0, 0); color: white;"></textarea>
+                <textarea name="description" id="description" style="margin-bottom: 1em; height: 4em; border-radius: 5px; padding: 5px; background-color: rgba(0, 0, 0, 0); color: white;" required></textarea>
 
                 <label for="spottype">Spot Type</label>
-                <select name="spottype" id="spottype" style="padding: 0.3em; margin-top: 0.5em; border: 1px solid gray; border-radius: 4px; margin-bottom: 1em;">
+                <select name="spottype" id="spottype" style="padding: 0.3em; margin-top: 0.5em; border: 1px solid gray; border-radius: 4px; margin-bottom: 1em;" required>
                     <option value="" selected disabled>select one</option>
                     <option value="rail">rail</option>
                     <option value="stairs">stairs</option>
@@ -260,21 +262,22 @@
                 <input type="file" name="images" id="spotImages" accept="image/png, image/jpeg" multiple required>
                 <!-- <input type="file" name="images" id="spotImages" accept="image/png, image/jpeg" multiple> -->
                 <p style="font-size: 0.8em; margin-top: 5px;">File size: <span id="fileSizeSpan">0</span> mb</p>
+                <button type="button" class="base-button modal-button hidden" data-toggle-modal="editUploadImages" id="modifyUploadImages" style="width: fit-content;">Edit Images</button>
 
-                <button class="spot-confirm">Confirm</button>
+                <button class="spot-confirm" >Confirm</button>
             </form>
         </div>
         <div class="base-modal" id="editUploadImages">
             <div class="base-modal-inner">
                 <img src="./logos/closelight.png" alt="close menu" class="close-menu2 image-invert close-modal" data-toggle-modal="editUploadImages">
                 <div class="base-modal-content">
-                    <div class="edit-pictures-div" id="editUploadImagesDiv">
-                    </div>
-                    <button class="base-button" style="color: red; border: 1px solid red; margin-top: 1em;">Clear</button>
+                    <div class="edit-pictures-div" id="editUploadImagesDiv"></div>
+                    <button class="base-button hidden" style="color: red; border: 1px solid red; margin-top: 1em;" id="clearUploadSelections">Clear</button>
                 </div>
             </div>
         </div>
     </div>
+    <div class="drag-image-position"></div>
 </body>
 <div id="spot-container" data-object="<%= JSON.stringify(spots) %>"></div>
 <div id="likes-load-container" data-object="<%= JSON.stringify(likes) %>"></div>
@@ -317,6 +320,19 @@
             }
         })
     }
+
+    function shortText(text, length) {
+        let newText = text.slice(0, length)
+        newText = newText + "..."
+        return newText
+    }
+
+    document.querySelectorAll(".spot-description-short").forEach(item => {
+        let description = item.innerText
+        if (description.length > 100) {
+            item.innerText = shortText(description, 100)
+        }
+    })
 
     let spotsListObserver = new IntersectionObserver(spotListCallback, {
         root: spotsListObserverContainer,
@@ -1125,6 +1141,7 @@
     addNewSpotButton.addEventListener('click', function() {
         // hideMenu()
         hideModal(currentOpenModal)
+        popup.remove()
         addSpotForm.style.display = "block"
         // spotInformation.style.display = "none"
         // addNewSpotButton.style.display = "none"
@@ -1167,25 +1184,14 @@
             reader.onload = () => resolve(reader.result)
             reader.onerror = reject
             reader.readAsDataURL(img)
-            // reader.readAsArrayBuffer(img)
-            // reader.readAsText(img)
         })
     }
 
     let editUploadImagesDiv = document.getElementById("editUploadImagesDiv")
-    function clearSelections(id) {
-        let editPicturesDiv = document.getElementById(`editPicturesDiv-${id}`)
-        document.getElementById(`confirmEditImagesButton-${id}`).classList.add("hidden")
-        editPicturesDiv.querySelectorAll(".edit-pictures-item").forEach(elm => {
-            let check = elm.querySelectorAll(".edit-pictures-check")[0]
-            check.classList.add("hide-check")
-            selectedImages[`spot-${id}`].imageList.forEach(elm => {
-                elm.isSelected = false
-            })
-        })
-    }
-    let spotImageList = []
+    let clearUploadSelections = document.getElementById("clearUploadSelections")
+    let spotImageList = new Map()
     let sizeInMB = 0
+    let selectedCount = 0
     document.getElementById("spotImages").addEventListener("change", async function() {
         let images = document.getElementById("spotImages")
         let totalSize = 0
@@ -1195,29 +1201,23 @@
             this.value = null
             return
         }
+        document.getElementById("modifyUploadImages").classList.remove("hidden")
         for (let x = 0; x < images.files.length; x++) {
             // console.log(images.files[x])
             const compressedImage = await imageConversion.compressAccurately(images.files[x], 400)
             await filesToBase64(compressedImage)
             .then(res => {
-                console.log("compressedImage", compressedImage)
                 totalSize = totalSize + compressedImage.size
                 let imageNode = `<div class="edit-pictures-item" style="background-image: url('${res}');" data-picture-index="${x}">
                     <div class="edit-pictures-check hide-check">
-                        <img src="/logos/checkLight.png" alt="" style="width: 80%;">
+                        <p style="margin: 0;">X</p>
                     </div>
                     <div class="edit-check-circle"></div>
                 </div>`
                 imageNodesList = imageNodesList + imageNode
-                spotImageList.push({
-                    position: x,
-                    imageUrl: res,
-                })
+                spotImageList.set(`image-${x}`, res)
             })
         }
-        console.log(spotImageList)
-        // this.value = null
-        // console.log(this.value)
         sizeInMB = totalSize / 1048576
         if (sizeInMB > 10) {
             document.getElementById("fileSizeSpan").style.color = "red"
@@ -1226,11 +1226,138 @@
             editUploadImagesDiv.replaceChildren()
             editUploadImagesDiv.insertAdjacentHTML("beforeend", imageNodesList)
             document.querySelectorAll(".edit-pictures-item").forEach(elm => {
+                let isDragging = false
                 elm.addEventListener("click", function() {
+                    if (isDragging) {
+                        return
+                    }
                     let index = parseInt(elm.getAttribute("data-picture-index"))
                     let check = elm.querySelectorAll(".edit-pictures-check")[0]
                     check.classList.toggle("hide-check")
                     console.log("toggled index", index)
+                    let image = spotImageList.get(`image-${index}`)
+                    selectedCount = 0
+                    editUploadImagesDiv.querySelectorAll(".edit-pictures-item").forEach(item => {
+                        if (!item.querySelectorAll(".edit-pictures-check")[0].classList.contains("hide-check")) {
+                            ++selectedCount
+                        }
+                    })
+                    console.log(selectedCount)
+                    if (selectedCount === 0) {
+                        clearUploadSelections.classList.add("hidden")
+                    } else {
+                        clearUploadSelections.classList.remove("hidden")
+                    }
+                })
+
+                elm.addEventListener("pointerdown", function(e) {
+                    e.preventDefault()
+                    if (navigator.maxTouchPoints > 0) {
+                        return
+                    }
+                        elm.style.touchAction = "none"
+                    let initX = e.clientX
+                    let initY = e.clientY
+                    isDragging = false
+                    let initIndex = parseInt(elm.getAttribute("data-picture-index"))
+                    let draggingElm = e.target
+                    let image = spotImageList.get(`image-${initIndex}`)
+                    let dragImagePlaceholder = document.querySelector(".drag-image-position")
+                    dragImagePlaceholder.style.display = "block"
+                    dragImagePlaceholder.style.backgroundImage = `${elm.style.backgroundImage}`
+
+                    function dragEvent(drag) {
+                        dragImagePlaceholder.style.top = `${drag.clientY - 50}px`
+                        dragImagePlaceholder.style.left = `${drag.clientX - 50}px`
+                    }
+
+                    function hoverStart(hover) {
+                        if (hover.target.classList.contains("edit-pictures-item")) {
+                            hover.target.classList.add("edit-pictures-item-draghover")
+                        }
+                    }
+
+                    function hoverEnd(hover) {
+                        if (hover.target.classList.contains("edit-pictures-item")) {
+                            hover.target.classList.remove("edit-pictures-item-draghover")
+                        }
+                    }
+
+                    function stopDrag(stop) {
+                        if (Math.abs(stop.clientX - initX) > 10 || Math.abs(stop.clientY - initY) > 10) {
+                            isDragging = true
+                            if (stop.target.classList.contains("edit-pictures-item")) {
+                                stop.target.classList.remove("edit-pictures-item-draghover")
+                                if (stop.target !== draggingElm) {
+                                    console.log("swap images")
+                                    let dropIndex = parseInt(stop.target.getAttribute("data-picture-index"))
+                                    let dropImage = spotImageList.get(`image-${dropIndex}`)
+                                    let tempBg = draggingElm.style.backgroundImage
+                                    draggingElm.style.backgroundImage = stop.target.style.backgroundImage
+                                    stop.target.style.backgroundImage = tempBg
+                                    spotImageList.set(`image-${initIndex}`, dropImage)
+                                    spotImageList.set(`image-${dropIndex}`, image)
+                                }
+                            }
+                        }
+                        dragImagePlaceholder.style.display = "none"
+                        dragImagePlaceholder.style.top = "-100%"
+                        dragImagePlaceholder.style.left = "-100%"
+                        document.removeEventListener("pointermove", dragEvent)
+                        document.removeEventListener("pointerover", hoverStart)
+                        document.removeEventListener("pointerout", hoverEnd)
+                        document.removeEventListener("pointerup", stopDrag)
+                    }
+                    document.addEventListener("pointermove", dragEvent)
+                    document.addEventListener("pointerover", hoverStart)
+                    document.addEventListener("pointerout", hoverEnd)
+                    document.addEventListener("pointerup", stopDrag)
+                })
+
+                elm.addEventListener("touchstart", function(e) {
+                    // e.preventDefault()
+                    elm.style.touchAction = "none"
+                    let initX = e.touches[0].clientX
+                    let initY = e.touches[0].clientY
+                    isDragging = false
+                    let initIndex = parseInt(elm.getAttribute("data-picture-index"))
+                    let draggingElm = e.target
+                    let image = spotImageList.get(`image-${initIndex}`)
+                    let dragImagePlaceholder = document.querySelector(".drag-image-position")
+                    dragImagePlaceholder.style.display = "block"
+                    dragImagePlaceholder.style.backgroundImage = `${elm.style.backgroundImage}`
+
+                    function dragEvent(drag) {
+                        dragImagePlaceholder.style.top = `${drag.touches[0].clientY - 50}px`
+                        dragImagePlaceholder.style.left = `${drag.touches[0].clientX - 50}px`
+                    }
+
+                    function stopDrag(stop) {
+                        let endTarget = document.elementFromPoint(stop.changedTouches[0].clientX, stop.changedTouches[0].clientY)
+                        if (Math.abs(stop.changedTouches[0].clientX - initX) > 10 || Math.abs(stop.changedTouches[0].clientY - initY) > 10) {
+                            isDragging = true
+                            if (endTarget.classList.contains("edit-pictures-item")) {
+                                endTarget.classList.remove("edit-pictures-item-draghover")
+                                if (e.target !== endTarget) {
+                                    console.log("swap images")
+                                    let dropIndex = parseInt(endTarget.getAttribute("data-picture-index"))
+                                    let dropImage = spotImageList.get(`image-${dropIndex}`)
+                                    let tempBg = e.target.style.backgroundImage
+                                    e.target.style.backgroundImage = endTarget.style.backgroundImage
+                                    endTarget.style.backgroundImage = tempBg
+                                    spotImageList.set(`image-${initIndex}`, dropImage)
+                                    spotImageList.set(`image-${dropIndex}`, image)
+                                }
+                            }
+                        }
+                        dragImagePlaceholder.style.display = "none"
+                        dragImagePlaceholder.style.top = "-100%"
+                        dragImagePlaceholder.style.left = "-100%"
+                        document.removeEventListener("touchmove", dragEvent)
+                        document.removeEventListener("touchend", stopDrag)
+                    }
+                    document.addEventListener("touchmove", dragEvent)
+                    document.addEventListener("touchend", stopDrag)
                 })
             })
             showModal("editUploadImages")
@@ -1238,13 +1365,43 @@
         document.getElementById("fileSizeSpan").innerText = sizeInMB.toFixed(2)
     })
 
+    function clearSelections() {
+        editUploadImagesDiv.querySelectorAll(".edit-pictures-item").forEach(elm => {
+            let check = elm.querySelectorAll(".edit-pictures-check")[0]
+            // check.classList.add("hide-check")
+            if (!check.classList.contains("hide-check")) {
+                let index = elm.getAttribute("data-picture-index")
+                spotImageList.delete(`image-${index}`)
+                elm.remove()
+            }
+        })
+        console.log(spotImageList)
+
+        if (spotImageList.size === 0) {
+            hideModal(currentOpenModal)
+            document.getElementById("spotImages").value = null
+            return
+        }
+    }
+
+    clearUploadSelections.addEventListener("click", clearSelections)
+
     document.getElementById("addSpotForm").addEventListener("submit", async function(e) {
         e.preventDefault()
+        let sendData = []
+        let positionIndex = 0
+        spotImageList.forEach(item => {
+            sendData.push({
+                position: positionIndex,
+                imageUrl: item
+            })
+            ++positionIndex
+        })
         if (sizeInMB > 10) {
             addNewAlert("ERROR", "Files are too large")
             return
         }
-        if (spotImageList.length === 0) {
+        if (sendData.length === 0) {
             addNewAlert("ERROR", "No files selected")
             return
         }
@@ -1257,7 +1414,7 @@
                 spottype: document.getElementById("spottype").value,
                 lng: markerCoordinates[0],
                 lat: markerCoordinates[1],
-                spotimages: spotImageList,
+                spotimages: sendData,
             })
         })
         .then(async res => {
