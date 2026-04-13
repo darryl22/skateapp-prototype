@@ -154,16 +154,17 @@ app.post('/addspot', async (request, response) => {
 })
 
 app.get('/getSpot', async (request, response) => {
-    console.log(request.query)
     try{
-        let spotID = ObjectId.createFromHexString(request.query.spotID)
-        await databaseMethods.getOne("spots", {_id: spotID})
+        let spotId = ObjectId.createFromHexString(request.query.spotId)
+        let spot = null
+        await databaseMethods.getOne("spots", {_id: spotId})
         .then(res => {
-            if(res !== null) {
-                response.json({status: "SUCCESS", message: "Reference received", spot: res})
-            } else {
-                response.json({status: "ERROR", message: "Spot not found"})
-            }
+            if(res === null) {return response.json({status: "ERROR", message: "Spot not found"})}
+            spot = res
+            return databaseMethods.getManySorted("spotimages", {spotId: spotId}, {position: 1})
+        })
+        .then(res => {
+            response.json({status: "SUCCESS", message: "Reference received", spot: spot, images: res})
         })
         .catch(error => {
             console.log(error)

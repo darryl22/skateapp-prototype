@@ -232,10 +232,12 @@
             <p style="clear: both;"><span id="directionsDistance">0</span> meters</p>
             <p>Accuracy: <span id="directionsAccuracy">25</span> meters</p>
             <div class="directions-picker">
-                <p style="background-color: blue;">drive</p>
-                <p style="background-color: green;">walk</p>
-                <p style="background-color: purple;">cycle</p>
+                <p style="background-color: blue;" class="directions-picker-item directions-picker-selected" data-profile="driving" data-profile-color="blue">drive</p>
+                <p style="background-color: green;" class="directions-picker-item" data-profile="walking" data-profile-color="green">walk</p>
+                <p style="background-color: purple;" class="directions-picker-item" data-profile="cycling" data-profile-color="purple">cycle</p>
             </div>
+            <button class="base-button hidden" style="margin-top: 1em;" id="recalculateDirections">Recenter</button>
+            <button class="base-button hidden" style="margin-top: 1em;" id="confirmRecalculateDirections">Confirm</button>
         </div>
         <div id="map" class="map-div"></div>
         <div class="map-sidebar" id="addSpotForm">
@@ -356,6 +358,9 @@
     let currentOpenModal = null
 
     function hideModal(id) {
+        if (!id) {
+            return
+        }
         let modalOuter = document.getElementById(`${id}`)
         let modalInner = modalOuter.querySelectorAll(".base-modal-inner")[0]
         modalOuter.style.opacity = "0"
@@ -429,18 +434,6 @@
         }
     })
 
-    function openDirectionsDetails() {
-        document.getElementById("directionsDetails").style.display = "block"
-    }
-
-    function closeDirectionsDetails() {
-        document.getElementById("directionsDetails").style.display = "none"
-        map.removeLayer("route")
-        clearInterval(directionsInterval)
-        clearInterval(userPositionInterval)
-        directionsmarker.remove()
-    }
-
     mapboxgl.accessToken = "<%= mapboxtoken %>"
     let darkMap = "<%= darkMap %>"
     const map = new mapboxgl.Map({
@@ -449,34 +442,24 @@
         center: [36.8219, -1.2921],
         zoom: 10
     })
-    // map.addControl(new mapboxgl.GeolocateControl({
-    //     positionOptions: {
-    //         enableHighAccuracy: true
-    //     },
-    //     trackUserLocation: true,
-    //     showUserHeading: true,
-    // }));
 
-    let likeActionController = null
+    // let likeActionController = null
     let pauseLike = false
-    console.log("logged in user <%= isLoggedIn %>", )
     async function likeAction(elm, spotID) {
         console.log(elm)
         if (pauseLike) {
-            console.log("like hold")
             return
         }
-        if (likeActionController) {
-            console.log("like abort")
-            likeActionController.abort()
-        }
+        // if (likeActionController) {
+        //     likeActionController.abort()
+        // }
         if ("<%= isLoggedIn %>" === "false") {
             addNewAlert("ERROR", "<a href='/login'>Login</a> required for interactions")
             return
         }
         pauseLike = true
-        likeActionController = new AbortController()
-        const likeActionSignal = likeActionController.signal
+        // likeActionController = new AbortController()
+        // const likeActionSignal = likeActionController.signal
         // let likeButton = this.getElementById(`likeButton${spotID}`)
         let isLiked = elm.getAttribute("data-isliked")
         let likeRef = elm.getAttribute("data-likeref")
@@ -497,7 +480,7 @@
                 isLiked: isLiked,
                 likeRef: likeRef
             }),
-            signal: likeActionSignal
+            // signal: likeActionSignal
         })
         .then(async res => {
             let resData = await res.json()
@@ -824,19 +807,6 @@
             spotID: item._id,
             spotType: item.spottype
         })
-        // return {
-        //     type: 'Feature',
-        //     properties: {
-        //         spotId: item._id,
-        //         spotType: item.spottype
-        //     },
-        //     geometry: {
-        //         type: 'Point',
-        //         coordinates: [item.longitude, item.latitude]
-        //     },
-        //     spotID: item._id,
-        //     spotType: item.spottype
-        // }
     })
 
     console.log('spot points', spotCategories)
@@ -869,19 +839,60 @@
         let searchParams = new URLSearchParams(window.location.search)
         if (searchParams.has(paramName)) {
             let spotId = searchParams.get(paramName)
-            await fetch(`/getSpot?spotID=${spotId}`)
+            await fetch(`/getSpot?spotId=${spotId}`)
             .then(async res => {
-                let spotData = await res.json()
-                if(spotData.status === "SUCCESS") {
+                let resData = await res.json()
+                if(resData.status === "SUCCESS") {
                     let description = setPopupHtml(spotId)
-                    popup.setLngLat([spotData.spot.longitude, spotData.spot.latitude]).setHTML(description).addTo(map);
+                    popup.setLngLat([resData.spot.longitude, resData.spot.latitude]).setHTML(description).addTo(map);
                     map.easeTo({
-                        center: [spotData.spot.longitude, (spotData.spot.latitude - 0.023)],
+                        center: [resData.spot.longitude, (resData.spot.latitude - 0.023)],
                         zoom: 13,
                         duration: 500
                     })
+                    let currentData = spotDetailsMap.get(`spot-${spotId}`)
+                    let modalCarousel = document.getElementById(`spotDetailsModal${spotId}`).querySelectorAll(".swiper-wrapper")[0]
+                    if (modalCarousel.getAttribute("data-loaded") === "true") {
+                        console.log("images loaded already")
+                        return
+                    }
+                    let spotPopupImage = document.getElementById(`spotPopupImage${spotId}`)
+                    let spotListImage = document.getElementById(`spotListImage${spotId}`)
+                    spotDetailsMap.set(`spot-${spotId}`, {
+                        ...currentData,
+                        imageUrl: resData.images[0].imageUrl,
+                        isLoadingImages: false
+                    })
+                    if (spotPopupImage) spotPopupImage.setAttribute("src", resData.images[0].imageUrl)
+                    spotListImage.style.backgroundImage = `url("${resData.images[0].imageUrl}")`
+                    let images = ""
+                    console.log("images ref", resData.images)
+                    resData.images.forEach(item => {
+                        let swiperSlide = `<div class="swiper-slide">
+                            <div class="carousel-image" style="background-image: url('${item.imageUrl}'); background-size: contain;"></div>
+                        </div>`
+                        images = images + swiperSlide
+                    })
+                    modalCarousel.replaceChildren()
+                    modalCarousel.insertAdjacentHTML("beforeend", images)
+                    modalCarousel.setAttribute("data-loaded", "true")
+                    const swiper = new Swiper(`.swiper${spotId}`, {
+                        direction: 'horizontal',
+                        // slidesPerView: 2,
+                        loop: true,
+                        pagination: {
+                            el: '.swiper-pagination',
+                        },
+                        navigation: {
+                            nextEl: '.swiper-button-next',
+                            prevEl: '.swiper-button-prev',
+                        },
+                        scrollbar: {
+                            el: '.swiper-scrollbar',
+                        },
+                    });
                 } else {
-                    addNewAlert(spotData.status, spotData.message)
+                    addNewAlert(resData.status, resData.message)
                 }
             })
             .catch(error => {
@@ -896,7 +907,145 @@
     const popup = new mapboxgl.Popup({maxWidth: screen.width > 500 ? "390px" : "70%"})
     let directionsInterval = null
     let userPositionInterval = null
+    const geoLoc = new mapboxgl.GeolocateControl({
+        positionOptions: {
+            enableHighAccuracy: true
+        },
+        trackUserLocation: true,
+        showUserHeading: true,
+    })
+
+    function userPositionAsync(options) {
+        return new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, options)
+        })
+    }
+
+    function openDirectionsDetails(locationTrack) {
+        document.getElementById("directionsDetails").style.display = "block"
+        // map.setLayoutProperty("routeLayer", "visibility", "none")
+    }
+
+    function closeDirectionsDetails() {
+        // geoLoc.trigger()
+        map.removeControl(geoLoc)
+        map.addControl(geoLoc)
+        // geoLoc.options.trackUserLocation = false
+        document.getElementById("directionsDetails").style.display = "none"
+        map.removeLayer("routeLayer")
+        map.removeSource("routeSource")
+        manualDirectionsSetMarker.remove()
+        directionsMarker.remove()
+    }
+    const el = document.createElement('div')
+    el.className = 'marker';
+    let directionsMarker = new mapboxgl.Marker(el, {color: "red"})
+
+    let manualDirectionsCoordinates = [36.8219, -1.2921]
+    let manualDirectionsSetMarker = new mapboxgl.Marker({color: "red", draggable: true})
+    let spotDirectionCoordinates = null
+    manualDirectionsSetMarker.on('dragend', function(e) {
+        let lngLat = e.target.getLngLat()
+        manualDirectionsCoordinates = [lngLat.lng, lngLat.lat]
+        console.log(manualDirectionsCoordinates)
+        map.easeTo({
+            center: manualDirectionsCoordinates,
+            zoom: 14,
+            duration: 500
+        })
+    })
+    document.getElementById("recalculateDirections").addEventListener("click", function() {
+        // document.getElementById("recalculateDirections").classList.add("hidden")
+        this.classList.add("hidden")
+        manualDirectionsSetMarker.setLngLat(manualDirectionsCoordinates).addTo(map)
+        directionsMarker.remove()
+        map.easeTo({
+            center: manualDirectionsCoordinates,
+            zoom: 14,
+            duration: 500
+        })
+        document.getElementById("confirmRecalculateDirections").classList.remove("hidden")
+    })
+
+    document.getElementById("confirmRecalculateDirections").addEventListener("click", async function() {
+        this.classList.add("hidden")
+        document.getElementById("recalculateDirections").classList.remove("hidden")
+        await getDirections(manualDirectionsCoordinates[0], manualDirectionsCoordinates[1], spotDirectionCoordinates[0], spotDirectionCoordinates[1])
+        directionsMarker.setLngLat(manualDirectionsCoordinates).addTo(map)
+        manualDirectionsSetMarker.remove()
+    })
+    let directionsController = null
+    let routeType = "driving"
+    let routeColor = "blue"
+    document.querySelectorAll(".directions-picker-item").forEach(elm => {
+        elm.addEventListener("click", function() {
+            document.querySelectorAll(".directions-picker-selected")[0].classList.remove("directions-picker-selected")
+            this.classList.add("directions-picker-selected")
+            routeType = this.getAttribute("data-profile")
+            routeColor = this.getAttribute("data-profile-color")
+        })
+    })
+    async function getDirections(startLng, startLat, endLng, endLat) {
+        if (directionsController) {
+            directionsController.abort()
+        }
+        directionsController = new AbortController()
+        const signal = directionsController.signal
+        console.log(startLng, startLat, endLng, endLat)
+        let accessToken = "<%= mapboxtoken %>"
+        // console.log(position.coords.latitude)
+        let directionsUrl = `https://api.mapbox.com/directions/v5/mapbox/${routeType}/${startLng},${startLat};${endLng},${endLat}?geometries=geojson&access_token=${accessToken}`
+        await fetch(directionsUrl, {signal: signal})
+        .then(async res => {
+            let json = await res.json()
+            console.log(json)
+            popup.remove()
+            if (map.getSource("routeSource")) {
+                map.getSource("routeSource").setData(json.routes[0].geometry)
+                console.log(json.routes[0].distance)
+                hideModal(currentOpenModal)
+            } else {
+                map.addSource('routeSource', {
+                    type: 'geojson',
+                    data: {
+                        type: "Feature",
+                        properties: {},
+                        geometry: json.routes[0].geometry
+                    }
+                })
+                map.addLayer({
+                    id: 'routeLayer',
+                    type: 'line',
+                    source: 'routeSource',
+                    layout: {
+                        'line-join': 'round',
+                        'line-cap': 'round'
+                    },
+                    paint: {
+                        'line-color': routeColor,
+                        'line-width': 4,
+                        'line-opacity': 1
+                    }
+                })
+                let visible = map.getLayoutProperty("routeLayer", "visibility")
+                if (!visible) {
+                    map.setLayoutProperty("routeLayer", "visibility", "visible")
+                }
+                hideModal(currentOpenModal)
+            }
+            document.getElementById("directionsDistance").innerText = parseInt(json.routes[0].distance)
+            map.easeTo({
+                center: [startLng, startLat],
+                zoom: 13,
+                duration: 500
+            })
+        })
+        .catch(error => {
+            console.log(error)
+        })
+    }
     map.on('load', () => {
+        map.addControl(geoLoc);
         for (let x = 0; x < categoryEntries.length; x++) {
             let pointColor = ""
             if (categoryEntries[x][0] === "stairs") {
@@ -921,6 +1070,9 @@
                     'type': 'FeatureCollection',
                     'features': categoryEntries[x][1]
                 },
+                // cluster: true,
+                // clusterMaxZoom: 11,
+                // clusterRadius: 20
                 // 'dynamic': true
             })
 
@@ -931,7 +1083,7 @@
                 'paint': {
                     'circle-color': pointColor,
                     'circle-radius': 8,
-                    'circle-stroke-width': 2,
+                    'circle-stroke-width': 3,
                     'circle-stroke-color': '#ffffff'
                 }
             })
@@ -966,121 +1118,52 @@
         document.getElementById(`typeFilter-all`).innerText = spotsData.length
         getOneSpot('spot')
         for (let x = 0; x < spotsData.length; x++) {
-            document.getElementById(`getDirections${spotsData[x]._id}`).addEventListener("click", function() {
-                // let directionsGeolocateControl = new mapboxgl.GeolocateControl({
-                //     positionOptions: {
-                //         enableHighAccuracy: true
-                //     },
-                //     trackUserLocation: true,
-                //     showUserHeading: true,
-                // })
-                // map.addControl(directionsGeolocateControl);
+            document.getElementById(`getDirections${spotsData[x]._id}`).addEventListener("click", async function() {
+                if (map.getSource("routeSource")) {
+                    console.log("reset directions")
+                    map.removeLayer("routeLayer")
+                    map.removeSource("routeSource")
+                }
                 let endLng = this.getAttribute("data-lng")
                 let endLat = this.getAttribute("data-lat")
+                spotDirectionCoordinates = [endLng, endLat]
                 let id = this.getAttribute("data-id")
-                console.log(endLng, endLat, id)
-                directionsInterval = setInterval(getDirections, 30000, endLng, endLat, id)
-                userPositionInterval = setInterval(function () {
-                    if (navigator.geolocation) {
-                        navigator.geolocation.getCurrentPosition(function(position) {
-                            console.log(position)
-                            directionsmarker.setLngLat([position.coords.longitude, position.coords.latitude]).addTo(map)
-                        })
-                    }
-                }, 500)
-                // console.log("directionsInterval ID", directionsInterval)
+                // let startLng = manualDirectionsCoordinates[0]
+                // let startLat = manualDirectionsCoordinates[1]
+                document.getElementById("spinnerContainer").style.display = "block"
+                await userPositionAsync({enableHighAccuracy: true})
+                .then(async position => {
+                    await getDirections(position.coords.longitude, position.coords.latitude, endLng, endLat)
+                    document.getElementById("spinnerContainer").style.display = "none"
+                    geoLoc.trigger()
+                    document.getElementById("directionsAccuracy").innerText = parseInt(position.coords.accuracy)
+                })
+                .catch(error => {
+                    document.getElementById("spinnerContainer").style.display = "none"
+                    console.log("geoloc error", error)
+                    let confirmRecalculateDirections = document.getElementById("confirmRecalculateDirections")
+                    confirmRecalculateDirections.classList.remove("hidden")
+                    manualDirectionsSetMarker.setLngLat(manualDirectionsCoordinates).addTo(map)
+                    map.easeTo({
+                        center: manualDirectionsCoordinates,
+                        zoom: 14,
+                        duration: 500
+                    })
+                    hideModal(currentOpenModal)
+                    popup.remove()
+                    addNewAlert("ERROR", `Error getting user location, move red marker to start position or try <a href="https://www.google.com/maps/search/?api=1&query=${endLat},${endLng}">view on maps</a>`)
+                    // document.getElementById("recalculateDirections").classList.remove("hidden")
+                })
                 openDirectionsDetails()
-                getDirections(endLng, endLat, id)
-                // setTimeout(function() {
-                //     clearInterval(directionsInterval)
-                // }, 5000)
             })
         }
     })
-
-    let directionsController = null
-    const el = document.createElement('div');
-    el.className = 'marker';
-    let directionsmarker = new mapboxgl.Marker(el, {color: "red"})
-    function getDirections(endLng, endLat, id) {
-        if(navigator.geolocation) {
-            if(directionsController) {
-                directionsController.abort()
-            }
-            directionsController = new AbortController()
-            const signal = directionsController.signal
-            navigator.geolocation.getCurrentPosition(async function(position) {
-                console.log(position)
-                document.getElementById("directionsAccuracy").innerText = parseInt(position.coords.accuracy)
-                let accessToken = "<%= mapboxtoken %>"
-                let directionsUrl = `https://api.mapbox.com/directions/v5/mapbox/cycling/${position.coords.longitude},${position.coords.latitude};${endLng},${endLat}?geometries=geojson&access_token=${accessToken}`
-                await fetch(directionsUrl, {signal: signal})
-                .then(async res => {
-                    let json = await res.json()
-                    console.log(json)
-                    if (map.getSource("route")) {
-                        map.getSource("route").setData(json.routes[0].geometry)
-                        console.log(json.routes[0].distance)
-                        document.getElementById("directionsDistance").innerText = parseInt(json.routes[0].distance)
-                        // hideDetails(id)
-                        popup.remove()
-                        hideModal(currentOpenModal)
-                    } else {
-                        map.addLayer({
-                            id: 'route',
-                            type: 'line',
-                            source: {
-                                type: 'geojson',
-                                data: {
-                                    type: "Feature",
-                                    properties: {},
-                                    geometry: json.routes[0].geometry
-                                }
-                            },
-                            layout: {
-                                'line-join': 'round',
-                                'line-cap': 'round'
-                            },
-                            paint: {
-                                'line-color': "#37ff00",
-                                'line-width': 4,
-                                'line-opacity': 1
-                            }
-                        })
-                        popup.remove()
-                        hideModal(currentOpenModal)
-                        map.easeTo({
-                            center: [position.coords.longitude, position.coords.latitude],
-                            zoom: 13
-                        })
-                    }
-                    directionsmarker.setLngLat([position.coords.longitude, position.coords.latitude]).addTo(map)
-                })
-                .catch(error => {
-                    console.log(error)
-                })
-            }, function(error) {
-                // window.alert("Cannot get user Location")
-                console.log(error)
-                addNewAlert("ERROR", "Cannot get user location")
-            }, {
-                enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 0
-            })
-        } 
-    }
 
     function handleSpotFilters() {
         let typeFilter = document.getElementById("typeFilter")
         let sortByFilter = document.getElementById("sortByFilter")
         let yourFavouritesCheck = document.getElementById("yourFavouritesCheck")
         let savedSpotsCheck = document.getElementById("savedSpotsCheck")
-        // if (typeFilter.value === "ledge") {
-        //     map.setLayoutProperty("spotsLayerledge", "visibility", 'none')
-        //     // map.setLayoutProperty("spotsLayerledge", "visibility", 'visible')
-        // }
-        // let paintProperty = map.getPaintProperty('spotsLayerledge', 'source')
 
         for (x of categoryEntries) {
             if (x[0] === typeFilter.value || typeFilter.value === "all") {
@@ -1089,12 +1172,7 @@
                 map.setLayoutProperty(`spotsLayer${x[0]}`, "visibility", "none")
             }
         }
-        // hideMenu()
         hideModal(currentOpenModal)
-        // map.easeTo({
-        //     center: [36.8219, -1.2921],
-        //     zoom: 10
-        // })
     }
 
     const searchResult = document.getElementById("search-js")
@@ -1131,6 +1209,11 @@
         longitude.value = lngLat.lng
         latitude.value = lngLat.lat
         console.log(markerCoordinates)
+        map.easeTo({
+            center: markerCoordinates,
+            zoom: 13,
+            duration: 500
+        })
     })
 
     const addNewSpotButton = document.getElementById("addNewSpotButton")
@@ -1154,17 +1237,27 @@
                 latitude.value = position.coords.latitude
                 map.easeTo({
                     center: [position.coords.longitude, position.coords.latitude],
-                    zoom: 13
+                    zoom: 13,
+                    duration: 500
                 })
                 addSpotMarker.setLngLat([position.coords.longitude, position.coords.latitude]).addTo(map)
             }, function() {
                 addNewAlert("ERROR", "Could not get current user position, drag red marker to spot location.")
                 map.easeTo({
                     center: [36.8219, -1.2921],
-                    zoom: 13
+                    zoom: 13,
+                    duration: 500
                 })
                 addSpotMarker.setLngLat([36.8219, -1.2921]).addTo(map)
             })
+        } else {
+            addNewAlert("ERROR", "Could not get current user position, drag red marker to spot location.")
+            map.easeTo({
+                center: [36.8219, -1.2921],
+                zoom: 13,
+                duration: 500
+            })
+            addSpotMarker.setLngLat([36.8219, -1.2921]).addTo(map)
         }
     })
 

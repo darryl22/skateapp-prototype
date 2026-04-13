@@ -132,10 +132,13 @@ a{
 }
 
 .marker{
-    background-image: url("./logos/longboard.png");
+    /* background-image: url("./logos/longboard.png"); */
+    background-image: url("./logos/skating.png");
+    background-color: white;
     background-size: cover;
-    width: 50px;
-    height: 50px;
+    width: 30px;
+    height: 30px;
+    padding: 5px;
     border-radius: 50%;
     cursor: pointer;
 }
@@ -483,11 +486,15 @@ a{
     margin-top: 1em;
 }
 
-.directions-picker p{
+.directions-picker-item{
     cursor: pointer;
     color: var(--text-color-primary);
     padding: 5px;
     border-radius: 5px;
+}
+
+.directions-picker-selected{
+    border: 2px solid white;
 }
 
 .mapboxgl-popup-content{

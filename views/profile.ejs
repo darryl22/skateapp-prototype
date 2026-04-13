@@ -432,7 +432,6 @@
                 if (navigator.maxTouchPoints > 0) {
                     return
                 }
-                console.log("drag start", e.pointerType)
                 // elm.style.touchAction = "none"
                 let initX = e.clientX
                 let initY = e.clientY
@@ -467,7 +466,6 @@
                 }
 
                 function stopDrag(stop) {
-                    console.log("drag stop")
                     // click start and stop position offset, differentiate between click and drag
                     if (Math.abs(stop.clientX - initX) > 10 || Math.abs(stop.clientY - initY) > 10) {
                         isDragging = true
@@ -516,8 +514,6 @@
             elm.addEventListener("touchstart", function(e) {
                 // e.preventDefault()
                 elm.style.touchAction = "none"
-                console.log(navigator.maxTouchPoints, 'ontouchstart' in window)
-                console.log("touch start", e)
                 let initX = e.touches[0].clientX
                 let initY = e.touches[0].clientY
                 isDragging = false
@@ -537,7 +533,6 @@
                 }
 
                 function stopDrag(stop) {
-                    console.log("touch stop")
                     let endTarget = document.elementFromPoint(stop.changedTouches[0].clientX, stop.changedTouches[0].clientY)
                     // click start and stop position offset, differentiate between click and drag
                     if (Math.abs(stop.changedTouches[0].clientX - initX) > 10 || Math.abs(stop.changedTouches[0].clientY - initY) > 10) {
