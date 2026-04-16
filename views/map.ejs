@@ -136,6 +136,10 @@
                         replyListeners("<%= spots[x]._id  %>")
 
                     }
+                    let commentsCount = parseInt(document.querySelectorAll(".spotCommentsCount-<%= spots[x]._id %>")[0].innerText)
+                    let newCount = ++commentsCount
+                    document.querySelectorAll(".spotCommentsCount-<%= spots[x]._id %>").forEach(item => item.innerText = newCount)
+
                 } else if (result.status === "ERROR") {
                     addNewAlert(res.status, res.message)
                 }
@@ -204,11 +208,11 @@
                                         <div style="display: flex; gap: 5px">
                                             <div style="display: flex; align-items: center; gap: 0.5em">
                                                 <img src="/logos/heart-unfilledlight.png" class="like-button likeButton<%= spots[x]._id %>" data-likeref="" data-isliked="" onclick="likeAction(this, '<%= spots[x]._id %>')"></img>
-                                                <p class="likes-count spotLikesCount-<%= spots[x]._id %>">0</p>
+                                                <p class="likes-count spotLikesCount-<%= spots[x]._id %>"><%= spots[x].likesCount %></p>
                                             </div>
                                             <div style="display: flex; align-items: center; gap: 0.5em">
                                                 <img src="/logos/comments-light.png" style="height: 2em;"></img>
-                                                <p>0</p>
+                                                <p class="spotCommentsCount-<%= spots[x]._id %>"><%= spots[x].commentsCount%></p>
                                             </div>
                                         </div>
                                     </div>
@@ -347,13 +351,13 @@
     })
     // spotsListObserver.observe(spotListItems[0])
 
-    async function getUser() {
-        let userRes = await fetch('/getUser')
-        .then(res => {
-            console.log(res)
-            return res
-        })
-    }
+    // async function getUser() {
+    //     let userRes = await fetch('/getUser')
+    //     .then(res => {
+    //         console.log(res)
+    //         return res
+    //     })
+    // }
 
     let currentOpenModal = null
 
@@ -387,12 +391,10 @@
                 })
                 .then(async res => {
                     let resData = await res.json()
-                    console.log(resData)
                     if (resData.status === "SUCCESS") {
                         loadComments(spotId, resData.comments)
                         loadReplies(spotId, resData.replies)
                         replyListeners(spotId)
-                        console.log("users in conversation", usersInConversation)
                         await loadCommentsInfo(spotId)
                         document.getElementById(`commentsDiv${spotId}`).setAttribute("data-loaded", "true")
                     } else if(resData.status === "ERROR") {
@@ -446,7 +448,6 @@
     // let likeActionController = null
     let pauseLike = false
     async function likeAction(elm, spotID) {
-        console.log(elm)
         if (pauseLike) {
             return
         }
@@ -469,7 +470,6 @@
             return
         }
         let src = isLiked === "true" ? '/logos/heart-unfilledlight.png' : '/logos/heart-filledlight.png'
-        // elm.setAttribute("src", src)
         document.querySelectorAll(`.likeButton${spotID}`).forEach(item => {item.setAttribute("src", src)})
         let currentData = spotDetailsMap.get(`spot-${spotID}`)
         await fetch("/updateLiked", {
@@ -484,14 +484,15 @@
         })
         .then(async res => {
             let resData = await res.json()
+            console.log(res)
             pauseLike = false
             if (resData.status === "SUCCESS") {
-                // src = resData.isLiked ? '/logos/heart-filledlight.png' : '/logos/heart-unfilledlight.png'
                 document.querySelectorAll(`.likeButton${spotID}`).forEach(item => {
                     item.setAttribute("data-isliked", resData.isLiked)
                     item.setAttribute("data-likeref", resData.likeRef)
                 })
-                let likesCount = parseInt(likesCounter[0].innerText)
+                // let likesCount = parseInt(likesCounter[0].innerText)
+                let likesCount = currentData.likesCount
                 let newLikesCount = resData.isLiked ? `${++likesCount}` : `${--likesCount}`
                 likesCounter.forEach(item => item.innerText = newLikesCount)
                 spotDetailsMap.set(`spot-${spotID}`, {
@@ -539,11 +540,13 @@
         document.querySelectorAll(".delete-comment").forEach(elm => {
             elm.addEventListener("click", async function() {
                 let idRef = elm.getAttribute("data-deleteref")
+                let spotId = elm.getAttribute("data-spotid")
                 await fetch("/deleteComment", {
                     method: "POST",
                     headers: {"Content-Type": "application/json"},
                     body: JSON.stringify({
-                        commentID: idRef
+                        commentID: idRef,
+                        spotId: spotId
                     })
                 })
                 .then(async res => {
@@ -551,6 +554,9 @@
                     if (resData.status === "SUCCESS") {
                         let deletedElm = document.getElementById(`commentId-${idRef}`)
                         deletedElm.remove()
+                        let commentsCount = parseInt(document.querySelectorAll(`.spotCommentsCount-${spotId}`)[0].innerText)
+                        let newCount = --commentsCount
+                        document.querySelectorAll(`.spotCommentsCount-${spotId}`).forEach(item => item.innerText = newCount)
                         addNewAlert(resData.status, resData.message)
                     } else {
                         addNewAlert(resData.status, resData.message)
@@ -569,7 +575,6 @@
             commentsDiv.replaceChildren()
         }
         for (let x = 0; x < comments.length; x++) {
-            console.log("<%= userID %>")
             if (!usersInConversation.includes(comments[x].author)) {
                 usersInConversation.push(comments[x].author)
             }
@@ -586,7 +591,7 @@
                     <div class="comment-content">${comments[x].content}</div>
                     <div style="display: flex; align-items: center; gap: 1em;">
                         <p class="reply-button replyEvent${spotId} change-author-${comments[x].author}" id="replyButton${comments[x]._id}" data-author="User" data-replyref="${comments[x]._id}" data-spotid="${spotId}">reply</p>
-                        <p class="delete-comment" style="display: ${comments[x].author === loggedInUserID ? "block" : "none"};" data-deleteref="${comments[x]._id}">delete</p>
+                        <p class="delete-comment" style="display: ${comments[x].author === loggedInUserID ? "block" : "none"};" data-deleteref="${comments[x]._id}" data-spotid="${spotId}">delete</p>
                     </div>
                     <div class="comment-reply-container" id="repliesContainer${spotId}-${comments[x]._id}">
                     </div>
@@ -622,7 +627,7 @@
                     <div class="comment-content">${replies[x].content}</div>
                     <div style="display: flex; align-items: center; gap: 1em;">
                         <p class="reply-button replyEvent${spotId} change-author-${replies[x].author}" id="replyButton${replies[x]._id}" data-author="User" data-replyref="${replies[x].replyId}" data-spotid="${spotId}">reply</p>
-                        <p class="delete-comment" style="display: ${replies[x].author === loggedInUserID ? "block" : "none"};" data-deleteref="${replies[x]._id}">delete</p>
+                        <p class="delete-comment" style="display: ${replies[x].author === loggedInUserID ? "block" : "none"};" data-deleteref="${replies[x]._id}" data-spotid="${spotId}">delete</p>
                     </div>
                 </div>
             </div>`
@@ -766,17 +771,18 @@
         console.log("likes list size", tempLikesList.length, likesList.length)
         tempLikesList.forEach(likeItem => {
             if (likeItem.spotId === item._id) {
-                likesCount++
-                if (likeItem.likeUser === loggedInUserID) {
-                    isLiked = true
-                    likeRef = likeItem._id
-                }
+                // likesCount++
+                // if (likeItem.likeUser === loggedInUserID) {
+                //     likeRef = likeItem._id
+                // }
+                likeRef = likeItem._id
+                isLiked = true
             } else {
                 temp.push(likeItem)
             }
         })
         tempLikesList = temp
-        document.querySelectorAll(`.spotLikesCount-${item._id}`).forEach(item => item.innerHTML = likesCount)
+        // document.querySelectorAll(`.spotLikesCount-${item._id}`).forEach(item => item.innerHTML = likesCount)
         document.querySelectorAll(`.likeButton${item._id}`).forEach(item => {
             let src = isLiked ? '/logos/heart-filledlight.png' : '/logos/heart-unfilledlight.png'
             item.setAttribute("src", src)
@@ -786,7 +792,8 @@
         spotDetailsMap.set(`spot-${item._id}`, {
             isLiked: isLiked,
             imageUrl: "/images/loading.png",
-            likesCount: likesCount,
+            likesCount: item.likesCount,
+            commentsCount: item.commentsCount,
             description: item.description,
             index: index,
             likeRef: likeRef,
@@ -826,7 +833,7 @@
                         </div>
                         <div style="display: flex; align-items: center; gap: 0.5em">
                             <img src="/logos/comments-light.png" style="height: 2em;"></img>
-                            <p>0</p>
+                            <p class="spotCommentsCount-${spotId}">${currentData.commentsCount}</p>
                         </div>
                     </div>
                     <button class='spot-details-button modal-button' data-toggle-modal="spotDetailsModal${spotId}" onclick="showModal('spotDetailsModal${spotId}')">Details</button>

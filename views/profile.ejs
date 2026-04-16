@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"/>
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
@@ -162,24 +161,24 @@
 
                 <div class="profile-pill-outer">
                     <div class="profile-pill-title">Two factor Authentication</div>
-                    <div class="profile-pill-div" id="twoFactorAuthPill">
+                    <div class="profile-pill-div" id="twoFactorAuthPill" data-param="twoFactorAuth">
                         <div class="profile-pill-circle" id="twoFactorAuthPillCircle"></div>
                     </div>
-                    <input type="hidden" value="<%= user.settings.twoFactorAuth %>" id="twoFactorAuthPillValue">
+                    <input type="hidden" class="profile-pill-input" value="<%= user.settings.twoFactorAuth %>" id="twoFactorAuthPillValue">
                 </div>
                 <div class="profile-pill-outer">
                     <div class="profile-pill-title">Dark mode</div>
-                    <div class="profile-pill-div" id="darkModePill">
+                    <div class="profile-pill-div" id="darkModePill" data-param="darkMode">
                         <div class="profile-pill-circle" id="darkModePillCircle"></div>
                     </div>
-                    <input type="hidden" value="<%= user.settings.darkMode %>" id="darkModePillValue">
+                    <input type="hidden" class="profile-pill-input" value="<%= user.settings.darkMode %>" id="darkModePillValue">
                 </div>
                 <div class="profile-pill-outer">
                     <div class="profile-pill-title">Dark map</div>
-                    <div class="profile-pill-div" id="darkMapPill">
+                    <div class="profile-pill-div" id="darkMapPill" data-param="darkMap">
                         <div class="profile-pill-circle" id="darkMapPillCircle"></div>
                     </div>
-                    <input type="hidden" value="<%= user.settings.darkMap %>" id="darkMapPillValue">
+                    <input type="hidden" class="profile-pill-input" value="<%= user.settings.darkMap %>" id="darkMapPillValue">
                 </div>
             </div>
             <div class="profile-info-div" id="spotsContentDiv">
@@ -1086,86 +1085,76 @@
         profileImageModalOuter.style.pointerEvents = "none"
     }
 
-    // document.getElementById("confirmProfileImageUpdate").addEventListener("click", function() {
-    //     fetch('/updateProfileImage', {
-    //         method: "POST",
-    //         headers: {
-    //             // "Accept": "application/json",
-    //             "Content-Type": "application/json"
-    //         },
-    //         body: JSON.stringify({
-    //             profileImage: profilePreview
-    //         })
-    //     })
-    //     .then(res => {
-    //         console.log(res)
-    //     })
-    //     .catch(error => {
-    //         console.log(error)
-    //     })
-    // })
-
-    $(document).ready(function () {
-
-        $(".profile-pill-div").on("click", function() {
-            $(this).toggleClass("pill-on")
-            let pillID = $(this).attr("id") + "Circle"
-            let pillVal = $(this).attr("id") + "Value"
-            $(`#${pillID}`).toggleClass("pill-circle-on")
-            if ($(`#${pillVal}`).val() == "true") {
-                $(`#${pillVal}`).val("false")
-            } else {
-                $(`#${pillVal}`).val("true")
-            }
-            console.log($(`#${pillVal}`).val())
-            $.ajax({
-                url: "updateProfile",
-                method: "post",
-                data: {
-                    twoFactorAuth: $("#twoFactorAuthPillValue").val(),
-                    darkMode: $("#darkModePillValue").val(),
-                    darkMap: $("#darkMapPillValue").val(),
-                },
-                success: function(res) {
-                    console.log(res)
-                    if (res.status === "SUCCESS") {
-                        if ($("#darkModePillValue").val() === "true") {
-                            document.body.classList.add("dark-mode")
-                            document.body.classList.remove("light-mode")
-                        } else if ($("#darkModePillValue").val() === "false") {
-                            document.body.classList.remove("dark-mode")
-                            document.body.classList.add("light-mode")
-                        } else {
-                            document.body.classList.remove("dark-mode")
-                            document.body.classList.remove("light-mode")
-                        }
-                        addNewAlert(res.status, res.message)
-                    } else if (res.status === "ERROR") {
-                        addNewAlert(res.status, res.message)
-                    }
-                },
-                error: function(error) {
-                    console.log(error)
-                }
+    document.getElementById("confirmProfileImageUpdate").addEventListener("click", async function() {
+        await fetch('/updateProfileImage', {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                profileImage: profilePreview
             })
         })
+        .then(async res => {
+            let resData = await res.json()
+            if(resData.status === "SUCCESS") {
+                addNewAlert(resData.status, resData.message)
+                document.getElementById("profilePicture").style.backgroundImage = `url('${profilePreview}')`
+                hideProfileImageModal()
+            } else {
+                addNewAlert(resData.status, resData.message)
+            }
+        })
+        .catch(error => {
+            console.log(error)
+            addNewAlert("ERROR", "Error updating image")
+        })
+    })
 
-        $("#confirmProfileImageUpdate").on("click", function() {
-            $.ajax({
-                url: "/updateProfileImage",
-                method: "post",
-                data: {
-                    profileImage: profilePreview
-                },
-                success: function(res) {
-                    console.log(res)
-                    $("#profilePicture").css('background-image', `url('${profilePreview}')`)
-                    hideProfileImageModal()
-                    addNewAlert(res.status, res.message)
-                },
-                error: function(error) {
-                    console.log(error)
+    let pillUpdating = false
+    document.querySelectorAll(".profile-pill-div").forEach(elm => {
+        elm.addEventListener("click", async function() {
+            if (pillUpdating) {
+                return
+            }
+            pillUpdating = true
+            this.classList.toggle("pill-on")
+            let id = this.getAttribute("id")
+            let param = this.getAttribute("data-param")
+            document.getElementById(`${id}Circle`).classList.toggle("pill-circle-on")
+            let pillValue = document.getElementById(`${id}Value`).value
+            document.getElementById(`${id}Value`).value = pillValue === "true" ? "false" : "true"
+            console.log(document.getElementById(`${id}Value`).value)
+            await fetch("/updateProfile", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({
+                    param: param,
+                    value: document.getElementById(`${id}Value`).value
+                })
+            })
+            .then(async res => {
+                let resData = await res.json()
+                if (resData.status === "SUCCESS") {
+                    addNewAlert(resData.status, resData.message)
+                    console.log("darkMode", document.getElementById("darkModePillValue").value)
+                    if (document.getElementById("darkModePillValue").value === "true") {
+                        document.body.classList.add("dark-mode")
+                        document.body.classList.remove("light-mode")
+                    } else if (document.getElementById("darkModePillValue").value === "false") {
+                        document.body.classList.remove("dark-mode")
+                        document.body.classList.add("light-mode")
+                    } else {
+                        document.body.classList.remove("dark-mode")
+                        document.body.classList.remove("light-mode")
+                    }
+                    pillUpdating = false
+                } else {
+                    addNewAlert(resData.status, resData.message)
+                    pillUpdating = false
                 }
+            })
+            .catch(error => {
+                addNewAlert("ERROR", "Could not update profile")
+                pillUpdating = false
             })
         })
     })

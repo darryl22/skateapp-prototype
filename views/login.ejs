@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Skatespot App</title>
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
     <link rel="stylesheet" href="/index.css">
 </head>
 <body>
@@ -21,31 +20,34 @@
     </form>
 </body>
 <script>
-    $(document).ready(function() {
-        $("#loginForm").submit(function(e) {
-            e.preventDefault()
-            $.ajax({
-                url: "/login",
-                method: "post",
-                data: {
-                    email: $("#email").val(),
-                    password: $("#password").val()
-                },
-                success: function(res) {
-                    console.log(res)
-                    setTimeout(() => {
-                        if (res.status === "SUCCESS") {
-                            window.location.replace("/profile")
-                        } else {
-                            addNewAlert(res.status, res.message)
-                        }
-                    }, 2000)
-                },
-                error: function(error) {
-                    console.log(error)
-                    addNewAlert(res.status, res.message)
-                }
+    document.getElementById("loginForm").addEventListener("submit", async function(e) {
+        e.preventDefault()
+        await fetch("/login", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                email: document.getElementById("email").value,
+                password: document.getElementById("password").value
             })
+        })
+        .then(async res => {
+            let resData = await res.json()
+            console.log(resData)
+            if (resData.status === "SUCCESS") {
+                addNewAlert(resData.status, resData.message)
+                setTimeout(() => {
+                    if (resData.action === "login") {
+                        window.location.replace("/profile")
+                    } else if (resData.action === "tfa") {
+                        window.location.replace("/twoFactorAuth")
+                    }
+                }, 2000)
+            } else {
+                addNewAlert(resData.status, resData.message)
+            }
+        })
+        .catch(error => {
+            addNewAlert("ERROR", "Error with login")
         })
     })
 </script>

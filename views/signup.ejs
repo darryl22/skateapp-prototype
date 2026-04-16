@@ -22,32 +22,33 @@
     </form>
 </body>
 <script>
-    $(document).ready(function() {
-        $("#submitForm").submit(function(e) {
-            e.preventDefault()
-            $.ajax({
-                url: "/signup",
-                method: "post",
-                data: {
-                    username: $("#username").val(),
-                    email: $("#email").val(),
-                    password: $("#password").val(),
-                    confirmpassword: $("#confirmpassword").val(),
-                },
-                success: function(res) {
-                    console.log(res)
-                    addNewAlert(res.status, res.message)
-                    setTimeout(() => {
-                        if (res.status === "SUCCESS") {
-                            window.location.replace(`/verify`)
-                        }
-                    }, 2000)
-                },
-                error: function(error) {
-                    console.log(error)
-                    addNewAlert(res.status, res.message)
-                }
+    document.getElementById("submitForm").addEventListener("submit", async function(e) {
+        e.preventDefault()
+        await fetch("/signup", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                username: document.getElementById("username").value,
+                email: document.getElementById("email").value,
+                password: document.getElementById("password").value,
+                confirmpassword: document.getElementById("confirmpassword").value,
             })
+        })
+        .then(async res => {
+            let resData = await res.json()
+            if (resData.status === "SUCCESS") {
+                addNewAlert(res.status, res.message)
+                setTimeout(() => {
+                    if (res.status === "SUCCESS") {
+                        window.location.replace(`/verify`)
+                    }
+                }, 2000)
+            } else {
+                addNewAlert(res.status, res.message)
+            }
+        })
+        .catch(error => {
+            addNewAlert("ERROR", "Error with signup")
         })
     })
 </script>

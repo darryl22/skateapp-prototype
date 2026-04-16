@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
     <title>Skatespot App</title>
     <link rel="stylesheet" href="/index.css">
 </head>
@@ -12,7 +11,7 @@
     <%- include('templates/alert.ejs') %>
     <%- include('templates/theme.ejs') %>
     <form action="" method="post" class="auth-div" id="submitForm">
-        <p style="text-align: center; font-size: 1.5em;">Verify Email</p>
+        <p style="text-align: center; font-size: 1.5em;">Login Verification</p>
         <input type="text" class="auth-input" placeholder="token" name="token" id="token" required>
         <p id="tokenExpiryCounter">Token Expires in <span id="timerSpan"></span></p>
         <p id="resendTokenDiv">Token Expired</p>
@@ -60,7 +59,7 @@
 
     document.getElementById("submitForm").addEventListener("submit", async function(e) {
         e.preventDefault()
-        await fetch("/verify", {
+        await fetch("/twoFactorAuth", {
             method: "POST",
             headers: {"Content-Type": "application/json"},
             body: JSON.stringify({
@@ -84,7 +83,7 @@
     })
 
     document.getElementById("resendTokenButton").addEventListener("click", async function() {
-        await fetch("/verify", {
+        await fetch("/twoFactorAuth", {
             method: "POST",
             headers: {"Content-Type": "application/json"},
             body: JSON.stringify({
@@ -100,7 +99,7 @@
             addNewAlert("SUCCESS", "New token sent")
         })
         .catch(error => {
-            addNewAlert("ERROR", "Error sending token")
+            addNewAlert("ERROR", "Error with token resend")
         })
     })
 </script>

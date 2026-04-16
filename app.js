@@ -25,6 +25,7 @@ const { error } = require("console")
 let databaseMethods = new DatabaseMethods()
 let appFuncs = new appFunctions()
 const ExpressSanitizer = require("perfect-express-sanitizer")
+const { settings } = require("cluster")
 
 app.set('view engine', 'ejs')
 app.use(express.static('public'))
@@ -82,7 +83,7 @@ app.get('/getUser', async (request, response) => {
 app.get('/map', async (request, response) => {
     let date = new Date()
     // let currentDate = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`
-    await Promise.all([databaseMethods.getMany("spots"), databaseMethods.getOne("users", {username: request.session.username}), databaseMethods.getMany("likes", {type: "spot"})])
+    await Promise.all([databaseMethods.getMany("spots"), databaseMethods.getOne("users", {username: request.session.username}), databaseMethods.getMany("likes", {type: "spot", likeUser: ObjectId.createFromHexString(request.session.userID)})])
     .then(res => {
         // console.log(res[1])
         let darkMap = "true"
@@ -125,7 +126,9 @@ app.post('/addspot', async (request, response) => {
         createdAt: date,
         createdBy: request.session.username,
         createdByID: ObjectId.createFromHexString(request.session.userID),
-        dateCreated: currentDate[0]
+        dateCreated: currentDate[0],
+        likesCount: 0,
+        commentsCount: 0
     }
     let insertId = null
     let uploads = [...request.body.spotimages]
@@ -194,18 +197,19 @@ app.post('/updateComment', async (request, response) => {
     try {
         if (request.session.username === undefined) return response.json({status: "ERROR", message: "Login required for interactions"})
         let date = new Date()
+        let spotId = ObjectId.createFromHexString(request.body.spotId)
         let currentDate = date.toISOString().split("T")
         let updateData = {
             content: request.body.comment,
             type: request.body.type,
-            spotId: ObjectId.createFromHexString(request.body.spotId),
+            spotId: spotId,
             replyId: request.body.replyId,
             author: request.session.userID,
             dateAdded: currentDate[0]
         }
-        await databaseMethods.addOne("comment", updateData)
+        await Promise.all([databaseMethods.addOne("comment", updateData), databaseMethods.makeUpdate("spots", {_id: spotId}, {$inc: {commentsCount: 1}})])
         .then(res => {
-            return databaseMethods.getOne("comment", {_id: res.insertedId})
+            return databaseMethods.getOne("comment", {_id: res[0].insertedId})
         })
         .then(res => {
             response.json({status: "SUCCESS", message: "Updated comments", newComment: res})
@@ -228,7 +232,8 @@ app.get("/loadComments", async (request, response) => {
         .then(res => {
             let commentsList = [...res[0].value]
             let repliesList = [...res[1].value]
-            response.json({status: "SUCCESS", message: "Loaded comments", comments: commentsList, replies: repliesList})
+            let commentsCount = commentsList.length + repliesList.length
+            response.json({status: "SUCCESS", message: "Loaded comments", comments: commentsList, replies: repliesList, commentsCount: commentsCount})
         })
         .catch(error => {
             console.log(error)
@@ -271,8 +276,9 @@ app.post("/commentUserInfo", async (request, response) => {
 app.post("/deleteComment", async (request, response) => {
     try {
         let commentID = ObjectId.createFromHexString(request.body.commentID)
+        let spotId = ObjectId.createFromHexString(request.body.spotId)
         console.log(commentID)
-        await databaseMethods.deleteDocument("comment", {_id: commentID})
+        await Promise.all([databaseMethods.deleteDocument("comment", {_id: commentID}), databaseMethods.makeUpdate("spots", {_id: spotId}, {$inc: {commentsCount: -1}})])
         .then(res => {
             console.log(res)
             response.json({status: "SUCCESS", message: "Comment Deleted"})
@@ -289,45 +295,27 @@ app.post("/deleteComment", async (request, response) => {
 
 app.post('/updateLiked', async (request, response) => {
     try{
-        // setTimeout(async () => {
-        //     let likePromise = []
-        //     let likeObject = {
-        //         spotId: request.body.ID,
-        //         likeUser: request.session.userID,
-        //         type: "spot"
-        //     }
-        //     if (request.body.isLiked === "false") {
-        //         likePromise.push(databaseMethods.addOne("likes", likeObject))
-        //     } else {
-        //         let likeRef = ObjectId.createFromHexString(request.body.likeRef)
-        //         likePromise.push(databaseMethods.deleteDocument("likes", {_id: likeRef}))
-        //     }
-        //     await Promise.allSettled(likePromise)
-        //     .then(res => {
-        //         console.log(res)
-        //         if (request.body.isLiked === "false") {
-        //             return response.json({status: "SUCCESS", message: "Like Updated", isLiked: true, likeRef: res[0].value.insertedId.toString()})
-        //         }
-        //         console.log("delete like")
-        //         response.json({status: "SUCCESS", message: "Like Updated", isLiked: false, likeRef: "None"})
-        //     })
-        // }, 3000);
-
+        if (!request.session.isLoggedIn) {
+            return response.json({status: "ERROR", message: "Login required for interactions"})
+        }
         let likePromise = []
+        let spotId = ObjectId.createFromHexString(request.body.ID)
         let likeObject = {
-            spotId: ObjectId.createFromHexString(request.body.ID),
+            spotId: spotId,
             likeUser: ObjectId.createFromHexString(request.session.userID),
             type: "spot"
         }
         if (request.body.isLiked === "false") {
             likePromise.push(databaseMethods.addOne("likes", likeObject))
+            likePromise.push(databaseMethods.makeUpdate("spots", {_id: spotId}, {$inc: {likesCount: 1}}))
         } else {
             let likeRef = ObjectId.createFromHexString(request.body.likeRef)
             likePromise.push(databaseMethods.deleteDocument("likes", {_id: likeRef}))
+            likePromise.push(databaseMethods.makeUpdate("spots", {_id: spotId}, {$inc: {likesCount: -1}}))
         }
         await Promise.allSettled(likePromise)
         .then(res => {
-            // console.log(res)
+            console.log(res)
             if (request.body.isLiked === "false") {
                 console.log("add like")
                 return response.json({status: "SUCCESS", message: "Like Updated", isLiked: true, likeRef: res[0].value.insertedId.toString()})
@@ -375,11 +363,7 @@ app.get('/profile', async (request, response) => {
             username: res.username,
             email: res.email,
             verified: res.verified,
-            settings: {
-                twoFactorAuth: res.settings.twoFactorAuth,
-                darkMode: res.settings.darkMode,
-                darkMap: res.settings.darkMap
-            },
+            settings: res.settings,
             profileImage: res.profileImage,
             likedSpots: res.likedSpots
         }
@@ -391,19 +375,14 @@ app.post('/updateProfile', async (request, response) => {
     try{
         let userID = request.session.userID
         let idObject = ObjectId.createFromHexString(userID)
-        console.log("Profile updated")
-        await databaseMethods.makeUpdate("users", {_id: idObject}, {
-            $set: {
-                settings: {
-                    twoFactorAuth: request.body.twoFactorAuth === "true" ? true : false,
-                    darkMode: request.body.darkMode === "true" ? true : false,
-                    darkMap: request.body.darkMap === "true" ? true : false,
-                },
-            }
-        })
+        let settingsUpdate = {}
+        settingsUpdate[`settings.${request.body.param}`] = request.body.value === "true" ? true : false
+        await databaseMethods.makeUpdate("users", {_id: idObject}, {$set: settingsUpdate})
         .then(res => {
             console.log(res)
-            request.session.darkMode = request.body.darkMode
+            if (request.body.param === "darkMode") {
+                request.session.darkMode = request.body.value
+            }
             response.json({status: "SUCCESS", message: "Profile updated"})
         })
         .catch(error => {
@@ -592,12 +571,23 @@ app.post('/login', async (request, response) => {
         let checkPass = await bcrypt.compare(password, res.password)
         console.log(checkPass)
         if(checkPass) {
-            request.session.username = res.username
-            request.session.userID = res._id.toString()
-            request.session.email = res.email
-            request.session.isLoggedIn = true
-            request.session.darkMode = res.settings.darkMode ? "true" : "false"
-            response.json({status: "SUCCESS", message: "Login successful"})
+            if (res.settings.twoFactorAuth === true) {
+                let token = appFuncs.generateToken(7)
+                let currentTime = new Date()
+                request.session.verifyToken = token
+                request.session.tokenExpiry = currentTime.getTime() + 180000
+                request.session.tempEmail = res.email
+                let content = `<h1>Login Verification</h1> <p>Your Skate App Login token is ${token}</p>`
+                let mailresult = await appFuncs.sendPrimaryMail("darrylandrew22@gmail.com", "Skate App Login Verification", content)
+                return response.json({status: "SUCCESS", message: "Login successful", action: "tfa"})
+            } else {
+                request.session.username = res.username
+                request.session.userID = res._id.toString()
+                request.session.email = res.email
+                request.session.isLoggedIn = true
+                request.session.darkMode = res.settings.darkMode ? "true" : "false"
+                return response.json({status: "SUCCESS", message: "Login successful", action: "login"})
+            }
         } else {
             response.json({status: "ERROR", message: "Password missmatch"})
         }
@@ -606,6 +596,80 @@ app.post('/login', async (request, response) => {
         console.log(error)
         response.json({status: "ERROR", message: "Error with login"})
     })
+})
+
+app.get("/twoFactorAuth", async (request, response) => {
+    if (!request.session.tempEmail) {
+        return response.redirect("/login")
+    }
+    let duration = 0
+    if (!request.session.verifyToken) {
+        let token = appFuncs.generateToken(7)
+        let currentTime = new Date()
+        request.session.verifyToken = token
+        request.session.tokenExpiry = currentTime.getTime() + 180000
+        duration = request.session.tokenExpiry - currentTime.getTime()
+        // let content = `<h1>Verify Account</h1> <p>Your Skate App verification token is ${token}</p>`
+        let content = `<h1>Login Verification</h1> <p>Your Skate App Login token is ${token}</p>`
+        let mailresult = await appFuncs.sendPrimaryMail("darrylandrew22@gmail.com", "Skate App Account Verification", content)
+    }
+    let currentTime = new Date()
+    duration = request.session.tokenExpiry - currentTime.getTime()
+    let expired = false
+    if (duration < 0) {
+        request.session.verifyToken = null
+        expired = true
+        // duration = request.session.tokenExpiry - currentTime.getTime()
+        console.log("Token Expired")
+    }
+    response.render('twoFactorAuth.ejs', {user: request.session.username, darkMode: request.session.darkMode, duration: duration, expired: expired})
+})
+
+app.post("/twoFactorAuth", async (request, response) => {
+    if (!request.session.tempEmail) {
+        return response.redirect("/login")
+    }
+    let tempEmail = request.session.tempEmail
+    let token = request.session.verifyToken
+    let sentToken = request.body.sentToken
+    let currentTime = new Date()
+    let duration = request.session.tokenExpiry - currentTime.getTime()
+    let action = request.body.action
+    if (action === "checkToken") {
+        if(duration < 0) {
+            response.json({status: "ERROR", message: "Token Expired, try again"})
+        } else if (token === sentToken && duration > 0) {
+            console.log("Token matched")
+            await databaseMethods.getOne("users", {email: tempEmail})
+            .then(res => {
+                request.session.verifyToken = null
+                request.session.tokenExpiry = null
+                request.session.username = res.username
+                request.session.userID = res._id.toString()
+                request.session.email = res.email
+                request.session.isLoggedIn = true
+                request.session.darkMode = res.settings.darkMode ? "true" : "false"
+                response.json({status: "SUCCESS", message: "Token Match"})
+            })
+            .catch(error => {
+                console.log(error)
+                response.json({status: "ERROR", message: "Error updating user"})
+            })
+
+        } else {
+            console.log("Token mismatch")
+            response.json({status: "ERROR", message: "Token Missmatch"})
+        }
+    } else if (action === "resendToken") {
+        let token = appFuncs.generateToken(7)
+        request.session.verifyToken = token
+        let currentTime = new Date()
+        request.session.tokenExpiry = currentTime.getTime() + 180000
+        duration = request.session.tokenExpiry - currentTime.getTime()
+        let content = `<h1>Verify Account</h1> <p>Your Skate App verification token is ${token}</p>`
+        let mailresult = await appFuncs.sendPrimaryMail("darrylandrew22@gmail.com", "Skate App Account Verification", content)
+        response.json({status: "SUCCESS", duration: duration})
+    }
 })
 
 app.get('/signup', (request, response) => {
@@ -649,14 +713,12 @@ app.post('/signup', async (request, response) => {
         request.session.email = request.body.email
         request.session.darkMode = "false"
         request.session.isLoggedIn = true
-        // response.redirect("/profile")
         let token = appFuncs.generateToken(7)
-        request.session.verifyToken = token
         let currentTime = new Date()
+        request.session.verifyToken = token
         request.session.tokenExpiry = currentTime.getTime() + 180000
         let content = `<h1>Verify Account</h1> <p>Your Skate App verification token is ${token}</p>`
-        let mailresult = await appFuncs.sendPrimaryMail(request.body.email, "Skate App Account Verification", content)
-        console.log(mailresult.messageId)
+        let mailresult = await sendTokenFlow(request, token, "Skate App Account Verification", content)
         console.log(mailresult)
         response.json({status: "SUCCESS", message: "Created user", email: request.body.email})
     })
@@ -680,12 +742,7 @@ app.get("/verify", async (request, response) => {
         let content = `<h1>Verify Account</h1> <p>Your Skate App verification token is ${token}</p>`
         let mailresult = await appFuncs.sendPrimaryMail("darrylandrew22@gmail.com", "Skate App Account Verification", content)
     }
-    
-    console.log("Token value", request.session.verifyToken)
-    console.log(request.session.userID)
     let currentTime = new Date()
-    // request.session.tokenExpiry = currentTime.getTime() + 10000
-    console.log(request.session.tokenExpiry)
     duration = request.session.tokenExpiry - currentTime.getTime()
     let expired = false
     if (duration < 0) {
@@ -694,7 +751,6 @@ app.get("/verify", async (request, response) => {
         duration = request.session.tokenExpiry - currentTime.getTime()
         console.log("Token Expired")
     }
-    console.log(duration)
     response.render("verify.ejs", {user: request.session.username, duration: duration, expired: expired, darkMode: request.session.darkMode})
 })
 
