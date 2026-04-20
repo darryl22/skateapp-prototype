@@ -25,7 +25,7 @@
         <div class="profile-side">
             <div class="profile-info-div" style="display: flex; flex-direction: column; align-items: start;">
                 <div class="profile-image-container">
-                    <div class="profile-settings-picture" style="background-image: url('<%= user.profileImage %>');" id="profilePicture">
+                    <div class="profile-settings-picture" style="background-image: url('<%= userProfile.profileImage %>');" id="profilePicture">
                         <!-- <img src="/images/defaultProfile.jpg" alt="" style="width: 100%; aspect-ratio: 1 / 1;"> -->
                     </div>
                     <div class="edit-profile-image" id="editProfileImage">
@@ -39,12 +39,12 @@
                 <div style="width: 100%;">
                     <div style="position: relative;">
                         <p class="profile-detail-title">Username</p>
-                        <p class="profile-detail-info" id="usernameValue"><%= user.username %></p>
+                        <p class="profile-detail-info" id="usernameValue"><%= userProfile.username %></p>
                         <img src="/logos/pen.png" alt="" class="edit-profile-detail-pen image-invert" id="usernameEdit">
                     </div>
                     <div class="edit-profile-detail hidden" id="usernameEditDiv">
                         <div class="edit-profile-detail-input-div">
-                            <input type="text" class="edit-profile-detail-input" value="<%= user.username %>" id="usernameInput" data-param="username">
+                            <input type="text" class="edit-profile-detail-input" value="<%= userProfile.username %>" id="usernameInput" data-param="username">
                             <div class="rounded-close" id="usernameCloseInput">
                                 <img src="/logos/closeLight.png" alt="" class="image-invert" style="height: 10px;">
                             </div>
@@ -56,12 +56,12 @@
                 <div style="width: 100%;">
                     <div style="position: relative;">
                         <p class="profile-detail-title">Email</p>
-                        <p class="profile-detail-info" id="emailValue"><%= user.email %></p>
+                        <p class="profile-detail-info" id="emailValue"><%= userProfile.email %></p>
                         <img src="/logos/pen.png" alt="" class="edit-profile-detail-pen image-invert" id="emailEdit">
                     </div>
                     <div class="edit-profile-detail hidden" id="emailEditDiv">
                         <div class="edit-profile-detail-input-div">
-                            <input type="text" class="edit-profile-detail-input" value="<%= user.email %>" id="emailInput" data-param="email">
+                            <input type="text" class="edit-profile-detail-input" value="<%= userProfile.email %>" id="emailInput" data-param="email">
                             <div class="rounded-close" id="emailCloseInput">
                                 <img src="/logos/closeLight.png" alt="" class="image-invert" style="height: 10px;">
                             </div>
@@ -141,7 +141,7 @@
                     })
                 </script>
 
-                <% if (user.verified) { %>
+                <% if (userProfile.verified) { %>
                     <div style="display: flex; align-items: center; gap: 5px; margin-top: 1em;">
                         <p>Verified</p>
                         <div class="verified-tick-div">
@@ -164,21 +164,21 @@
                     <div class="profile-pill-div" id="twoFactorAuthPill" data-param="twoFactorAuth">
                         <div class="profile-pill-circle" id="twoFactorAuthPillCircle"></div>
                     </div>
-                    <input type="hidden" class="profile-pill-input" value="<%= user.settings.twoFactorAuth %>" id="twoFactorAuthPillValue">
+                    <input type="hidden" class="profile-pill-input" value="<%= userProfile.settings.twoFactorAuth %>" id="twoFactorAuthPillValue">
                 </div>
                 <div class="profile-pill-outer">
                     <div class="profile-pill-title">Dark mode</div>
                     <div class="profile-pill-div" id="darkModePill" data-param="darkMode">
                         <div class="profile-pill-circle" id="darkModePillCircle"></div>
                     </div>
-                    <input type="hidden" class="profile-pill-input" value="<%= user.settings.darkMode %>" id="darkModePillValue">
+                    <input type="hidden" class="profile-pill-input" value="<%= userProfile.settings.darkMode %>" id="darkModePillValue">
                 </div>
                 <div class="profile-pill-outer">
                     <div class="profile-pill-title">Dark map</div>
                     <div class="profile-pill-div" id="darkMapPill" data-param="darkMap">
                         <div class="profile-pill-circle" id="darkMapPillCircle"></div>
                     </div>
-                    <input type="hidden" class="profile-pill-input" value="<%= user.settings.darkMap %>" id="darkMapPillValue">
+                    <input type="hidden" class="profile-pill-input" value="<%= userProfile.settings.darkMap %>" id="darkMapPillValue">
                 </div>
             </div>
             <div class="profile-info-div" id="spotsContentDiv">
@@ -222,7 +222,7 @@
 </body>
 <script>
 
-    let user = JSON.parse('<%- JSON.stringify(user)%>')
+    let user = JSON.parse('<%- JSON.stringify(userProfile)%>')
     let twoFactorAuthPill = document.getElementById("twoFactorAuthPill")
     let darkModePill = document.getElementById("darkModePill")
     let darkMapPill = document.getElementById("darkMapPill")

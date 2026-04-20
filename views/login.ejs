@@ -31,8 +31,11 @@
             })
         })
         .then(async res => {
+            if (!res.ok) {
+                addNewAlert("ERROR", res.statusText)
+                return
+            }
             let resData = await res.json()
-            console.log(resData)
             if (resData.status === "SUCCESS") {
                 addNewAlert(resData.status, resData.message)
                 setTimeout(() => {

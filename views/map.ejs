@@ -541,12 +541,26 @@
             elm.addEventListener("click", async function() {
                 let idRef = elm.getAttribute("data-deleteref")
                 let spotId = elm.getAttribute("data-spotid")
+                let type = elm.getAttribute("data-type")
+                let deleteLength = 1
+                if (type === "comment") {
+                    let replyContainer = document.getElementById(`repliesContainer${spotId}-${idRef}`)
+                    let replyLength = replyContainer.querySelectorAll(".comment-reply-div").length
+                    console.log("replies length", replyLength)
+                    if (replyLength > 0) {
+                        deleteLength = deleteLength + replyLength
+                    }
+                    console.log("delete length", deleteLength)
+                }
+                console.log(type)
                 await fetch("/deleteComment", {
                     method: "POST",
                     headers: {"Content-Type": "application/json"},
                     body: JSON.stringify({
                         commentID: idRef,
-                        spotId: spotId
+                        spotId: spotId,
+                        type: type,
+                        deleteLength: deleteLength
                     })
                 })
                 .then(async res => {
@@ -555,7 +569,7 @@
                         let deletedElm = document.getElementById(`commentId-${idRef}`)
                         deletedElm.remove()
                         let commentsCount = parseInt(document.querySelectorAll(`.spotCommentsCount-${spotId}`)[0].innerText)
-                        let newCount = --commentsCount
+                        let newCount = commentsCount - deleteLength
                         document.querySelectorAll(`.spotCommentsCount-${spotId}`).forEach(item => item.innerText = newCount)
                         addNewAlert(resData.status, resData.message)
                     } else {
@@ -591,7 +605,7 @@
                     <div class="comment-content">${comments[x].content}</div>
                     <div style="display: flex; align-items: center; gap: 1em;">
                         <p class="reply-button replyEvent${spotId} change-author-${comments[x].author}" id="replyButton${comments[x]._id}" data-author="User" data-replyref="${comments[x]._id}" data-spotid="${spotId}">reply</p>
-                        <p class="delete-comment" style="display: ${comments[x].author === loggedInUserID ? "block" : "none"};" data-deleteref="${comments[x]._id}" data-spotid="${spotId}">delete</p>
+                        <p class="delete-comment" style="display: ${comments[x].author === loggedInUserID ? "block" : "none"};" data-deleteref="${comments[x]._id}" data-spotid="${spotId}" data-type="comment">delete</p>
                     </div>
                     <div class="comment-reply-container" id="repliesContainer${spotId}-${comments[x]._id}">
                     </div>
@@ -627,7 +641,7 @@
                     <div class="comment-content">${replies[x].content}</div>
                     <div style="display: flex; align-items: center; gap: 1em;">
                         <p class="reply-button replyEvent${spotId} change-author-${replies[x].author}" id="replyButton${replies[x]._id}" data-author="User" data-replyref="${replies[x].replyId}" data-spotid="${spotId}">reply</p>
-                        <p class="delete-comment" style="display: ${replies[x].author === loggedInUserID ? "block" : "none"};" data-deleteref="${replies[x]._id}" data-spotid="${spotId}">delete</p>
+                        <p class="delete-comment" style="display: ${replies[x].author === loggedInUserID ? "block" : "none"};" data-deleteref="${replies[x]._id}" data-spotid="${spotId}" data-type="reply">delete</p>
                     </div>
                 </div>
             </div>`

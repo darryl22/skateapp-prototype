@@ -25,40 +25,47 @@ const { error } = require("console")
 let databaseMethods = new DatabaseMethods()
 let appFuncs = new appFunctions()
 const ExpressSanitizer = require("perfect-express-sanitizer")
-const { settings } = require("cluster")
+const {rateLimit} = require("express-rate-limit")
+const limiter = rateLimit({
+    windowMs: 10 * 60 * 1000,
+    limit: 50,
+    standardHeaders: true,
+    legacyHeaders: false,
+    ipv6Subnet: 56
+})
 
 app.set('view engine', 'ejs')
 app.use(express.static('public'))
 app.use(express.json({limit: "300mb"}))
-app.use(bodyParser.urlencoded({extended: true, limit: "300mb"}))
+app.use(bodyParser.urlencoded({extended: true, limit: "25mb"}))
 app.use(require("express-session")({
     secret: process.env.SESSION_SECRET,
     cookie: {
-        maxAge: 604800000
+        maxAge: 604800000,
+        secure: process.env.ENVIRONMENT === "prod",
+        httpOnly: true
     },
     store: store,
     resave: true,
-    saveUninitialized: true
-}))
-app.use(cors({
-    origin: ["localhost:3001", "9d240f47a4b9.ngrok-free.app"]
+    saveUninitialized: false
 }))
 
 app.use((request, response, next) => {
     console.log(request.method, request.path)
-    if (request.session.username === undefined) {
-        request.session.username = "anonymous"
-        request.session.isLoggedIn = false
-        request.session.userID = null
-    }
-    if (request.session.darkMode === undefined) {
-        request.session.darkMode = "none"
+    response.locals.user = "none"
+    response.locals.darkMode = "none"
+    response.locals.isLoggedIn = false
+    if (request.session.username) {
+        response.locals.user = request.session.username
+        response.locals.isLoggedIn = true
+        response.locals.darkMode = request.session.darkMode
     }
     next()
 })
 
 app.get('/', async (request, response) => {
-    response.render('index.ejs', {user: request.session.username, darkMode: request.session.darkMode})
+    console.log(response.locals)
+    response.render('index.ejs')
 })
 
 app.get('/getUser', async (request, response) => {
@@ -83,25 +90,34 @@ app.get('/getUser', async (request, response) => {
 app.get('/map', async (request, response) => {
     let date = new Date()
     // let currentDate = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`
-    await Promise.all([databaseMethods.getMany("spots"), databaseMethods.getOne("users", {username: request.session.username}), databaseMethods.getMany("likes", {type: "spot", likeUser: ObjectId.createFromHexString(request.session.userID)})])
+    let mapPromises = [databaseMethods.getMany("spots"), databaseMethods.getOne("users", {username: request.session.username})]
+    if (response.locals.isLoggedIn) {
+        mapPromises.push(databaseMethods.getMany("likes", {type: "spot", likeUser: ObjectId.createFromHexString(request.session.userID)}))
+    }
+    await Promise.all(mapPromises)
     .then(res => {
         // console.log(res[1])
         let darkMap = "true"
         let profilePicture = '/images/defaultProfile2.png'
+        let likes = []
         if (res[1] !== null) {
             darkMap = res[1].settings.darkMap
             profilePicture = res[1].profileImage
         }
+        if (response.locals.isLoggedIn) {
+            likes = res[2]
+        }
+        console.log("likes", likes)
         let ctx = {
             mapboxtoken : process.env.MAPBOX_ACCESS_TOKEN,
             spots: res[0],
-            user: request.session.username,
+            // user: request.session.username,
             userID: request.session.userID,
-            isLoggedIn: request.session.isLoggedIn,
+            isLoggedIn: response.locals.isLoggedIn,
             profilePicture: profilePicture,
-            darkMode: request.session.darkMode,
+            // darkMode: response.locals.darkMode,
             darkMap: darkMap,
-            likes: res[2]
+            likes: likes
         }
         
         response.render('map.ejs', ctx)
@@ -198,12 +214,16 @@ app.post('/updateComment', async (request, response) => {
         if (request.session.username === undefined) return response.json({status: "ERROR", message: "Login required for interactions"})
         let date = new Date()
         let spotId = ObjectId.createFromHexString(request.body.spotId)
+        let replyId = request.body.replyId
+        if (replyId !== "") {
+            replyId = ObjectId.createFromHexString(request.body.replyId)
+        }
         let currentDate = date.toISOString().split("T")
         let updateData = {
             content: request.body.comment,
             type: request.body.type,
             spotId: spotId,
-            replyId: request.body.replyId,
+            replyId: replyId,
             author: request.session.userID,
             dateAdded: currentDate[0]
         }
@@ -277,10 +297,13 @@ app.post("/deleteComment", async (request, response) => {
     try {
         let commentID = ObjectId.createFromHexString(request.body.commentID)
         let spotId = ObjectId.createFromHexString(request.body.spotId)
-        console.log(commentID)
-        await Promise.all([databaseMethods.deleteDocument("comment", {_id: commentID}), databaseMethods.makeUpdate("spots", {_id: spotId}, {$inc: {commentsCount: -1}})])
+        let deleteLength = parseInt(request.body.deleteLength)
+        let deletePromiseList = [databaseMethods.deleteDocument("comment", {_id: commentID}), databaseMethods.makeUpdate("spots", {_id: spotId}, {$inc: {commentsCount: -deleteLength}})]
+        if (request.body.type === "comment" && request.body.deleteLength > 1) {
+            deletePromiseList.push(databaseMethods.deleteManyDocuments("comment", {replyId: commentID}))
+        }
+        await Promise.all(deletePromiseList)
         .then(res => {
-            console.log(res)
             response.json({status: "SUCCESS", message: "Comment Deleted"})
         })
         .catch(error => {
@@ -354,7 +377,7 @@ app.get('/info', (request, response) => {
 // profile endpoints
 
 app.get('/profile', async (request, response) => {
-    if (request.session.username === undefined || request.session.username === "anonymous") {
+    if (request.session.username === undefined || request.session.username === "none") {
         return response.redirect("/")
     }
     await databaseMethods.getOne("users", {username: request.session.username})
@@ -367,7 +390,7 @@ app.get('/profile', async (request, response) => {
             profileImage: res.profileImage,
             likedSpots: res.likedSpots
         }
-        response.render('profile.ejs', {user: userProfile, darkMode: request.session.darkMode})
+        response.render('profile.ejs', {userProfile: userProfile})
     })
 })
 
@@ -560,10 +583,11 @@ app.post('/updateProfileImage', async (request, response) => {
 // auth endpoints
 
 app.get('/login', (request, response) => {
-    response.render('login.ejs', {user: request.session.username, darkMode: request.session.darkMode})
+    console.log(response.locals)
+    response.render('login.ejs')
 })
 
-app.post('/login', async (request, response) => {
+app.post('/login', limiter, async (request, response) => {
     const password = request.body.password
     await databaseMethods.getOne("users", {email: request.body.email})
     .then(async res => {
@@ -622,7 +646,7 @@ app.get("/twoFactorAuth", async (request, response) => {
         // duration = request.session.tokenExpiry - currentTime.getTime()
         console.log("Token Expired")
     }
-    response.render('twoFactorAuth.ejs', {user: request.session.username, darkMode: request.session.darkMode, duration: duration, expired: expired})
+    response.render('twoFactorAuth.ejs', {duration: duration, expired: expired})
 })
 
 app.post("/twoFactorAuth", async (request, response) => {
@@ -673,7 +697,7 @@ app.post("/twoFactorAuth", async (request, response) => {
 })
 
 app.get('/signup', (request, response) => {
-    response.render('signup.ejs', {user: request.session.username, darkMode: request.session.darkMode})
+    response.render('signup.ejs')
 })
 
 app.post('/signup', async (request, response) => {
@@ -751,7 +775,7 @@ app.get("/verify", async (request, response) => {
         duration = request.session.tokenExpiry - currentTime.getTime()
         console.log("Token Expired")
     }
-    response.render("verify.ejs", {user: request.session.username, duration: duration, expired: expired, darkMode: request.session.darkMode})
+    response.render("verify.ejs", {duration: duration, expired: expired})
 })
 
 app.post("/verify", async (request, response) => {
@@ -804,6 +828,7 @@ app.post("/verify", async (request, response) => {
 
 app.get("/logout", (request, response) => {
     request.session.destroy()
+    response.clearCookie("connect.sid")
     response.redirect("/login")
 })
 

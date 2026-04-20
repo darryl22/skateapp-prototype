@@ -58,6 +58,11 @@
     let duration = '<%= duration %>'
     setTimer(parseInt(duration), "timerSpan")
 
+    document.getElementById("token").addEventListener("input", function() {
+        console.log("to upper", this.value.toUpperCase())
+        this.value = this.value.toUpperCase()
+    })
+
     document.getElementById("submitForm").addEventListener("submit", async function(e) {
         e.preventDefault()
         await fetch("/verify", {
