@@ -9,7 +9,6 @@ const Cryptr = require("cryptr")
 const cryptr = new Cryptr(process.env.ENCRYPTION_KEY)
 const bcrypt = require("bcrypt")
 const saltRounds = 10
-const cors = require("cors")
 const session = require("express-session")
 const {ObjectId} = require("mongodb")
 const MongoDBStore  = require("connect-mongodb-session")(session)
@@ -21,7 +20,6 @@ const store = new MongoDBStore ({
 
 const DatabaseMethods = require("./dbFunctions")
 const appFunctions = require("./appFunctions")
-const { error } = require("console")
 let databaseMethods = new DatabaseMethods()
 let appFuncs = new appFunctions()
 const ExpressSanitizer = require("perfect-express-sanitizer")
@@ -88,8 +86,6 @@ app.get('/getUser', async (request, response) => {
 // spots endpoints
 
 app.get('/map', async (request, response) => {
-    let date = new Date()
-    // let currentDate = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`
     let mapPromises = [databaseMethods.getMany("spots"), databaseMethods.getOne("users", {username: request.session.username})]
     if (response.locals.isLoggedIn) {
         mapPromises.push(databaseMethods.getMany("likes", {type: "spot", likeUser: ObjectId.createFromHexString(request.session.userID)}))
@@ -107,19 +103,15 @@ app.get('/map', async (request, response) => {
         if (response.locals.isLoggedIn) {
             likes = res[2]
         }
-        console.log("likes", likes)
         let ctx = {
             mapboxtoken : process.env.MAPBOX_ACCESS_TOKEN,
             spots: res[0],
-            // user: request.session.username,
             userID: request.session.userID,
             isLoggedIn: response.locals.isLoggedIn,
             profilePicture: profilePicture,
-            // darkMode: response.locals.darkMode,
             darkMap: darkMap,
             likes: likes
         }
-        
         response.render('map.ejs', ctx)
     })
     .catch(error => {
@@ -139,10 +131,10 @@ app.post('/addspot', async (request, response) => {
         spottype: request.body.spottype,
         longitude: request.body.lng,
         latitude: request.body.lat,
-        createdAt: date,
         createdBy: request.session.username,
         createdByID: ObjectId.createFromHexString(request.session.userID),
         dateCreated: currentDate[0],
+        dateCreatedInMs: date.getTime(),
         likesCount: 0,
         commentsCount: 0
     }
@@ -212,7 +204,7 @@ app.post("/getSpotImages", async (request, response) => {
 app.post('/updateComment', async (request, response) => {
     try {
         if (request.session.username === undefined) return response.json({status: "ERROR", message: "Login required for interactions"})
-        let date = new Date()
+        const date = new Date()
         let spotId = ObjectId.createFromHexString(request.body.spotId)
         let replyId = request.body.replyId
         if (replyId !== "") {
@@ -225,7 +217,8 @@ app.post('/updateComment', async (request, response) => {
             spotId: spotId,
             replyId: replyId,
             author: request.session.userID,
-            dateAdded: currentDate[0]
+            dateAdded: currentDate[0],
+            dateAddedInMs: date.getTime()
         }
         await Promise.all([databaseMethods.addOne("comment", updateData), databaseMethods.makeUpdate("spots", {_id: spotId}, {$inc: {commentsCount: 1}})])
         .then(res => {
@@ -549,6 +542,23 @@ app.post('/addSpotImages', async (request, response) => {
     })
 })
 
+app.post("/updateSpotDetails", async (request, response) => {
+    let spotId = ObjectId.createFromHexString(request.body.spotId)
+    let spotUpdate = {}
+    spotUpdate[`${request.body.param}`] = request.body.value
+    await databaseMethods.makeUpdate("spots", {_id: spotId}, {
+        $set: spotUpdate
+    })
+    .then(res => {
+        console.log(res)
+        response.json({status: "SUCCESS", message: "Spot updated"})
+    })
+    .catch(error => {
+        console.log(error)
+        response.json({status: "ERROR", message: "Error updating spot"})
+    })
+})
+
 app.post("/deleteSpot", async (request, response) => {
     console.log(request.body)
     let id = ObjectId.createFromHexString(request.body.spotId)
@@ -597,7 +607,7 @@ app.post('/login', limiter, async (request, response) => {
         if(checkPass) {
             if (res.settings.twoFactorAuth === true) {
                 let token = appFuncs.generateToken(7)
-                let currentTime = new Date()
+                const currentTime = new Date()
                 request.session.verifyToken = token
                 request.session.tokenExpiry = currentTime.getTime() + 180000
                 request.session.tempEmail = res.email

@@ -176,22 +176,23 @@
                             </div>
                             <div style="display: flex; flex-direction: column;">
                                 <label for="sortByFilter">Sort By</label>
-                                <select name="sortBy" id="sortByFilter" style="padding: 0.3em; margin-top: 0.5em; border: 1px solid gray; border-radius: 4px;" onchange="handleSpotFilters()">
+                                <select name="sortBy" id="sortByFilter" style="padding: 0.3em; margin-top: 0.5em; border: 1px solid gray; border-radius: 4px;" onchange="sortSpots()">
                                     <option value="" selected disabled>select</option>
                                     <option value="popular">Popularity</option>
                                     <option value="recent">most recent</option>
+                                    <option value="oldest">Oldest</option>
                                 </select>
                             </div>
                             
                         </div>
-                        <div style="margin-bottom: 1em;">
+                        <!-- <div style="margin-bottom: 1em;">
                             <input type="checkbox" name="yourFavouritesCheck" id="yourFavouritesCheck" onchange="handleSpotFilters()">
                             <label for="yourFavouritesCheck">Your favourites</label>
                         </div>
                         <div>
                             <input type="checkbox" name="savedSpotsCheck" id="savedSpotsCheck" onchange="handleSpotFilters()">
                             <label for="savedSpotsCheck">Saved Spots</label>
-                        </div>
+                        </div> -->
                     </div>
                     <p style="margin-top: 2em;">Results</p>
                     <div class="spots-list">
@@ -220,8 +221,9 @@
                                         <button class='base-button modal-button' data-toggle-modal="spotDetailsModal<%= spots[x]._id %>">Details</button>
                                         <div style="width: fit-content;">
                                             <p style="font-size: 0.8em; margin: 0;">Type: <%= spots[x].spottype %></p>
-                                            <p style="font-size: 0.8em; margin: 0;">Uploaded by: <%= spots[x].createdBy %></p>
+                                            <p style="font-size: 0.8em; margin: 0;">Uploaded by <%= spots[x].createdBy %> <span id="spotUploadDateInMs<%= spots[x]._id %>"></span></p>
                                         </div>
+                                        
                                     </div>
                                 </div>
                             </div>
@@ -245,33 +247,36 @@
         </div>
         <div id="map" class="map-div"></div>
         <div class="map-sidebar" id="addSpotForm">
-            <button class="cancel-spot-button" id="cancelNewSpotButton">Cancel</button>
-            <p>Drag the red marker to spot location(Current Location might be inaccurate)</p>
-            <form action="/addspot" method="post" class="addspot-form">
-                <input type="hidden" value="0" name="longitude" id="longitude">
-                <input type="hidden" value="0" name="latitude" id="latitude">
-                <mapbox-search-box access-token="<%= mapboxtoken %>" proximity="0, 0" style="margin-bottom: 1em;"></mapbox-search-box>
-                <label for="description" style="margin-bottom: 0.5em;">Description</label>
-                <textarea name="description" id="description" style="margin-bottom: 1em; height: 4em; border-radius: 5px; padding: 5px; background-color: rgba(0, 0, 0, 0); color: white;" required></textarea>
+            <img src="/logos/arrow-filled.png" alt="" class="addspot-collapse-arrow map-sidebar-arrow-rotate" id="addspotCollapseArrow">
+            <div class="map-sidebar-content">
+                <button class="cancel-spot-button" id="cancelNewSpotButton">Cancel</button>
+                <p style="font-size: 0.8em;">Drag the red marker to spot location(Current Location might be inaccurate)</p>
+                <form action="/addspot" method="post" class="addspot-form">
+                    <input type="hidden" value="0" name="longitude" id="longitude">
+                    <input type="hidden" value="0" name="latitude" id="latitude">
+                    <mapbox-search-box access-token="<%= mapboxtoken %>" proximity="0, 0" style="margin-bottom: 1em;"></mapbox-search-box>
+                    <label for="description" style="margin-bottom: 0.5em;">Description</label>
+                    <textarea name="description" id="description" style="margin-bottom: 1em; height: 4em; border-radius: 5px; padding: 5px; background-color: rgba(0, 0, 0, 0); color: white;" required></textarea>
 
-                <label for="spottype">Spot Type</label>
-                <select name="spottype" id="spottype" style="padding: 0.3em; margin-top: 0.5em; border: 1px solid gray; border-radius: 4px; margin-bottom: 1em;" required>
-                    <option value="" selected disabled>select one</option>
-                    <option value="rail">rail</option>
-                    <option value="stairs">stairs</option>
-                    <option value="park">park</option>
-                    <option value="ledge">ledge</option>
-                    <option value="other">other</option>
-                </select>
+                    <label for="spottype">Spot Type</label>
+                    <select name="spottype" id="spottype" style="padding: 0.3em; margin-top: 0.5em; border: 1px solid gray; border-radius: 4px; margin-bottom: 1em;" required>
+                        <option value="" selected disabled>select one</option>
+                        <option value="rail">rail</option>
+                        <option value="stairs">stairs</option>
+                        <option value="park">park</option>
+                        <option value="ledge">ledge</option>
+                        <option value="other">other</option>
+                    </select>
 
-                <label for="spotImages" style="margin-bottom: 0.5em;">Upload Images</label>
-                <input type="file" name="images" id="spotImages" accept="image/png, image/jpeg" multiple required>
-                <!-- <input type="file" name="images" id="spotImages" accept="image/png, image/jpeg" multiple> -->
-                <p style="font-size: 0.8em; margin-top: 5px;">File size: <span id="fileSizeSpan">0</span> mb</p>
-                <button type="button" class="base-button modal-button hidden" data-toggle-modal="editUploadImages" id="modifyUploadImages" style="width: fit-content;">Edit Images</button>
+                    <label for="spotImages" style="margin-bottom: 0.5em;">Upload Images</label>
+                    <input type="file" name="images" id="spotImages" accept="image/png, image/jpeg" multiple required>
+                    <!-- <input type="file" name="images" id="spotImages" accept="image/png, image/jpeg" multiple> -->
+                    <p style="font-size: 0.8em; margin-top: 5px;">File size: <span id="fileSizeSpan">0</span> mb</p>
+                    <button type="button" class="base-button modal-button hidden" data-toggle-modal="editUploadImages" id="modifyUploadImages" style="width: fit-content;">Edit Images</button>
 
-                <button class="spot-confirm" >Confirm</button>
-            </form>
+                    <button class="spot-confirm" >Confirm</button>
+                </form>
+            </div>
         </div>
         <div class="base-modal" id="editUploadImages">
             <div class="base-modal-inner">
@@ -333,10 +338,39 @@
         return newText
     }
 
+    let yearInMs = 365 * 24 * 60 * 60 * 1000
+    let monthInMs = 31 * 24 * 60 * 60 * 1000
+    let weekInMs = 7 * 24 * 60 * 60 * 1000
+    let dayInMs = 24 * 60 * 60 * 1000
+    function dateToTimepassed(dateInMs) {
+        let date = new Date()
+        let timePassed = date.getTime() - parseInt(dateInMs)
+        if (timePassed > yearInMs) {
+            let yearsCount = parseInt((timePassed / yearInMs))
+            return `${yearsCount} year${yearsCount > 1 ? "s" : ""} ago`
+        } else if (timePassed < yearInMs && timePassed > monthInMs) {
+            let monthsCount = parseInt((timePassed / monthInMs))
+            return `${monthsCount} month${monthsCount > 1 ? "s" : ""} ago`
+        } else if (timePassed < monthInMs && timePassed > weekInMs) {
+            let weekCount = parseInt((timePassed / weekInMs))
+            return `${weekCount} week${weekCount > 1 ? "s" : ""} ago`
+        } else if (timePassed < weekInMs && timePassed > dayInMs) {
+            let daysCount = parseInt((timePassed / dayInMs))
+            return `${daysCount} day${daysCount > 1 ? "s" : ""} ago`
+        } else if (timePassed < dayInMs) {
+            return "today"
+        } else {
+            return ""
+        }
+    }
+
+    let testDate = new Date('2026-05-10')
+    console.log("time passed", dateToTimepassed(testDate.getTime()))
+
     document.querySelectorAll(".spot-description-short").forEach(item => {
         let description = item.innerText
         if (description.length > 100) {
-            item.innerText = shortText(description, 100)
+            item.innerText = shortText(description, 50)
         }
     })
 
@@ -600,7 +634,7 @@
                 <div class="comment-content-div">
                     <div class="comment-info-div">
                         <p style="font-weight: bold; margin-top: 0;" class="change-comment-username-${comments[x].author}" id="commentUsername-${comments[x]._id}">User112</p>
-                        <p style="color: gray; margin-top: 0;">${comments[x].dateAdded}</p>
+                        <p style="color: gray; margin-top: 0;">${dateToTimepassed(comments[x].dateAddedInMs)}</p>
                     </div>
                     <div class="comment-content">${comments[x].content}</div>
                     <div style="display: flex; align-items: center; gap: 1em;">
@@ -636,7 +670,7 @@
                 <div class="comment-content-div">
                     <div class="comment-info-div">
                         <p style="font-weight: bold; margin-top: 0;" class="change-comment-username-${replies[x].author}" id="commentUsername-${replies[x]._id}">User</p>
-                        <p style="color: gray; margin-top: 0;">${replies[x].dateAdded}</p>
+                        <p style="color: gray; margin-top: 0;">${dateToTimepassed(replies[x].dateAddedInMs)}</p>
                     </div>
                     <div class="comment-content">${replies[x].content}</div>
                     <div style="display: flex; align-items: center; gap: 1em;">
@@ -803,6 +837,8 @@
             item.setAttribute("data-isliked", isLiked)
             item.setAttribute("data-likeref", likeRef)
         })
+        let dateSpan = document.getElementById(`spotUploadDateInMs${item._id}`)
+        dateSpan.innerText = dateToTimepassed(item.dateCreatedInMs)
         spotDetailsMap.set(`spot-${item._id}`, {
             isLiked: isLiked,
             imageUrl: "/images/loading.png",
@@ -813,7 +849,8 @@
             likeRef: likeRef,
             createdBy: item.createdBy,
             spotType: item.spottype,
-            isLoadingImages: false
+            isLoadingImages: false,
+            createdAtInMs: item.createdAtInMs
         })
         spotCategories[`${item.spottype}`].push({
             type: 'Feature',
@@ -838,7 +875,7 @@
             <img class="spot-details-image" src="${currentData.imageUrl}" id="spotPopupImage${spotId}">
             <div style="padding: 1em;" class="popup-details">
                 <p style="font-weight: bold; font-size: 1em; margin-bottom: 0px; margin-top: 0em;">Type: ${currentData.spotType}</p>
-                <p style="font-size: 1.3em; margin: 0;">Uploaded by: ${currentData.createdBy}</p>
+                <p style="font-size: 1.3em; margin: 0;">Uploaded by ${currentData.createdBy} ${dateToTimepassed(currentData.createdAtInMs)}</p>
                 <div class="popup-interactions">
                     <div style="display: flex; gap: 5px">
                         <div style="display: flex; align-items: center; gap: 0.5em">
@@ -1182,9 +1219,6 @@
 
     function handleSpotFilters() {
         let typeFilter = document.getElementById("typeFilter")
-        let sortByFilter = document.getElementById("sortByFilter")
-        let yourFavouritesCheck = document.getElementById("yourFavouritesCheck")
-        let savedSpotsCheck = document.getElementById("savedSpotsCheck")
 
         for (x of categoryEntries) {
             if (x[0] === typeFilter.value || typeFilter.value === "all") {
@@ -1196,6 +1230,16 @@
         hideModal(currentOpenModal)
     }
 
+    function sortSpots() {
+        let sortByFilter = document.getElementById("sortByFilter")
+        console.log(sortByFilter.value)
+    }
+
+    const addSpotMarker = new mapboxgl.Marker({color: "red", draggable: true})
+    let markerCoordinates = []
+    let longitude = document.getElementById("longitude")
+    let latitude = document.getElementById("latitude")
+    let addspotPaddingValue = 200
     const searchResult = document.getElementById("search-js")
     searchResult.onload = function () {
         const searchBox = document.querySelector('mapbox-search-box')
@@ -1209,32 +1253,54 @@
         searchBox.addEventListener('retrieve', e => {
             let searchResultCoordinates = e.detail.features[0].geometry.coordinates
             console.log(searchResultCoordinates)
-            map.easeTo({
-                center: searchResultCoordinates,
-                zoom: 13
-            })
+            if (screen.width > 900) {
+                map.easeTo({
+                    center: searchResultCoordinates,
+                    // zoom: 13
+                    padding: {
+                        left: addspotPaddingValue
+                    }
+                })
+            } else {
+                map.easeTo({
+                    center: searchResultCoordinates,
+                    // zoom: 13
+                    padding: {
+                        bottom: addspotPaddingValue
+                    }
+                })
+            }
 
             addSpotMarker.setLngLat(searchResultCoordinates).addTo(map)
             markerCoordinates = searchResultCoordinates
         })
     }
 
-    const addSpotMarker = new mapboxgl.Marker({color: "red", draggable: true})
-    // addSpotMarker.setRotation(45)
-    let markerCoordinates = []
-    let longitude = document.getElementById("longitude")
-    let latitude = document.getElementById("latitude")
     addSpotMarker.on('dragend', function(e) {
         let lngLat = e.target.getLngLat()
         markerCoordinates = [lngLat.lng, lngLat.lat]
         longitude.value = lngLat.lng
         latitude.value = lngLat.lat
         console.log(markerCoordinates)
-        map.easeTo({
-            center: markerCoordinates,
-            zoom: 13,
-            duration: 500
-        })
+        if (screen.width > 900) {
+            map.easeTo({
+                center: [lngLat.lng, lngLat.lat],
+                duration: 500,
+                padding: {
+                    left: addspotPaddingValue
+                },
+                retainPadding: false
+            })
+        } else {
+            map.easeTo({
+                center: [lngLat.lng, lngLat.lat],
+                duration: 500,
+                padding: {
+                    bottom: addspotPaddingValue
+                },
+                retainPadding: false
+            })
+        }
     })
 
     const addNewSpotButton = document.getElementById("addNewSpotButton")
@@ -1246,9 +1312,12 @@
         // hideMenu()
         hideModal(currentOpenModal)
         popup.remove()
-        addSpotForm.style.display = "block"
+        addSpotForm.style.display = "flex"
         // spotInformation.style.display = "none"
         // addNewSpotButton.style.display = "none"
+        for (x of categoryEntries) {
+            map.setLayoutProperty(`spotsLayer${x[0]}`, "visibility", "none")
+        }
 
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(function (position) {
@@ -1256,39 +1325,100 @@
                 markerCoordinates = [position.coords.longitude, position.coords.latitude]
                 longitude.value = position.coords.longitude
                 latitude.value = position.coords.latitude
-                map.easeTo({
-                    center: [position.coords.longitude, position.coords.latitude],
-                    zoom: 13,
-                    duration: 500
-                })
+                if (screen.width > 900) {
+                    map.easeTo({
+                        center: [position.coords.longitude, position.coords.latitude],
+                        zoom: 13,
+                        duration: 500,
+                        padding: {
+                            left: addspotPaddingValue
+                        },
+                        retainPadding: false
+                    })
+                } else {
+                    map.easeTo({
+                        center: [position.coords.longitude, position.coords.latitude],
+                        zoom: 13,
+                        duration: 500,
+                        padding: {
+                            bottom: addspotPaddingValue
+                        },
+                        retainPadding: false
+                    })
+                }
                 addSpotMarker.setLngLat([position.coords.longitude, position.coords.latitude]).addTo(map)
             }, function() {
                 addNewAlert("ERROR", "Could not get current user position, drag red marker to spot location.")
-                map.easeTo({
-                    center: [36.8219, -1.2921],
-                    zoom: 13,
-                    duration: 500
-                })
+                if (screen.width > 900) {
+                    map.easeTo({
+                        center: [36.8219, -1.2921],
+                        zoom: 13,
+                        duration: 500,
+                        padding: {
+                            left: addspotPaddingValue
+                        },
+                        retainPadding: false
+                    })
+                } else {
+                    map.easeTo({
+                        center: [36.8219, -1.2921],
+                        zoom: 13,
+                        duration: 500,
+                        padding: {
+                            bottom: addspotPaddingValue
+                        },
+                        retainPadding: false
+                    })
+                }
                 addSpotMarker.setLngLat([36.8219, -1.2921]).addTo(map)
             })
         } else {
             addNewAlert("ERROR", "Could not get current user position, drag red marker to spot location.")
-            map.easeTo({
-                center: [36.8219, -1.2921],
-                zoom: 13,
-                duration: 500
-            })
+            if (screen.width > 900) {
+                map.easeTo({
+                    center: [36.8219, -1.2921],
+                    zoom: 13,
+                    duration: 500,
+                    padding: {
+                        left: addspotPaddingValue
+                    },
+                    retainPadding: false
+                })
+            } else {
+                map.easeTo({
+                    center: [36.8219, -1.2921],
+                    zoom: 13,
+                    duration: 500,
+                    padding: {
+                        bottom: addspotPaddingValue
+                    },
+                    retainPadding: false
+                })
+            }
             addSpotMarker.setLngLat([36.8219, -1.2921]).addTo(map)
         }
+    })
+
+    document.getElementById("addspotCollapseArrow").addEventListener("click", function() {
+        addSpotForm.classList.toggle("map-sidebar-collapse")
+        this.classList.toggle("map-sidebar-arrow-rotate")
+        addspotPaddingValue = addSpotForm.classList.contains("map-sidebar-collapse") ? 0 : 200
     })
 
     cancelNewSpotButton.addEventListener('click', function() {
         addSpotForm.style.display = "none"
         addSpotMarker.remove()
+        for (x of categoryEntries) {
+            map.setLayoutProperty(`spotsLayer${x[0]}`, "visibility", "visible")
+        }
 
         map.easeTo({
             center: [36.8219, -1.2921],
-            zoom: 10
+            zoom: 10,
+            padding: {
+                bottom: 0,
+                left: 0
+            }
         })
     })
 
