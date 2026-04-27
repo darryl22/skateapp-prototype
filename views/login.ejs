@@ -19,7 +19,7 @@
         <a href="/signup" style="color: rgb(198, 198, 198); font-size: 0.8em; margin-top: 1em;">sign up</a>
     </form>
 </body>
-<script>
+<script nonce="<%= cspNonce %>">
     document.getElementById("loginForm").addEventListener("submit", async function(e) {
         e.preventDefault()
         await fetch("/login", {

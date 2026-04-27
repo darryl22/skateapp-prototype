@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
     <title>Skatespot App</title>
     <link rel="stylesheet" href="/index.css">
 </head>
@@ -21,7 +20,7 @@
         <a href="/login" style="color: rgb(198, 198, 198); font-size: 0.8em; margin-top: 3em;">Login</a>
     </form>
 </body>
-<script>
+<script nonce="<%= cspNonce %>">
     document.getElementById("submitForm").addEventListener("submit", async function(e) {
         e.preventDefault()
         await fetch("/signup", {
@@ -37,14 +36,12 @@
         .then(async res => {
             let resData = await res.json()
             if (resData.status === "SUCCESS") {
-                addNewAlert(res.status, res.message)
+                addNewAlert(resData.status, resData.message)
                 setTimeout(() => {
-                    if (res.status === "SUCCESS") {
-                        window.location.replace(`/verify`)
-                    }
+                    window.location.replace(`/verify`)
                 }, 2000)
             } else {
-                addNewAlert(res.status, res.message)
+                addNewAlert(resData.status, resData.message)
             }
         })
         .catch(error => {

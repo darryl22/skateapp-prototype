@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"/>
-    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/WangYuLue/image-conversion/build/conversion.js"></script>
+    <script nonce="<%= cspNonce %>" src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    <script nonce="<%= cspNonce %>" src="https://cdn.jsdelivr.net/gh/WangYuLue/image-conversion/build/conversion.js"></script>
 
     <title>Skatespot App</title>
     <link rel="stylesheet" href="/index.css">
@@ -69,7 +69,7 @@
                         <button class="purple-button" style="padding: 0.5em; height: fit-content;" id="emailConfirm">Confirm</button>
                     </div>
                 </div>
-                <script>
+                <script nonce="<%= cspNonce %>">
                     //change email
                     document.getElementById("emailEdit").addEventListener("click", function() {
                         document.getElementById("emailValue").classList.toggle("hidden")
@@ -213,7 +213,7 @@
     </div>
     <div class="profile-image-modal-outer" id="profileImageModalOuter">
         <div class="profile-image-modal-container" id="profileImageModalContainer">
-            <img src="./logos/closelight.png" alt="close menu" class="close-menu2 image-invert" onclick="hideProfileImageModal()">
+            <img src="./logos/closelight.png" alt="close menu" class="close-menu2 image-invert" id="hideProfileImageModal">
             <p style="align-self: center; font-weight: bold;">Preview</p>
 
             <div class="profile-image-container" style="width: 50%;">
@@ -226,7 +226,7 @@
     </div>
     <div class="drag-image-position"></div>
 </body>
-<script>
+<script nonce="<%= cspNonce %>">
 
     let user = JSON.parse('<%- JSON.stringify(userProfile)%>')
     let twoFactorAuthPill = document.getElementById("twoFactorAuthPill")
@@ -1195,6 +1195,8 @@
         profileImageModalContainer.style.transform = "translateY(-20%)"
         profileImageModalOuter.style.pointerEvents = "none"
     }
+
+    document.getElementById("hideProfileImageModal").addEventListener("click", hideProfileImageModal)
 
     document.getElementById("confirmProfileImageUpdate").addEventListener("click", async function() {
         await fetch('/updateProfileImage', {

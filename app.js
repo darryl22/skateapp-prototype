@@ -3,10 +3,10 @@ const app = express()
 const port = 3000
 require("dotenv").config()
 const bodyParser = require("body-parser")
-const fs = require("fs")
 
 const Cryptr = require("cryptr")
 const cryptr = new Cryptr(process.env.ENCRYPTION_KEY)
+const crypto = require("node:crypto")
 const bcrypt = require("bcrypt")
 const saltRounds = 10
 const session = require("express-session")
@@ -31,6 +31,24 @@ const limiter = rateLimit({
     legacyHeaders: false,
     ipv6Subnet: 56
 })
+
+const helmet = require("helmet")
+const { request } = require("node:http")
+
+app.use((request, response, next) => {
+    response.locals.cspNonce = crypto.randomBytes(32).toString("hex")
+    next()
+})
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            "script-src": ["'self'", "cdn.jsdelivr.net", "api.mapbox.com", (request, response) => `'nonce-${response.locals.cspNonce}'`],
+            // "style-src": ["'self'"],
+            "connect-src": ["'self'", "cdn.jsdelivr.net", "api.mapbox.com", "events.mapbox.com"],
+            "worker-src": ["'self'", "blob:", "cdn.jsdelivr.net"]
+        }
+    }
+}))
 
 app.set('view engine', 'ejs')
 app.use(express.static('public'))
@@ -752,7 +770,7 @@ app.post('/signup', async (request, response) => {
         request.session.verifyToken = token
         request.session.tokenExpiry = currentTime.getTime() + 180000
         let content = `<h1>Verify Account</h1> <p>Your Skate App verification token is ${token}</p>`
-        let mailresult = await sendTokenFlow(request, token, "Skate App Account Verification", content)
+        // let mailresult = await sendTokenFlow(request, token, "Skate App Account Verification", content)
         console.log(mailresult)
         response.json({status: "SUCCESS", message: "Created user", email: request.body.email})
     })

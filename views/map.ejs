@@ -6,21 +6,21 @@
 
     <!-- swiper cdn -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"/>
-    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    <script nonce="<%= cspNonce %>" src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 
     <!-- mapbox dependencies -->
     <link href="https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.css" rel="stylesheet">
-    <script src="https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.js"></script>
+    <script nonce="<%= cspNonce %>" src="https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.js"></script>
 
     <!-- mapbox geolocation -->
-    <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js"></script>
+    <script nonce="<%= cspNonce %>" src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js"></script>
 
     <!-- for the search bar -->
-    <script id="search-js" defer src="https://api.mapbox.com/search-js/v1.1.0/web.js"></script>
+    <script nonce="<%= cspNonce %>" id="search-js" defer src="https://api.mapbox.com/search-js/v1.1.0/web.js"></script>
     <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css" type="text/css">
     <!-- <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script> -->
 
-    <script src="https://cdn.jsdelivr.net/gh/WangYuLue/image-conversion/build/conversion.js"></script>
+    <script nonce="<%= cspNonce %>" src="https://cdn.jsdelivr.net/gh/WangYuLue/image-conversion/build/conversion.js"></script>
     <title>Skatespot App</title>
     <link rel="stylesheet" href="/index.css">
     <style>
@@ -82,7 +82,7 @@
             </div>
         </div>
     </div>
-    <script>
+    <script nonce="<%= cspNonce %>">
         document.getElementById("addCommentButton<%= spots[x]._id  %>").addEventListener("click", function() {
             if ("<%= isLoggedIn %>" === "false") {
                 addNewAlert("ERROR", "<a href='/login'>Login</a> required to comment")
@@ -208,7 +208,7 @@
                                     <div class="menu-interactions">
                                         <div style="display: flex; gap: 5px">
                                             <div style="display: flex; align-items: center; gap: 0.5em">
-                                                <img src="/logos/heart-unfilledlight.png" class="like-button likeButton<%= spots[x]._id %>" data-likeref="" data-isliked="" onclick="likeAction(this, '<%= spots[x]._id %>')"></img>
+                                                <img src="/logos/heart-unfilledlight.png" class="like-button likeButton<%= spots[x]._id %>" data-spotid="<%= spots[x]._id %>" data-likeref="" data-isliked=""></img>
                                                 <p class="likes-count spotLikesCount-<%= spots[x]._id %>"><%= spots[x].likesCount %></p>
                                             </div>
                                             <div style="display: flex; align-items: center; gap: 0.5em">
@@ -292,7 +292,7 @@
 </body>
 <div id="spot-container" data-object="<%= JSON.stringify(spots) %>"></div>
 <div id="likes-load-container" data-object="<%= JSON.stringify(likes) %>"></div>
-<script>
+<script nonce="<%= cspNonce %>">
     // const swiper = new Swiper('.swiper', {
     //     direction: 'horizontal',
     //     // slidesPerView: 2,
@@ -442,23 +442,33 @@
         }
     }
 
-    document.querySelectorAll(".modal-button").forEach(elm => {
-        elm.addEventListener("click", function() {
-            console.log("open")
-            if(currentOpenModal !== null) {
-                hideModal(currentOpenModal)
-            }
-            let id = this.getAttribute("data-toggle-modal")
-            showModal(id)
-        })
-    })
+    let modalController = null
+    function modalListeners() {
+        if (modalController) {
+            modalController.abort()
+        }
+        modalController = new AbortController()
+        const modalSignal = modalController.signal
 
-    document.querySelectorAll(".close-modal").forEach(elm => {
-        elm.addEventListener("click", function() {
-            let id = this.getAttribute("data-toggle-modal")
-            hideModal(id)
+        document.querySelectorAll(".modal-button").forEach(elm => {
+            elm.addEventListener("click", function() {
+                console.log("open")
+                if(currentOpenModal !== null) {
+                    hideModal(currentOpenModal)
+                }
+                let id = this.getAttribute("data-toggle-modal")
+                showModal(id)
+            }, {signal: modalSignal})
         })
-    })
+
+        document.querySelectorAll(".close-modal").forEach(elm => {
+            elm.addEventListener("click", function() {
+                let id = this.getAttribute("data-toggle-modal")
+                hideModal(id)
+            }, {signal: modalSignal})
+        })
+    }
+    modalListeners()
 
     document.addEventListener("click", function(e) {
         if (currentOpenModal) {
@@ -479,68 +489,130 @@
         zoom: 10
     })
 
-    // let likeActionController = null
-    let pauseLike = false
-    async function likeAction(elm, spotID) {
-        if (pauseLike) {
-            return
+    // let pauseLike = false
+    // async function likeAction(elm, spotID) {
+    //     if (pauseLike) {
+    //         return
+    //     }
+    //     if ("<%= isLoggedIn %>" === "false") {
+    //         addNewAlert("ERROR", "<a href='/login'>Login</a> required for interactions")
+    //         return
+    //     }
+    //     pauseLike = true
+    //     let isLiked = elm.getAttribute("data-isliked")
+    //     let likeRef = elm.getAttribute("data-likeref")
+    //     let likesCounter = document.querySelectorAll(`.spotLikesCount-${spotID}`)
+    //     if (isLiked === "true" && likeRef === "None") {
+    //         console.log("cancel like")
+    //         return
+    //     }
+    //     let src = isLiked === "true" ? '/logos/heart-unfilledlight.png' : '/logos/heart-filledlight.png'
+    //     document.querySelectorAll(`.likeButton${spotID}`).forEach(item => {item.setAttribute("src", src)})
+    //     let currentData = spotDetailsMap.get(`spot-${spotID}`)
+    //     await fetch("/updateLiked", {
+    //         method: "POST",
+    //         headers: {"Content-Type": "application/json"},
+    //         body: JSON.stringify({
+    //             ID: spotID,
+    //             isLiked: isLiked,
+    //             likeRef: likeRef
+    //         }),
+    //         // signal: likeActionSignal
+    //     })
+    //     .then(async res => {
+    //         let resData = await res.json()
+    //         console.log(res)
+    //         pauseLike = false
+    //         if (resData.status === "SUCCESS") {
+    //             document.querySelectorAll(`.likeButton${spotID}`).forEach(item => {
+    //                 item.setAttribute("data-isliked", resData.isLiked)
+    //                 item.setAttribute("data-likeref", resData.likeRef)
+    //             })
+    //             // let likesCount = parseInt(likesCounter[0].innerText)
+    //             let likesCount = currentData.likesCount
+    //             let newLikesCount = resData.isLiked ? `${++likesCount}` : `${--likesCount}`
+    //             likesCounter.forEach(item => item.innerText = newLikesCount)
+    //             spotDetailsMap.set(`spot-${spotID}`, {
+    //                 ...currentData,
+    //                 likeRef: resData.likeRef,
+    //                 likesCount: newLikesCount,
+    //                 isLiked: resData.isLiked,
+    //             })
+    //         }
+    //     })
+    //     .catch(error => {
+    //         pauseLike = false
+    //     })
+    // }
+
+    let likeActionController = null
+    function likeActionListeners() {
+        if (likeActionController) {
+            likeActionController.abort()
         }
-        // if (likeActionController) {
-        //     likeActionController.abort()
-        // }
-        if ("<%= isLoggedIn %>" === "false") {
-            addNewAlert("ERROR", "<a href='/login'>Login</a> required for interactions")
-            return
-        }
-        pauseLike = true
-        // likeActionController = new AbortController()
-        // const likeActionSignal = likeActionController.signal
-        // let likeButton = this.getElementById(`likeButton${spotID}`)
-        let isLiked = elm.getAttribute("data-isliked")
-        let likeRef = elm.getAttribute("data-likeref")
-        let likesCounter = document.querySelectorAll(`.spotLikesCount-${spotID}`)
-        if (isLiked === "true" && likeRef === "None") {
-            console.log("cancel like")
-            return
-        }
-        let src = isLiked === "true" ? '/logos/heart-unfilledlight.png' : '/logos/heart-filledlight.png'
-        document.querySelectorAll(`.likeButton${spotID}`).forEach(item => {item.setAttribute("src", src)})
-        let currentData = spotDetailsMap.get(`spot-${spotID}`)
-        await fetch("/updateLiked", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({
-                ID: spotID,
-                isLiked: isLiked,
-                likeRef: likeRef
-            }),
-            // signal: likeActionSignal
-        })
-        .then(async res => {
-            let resData = await res.json()
-            console.log(res)
-            pauseLike = false
-            if (resData.status === "SUCCESS") {
-                document.querySelectorAll(`.likeButton${spotID}`).forEach(item => {
-                    item.setAttribute("data-isliked", resData.isLiked)
-                    item.setAttribute("data-likeref", resData.likeRef)
+
+        likeActionController = new AbortController()
+        const likeActionSignal = likeActionController.signal
+        document.querySelectorAll(".like-button").forEach(elm => {
+            let pauseLike = false
+            elm.addEventListener("click", async function() {
+                if (pauseLike) {
+                    return
+                }
+                if ("<%= isLoggedIn %>" === "false") {
+                    addNewAlert("ERROR", "<a href='/login'>Login</a> required for interactions")
+                    return
+                }
+                pauseLike = true
+                let spotId = elm.getAttribute("data-spotid")
+                let isLiked = elm.getAttribute("data-isliked")
+                let likeRef = elm.getAttribute("data-likeref")
+                let likesCounter = document.querySelectorAll(`.spotLikesCount-${spotId}`)
+                if (isLiked === "true" && likeRef === "None") {
+                    console.log("cancel like")
+                    return
+                }
+                let src = isLiked === "true" ? '/logos/heart-unfilledlight.png' : '/logos/heart-filledlight.png'
+                document.querySelectorAll(`.likeButton${spotId}`).forEach(item => {item.setAttribute("src", src)})
+                let currentData = spotDetailsMap.get(`spot-${spotId}`)
+                await fetch("/updateLiked", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({
+                        ID: spotId,
+                        isLiked: isLiked,
+                        likeRef: likeRef
+                    }),
+                    // signal: likeActionSignal
                 })
-                // let likesCount = parseInt(likesCounter[0].innerText)
-                let likesCount = currentData.likesCount
-                let newLikesCount = resData.isLiked ? `${++likesCount}` : `${--likesCount}`
-                likesCounter.forEach(item => item.innerText = newLikesCount)
-                spotDetailsMap.set(`spot-${spotID}`, {
-                    ...currentData,
-                    likeRef: resData.likeRef,
-                    likesCount: newLikesCount,
-                    isLiked: resData.isLiked,
+                .then(async res => {
+                    let resData = await res.json()
+                    console.log(res)
+                    pauseLike = false
+                    if (resData.status === "SUCCESS") {
+                        document.querySelectorAll(`.likeButton${spotId}`).forEach(item => {
+                            item.setAttribute("data-isliked", resData.isLiked)
+                            item.setAttribute("data-likeref", resData.likeRef)
+                        })
+                        // let likesCount = parseInt(likesCounter[0].innerText)
+                        let likesCount = currentData.likesCount
+                        let newLikesCount = resData.isLiked ? `${++likesCount}` : `${--likesCount}`
+                        likesCounter.forEach(item => item.innerText = newLikesCount)
+                        spotDetailsMap.set(`spot-${spotId}`, {
+                            ...currentData,
+                            likeRef: resData.likeRef,
+                            likesCount: newLikesCount,
+                            isLiked: resData.isLiked,
+                        })
+                    }
                 })
-            }
-        })
-        .catch(error => {
-            pauseLike = false
+                .catch(error => {
+                    pauseLike = false
+                })
+            }, {signal: likeActionSignal})
         })
     }
+    likeActionListeners()
 
     let repliesController = null
     function replyListeners(id) {
@@ -879,7 +951,7 @@
                 <div class="popup-interactions">
                     <div style="display: flex; gap: 5px">
                         <div style="display: flex; align-items: center; gap: 0.5em">
-                            <img src="${currentData.isLiked === true ? '/logos/heart-filledlight.png' : '/logos/heart-unfilledlight.png'}" class="like-button likeButton${spotId}" data-likeref="${currentData.likeRef}" data-isliked="${currentData.isLiked === true ? 'true' : 'false'}" onclick="likeAction(this, '${spotId}')"></img>
+                            <img src="${currentData.isLiked === true ? '/logos/heart-filledlight.png' : '/logos/heart-unfilledlight.png'}" class="like-button likeButton${spotId}" data-spotid="${spotId}" data-likeref="${currentData.likeRef}" data-isliked="${currentData.isLiked === true ? 'true' : 'false'}"></img>
                             <p class="likes-count spotLikesCount-${spotId}">${currentData.likesCount}</p>
                         </div>
                         <div style="display: flex; align-items: center; gap: 0.5em">
@@ -887,7 +959,7 @@
                             <p class="spotCommentsCount-${spotId}">${currentData.commentsCount}</p>
                         </div>
                     </div>
-                    <button class='spot-details-button modal-button' data-toggle-modal="spotDetailsModal${spotId}" onclick="showModal('spotDetailsModal${spotId}')">Details</button>
+                    <button nonce="<%= cspNonce %>" class='spot-details-button modal-button' data-toggle-modal="spotDetailsModal${spotId}">Details</button>
                 </div>
             </div>
         </div>`
@@ -903,6 +975,8 @@
                 if(resData.status === "SUCCESS") {
                     let description = setPopupHtml(spotId)
                     popup.setLngLat([resData.spot.longitude, resData.spot.latitude]).setHTML(description).addTo(map);
+                    likeActionListeners()
+                    modalListeners()
                     map.easeTo({
                         center: [resData.spot.longitude, (resData.spot.latitude - 0.023)],
                         zoom: 13,
@@ -1156,6 +1230,8 @@
                 let currentData = spotDetailsMap.get(`spot-${spotId}`)
                 let description = setPopupHtml(spotId)
                 popup.setLngLat(coordinates).setHTML(description).addTo(map);
+                likeActionListeners()
+                modalListeners()
                 let spotCarousel = document.getElementById(`spotDetailsModal${spotId}`).querySelectorAll(".swiper-wrapper")[0]
                 if (spotCarousel.getAttribute("data-loaded") === "false") {
                     loadSpotImages(spotId, "all")

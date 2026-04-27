@@ -19,7 +19,7 @@
         <button class="auth-button">Confirm</button>
     </form>
 </body>
-<script>
+<script nonce="<%= cspNonce %>">
     let isExpired = '<%= expired %>'
     let tokenExpiryCounter = document.getElementById("tokenExpiryCounter")
     let resendTokenDiv = document.getElementById("resendTokenDiv")
