@@ -1,6 +1,27 @@
 <div class="alert-div" id="alertDiv">
 </div>
 <script nonce="<%= cspNonce %>">
+
+    function closeAlert() {
+        let messageID = this.getAttribute("data-alertid")
+        console.log(messageID)
+        let messageDiv = document.getElementById(messageID)
+        messageDiv.classList.remove("show-alert")
+        setTimeout(() => {
+            messageDiv.remove()
+        }, 500)
+    }
+    let alertsController = null
+    function alertListeners() {
+        if (alertsController) {
+            alertsController.abort()
+        }
+        alertsController = new AbortController()
+        const alertsSignal = alertsController.signal
+        document.querySelectorAll(".close-alert").forEach(elm => {
+            elm.addEventListener("click", closeAlert, {signal: alertsSignal})
+        })
+    }
     let alertList = []
     function addNewAlert(code, message) {
         let alertDiv = document.getElementById("alertDiv")
@@ -8,7 +29,7 @@
         alertDiv.insertAdjacentHTML("beforeend", `
             <div class="alert-item-div ${code === 'SUCCESS' ? 'alert-success': 'alert-error'}" id='alertItem${alertsLength}'>
                 <p class="alert-message"><span class="alert-message-code">${code}:</span>${message}</p>
-                <img src="./logos/close.png" alt="close menu" class="close-alert" onclick="closeAlert('alertItem${alertsLength}')">
+                <img src="./logos/close.png" alt="close menu" class="close-alert" data-alertid="alertItem${alertsLength}">
             </div>
         `)
         let alertItem = document.getElementById(`alertItem${alertsLength}`)
@@ -20,13 +41,6 @@
         setTimeout(() => {
             alertItem.remove()
         }, 5300)
-    }
-
-    function closeAlert(messageID) {
-        let messageDiv = document.getElementById(messageID)
-        messageDiv.classList.remove("show-alert")
-        setTimeout(() => {
-            messageDiv.remove()
-        }, 500)
+        alertListeners()
     }
 </script>

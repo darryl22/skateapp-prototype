@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="/index.css">
     <!-- swiper cdn -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"/>
-    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    <script nonce="<%= cspNonce %>" src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
     <!-- <meta name="color-scheme" content="light"> -->
     <!-- <meta name="theme-color" media="(prefers-color-scheme: dark)" /> -->
     <meta name="theme-color" media="(prefers-color-scheme: light)" />
@@ -25,34 +25,92 @@
 <body>
     <%- include('templates/nav.ejs') %>
     <%- include('templates/theme.ejs') %>
-    <div class="swiper">
+    <!-- <div class="swiper">
         <div class="swiper-wrapper">
             <div class="swiper-slide">
-                <div class="carousel-image" style="background-image: url('/images/carouselimage1.jpg');"></div>
+                <div class="carousel-image" style="background-image: url('/images/skateboardingimage1.jpeg');"></div>
             </div>
             <div class="swiper-slide">
-                <div class="carousel-image" style="background-image: url('/images/carouselimage2.jpg');"></div>
+                <div class="carousel-image" style="background-image: url('/images/skateboardingimage5.jpeg');"></div>
             </div>
             <div class="swiper-slide">
-                <div class="carousel-image" style="background-image: url('/images/carouselimage3.jpg');"></div>
+                <div class="carousel-image" style="background-image: url('/images/skateboardingimage12.jpeg');"></div>
             </div>
         </div>
         <div class="swiper-pagination"></div>
         <div class="swiper-button-prev"></div>
         <div class="swiper-button-next"></div>
+    </div> -->
+    <div class="index-banner">
+        <div class="index-banner-image"></div>
+        <div class="index-banner-content">
+            <div class="index-banner-content-invert"></div>
+            <div class="index-banner-title-div">
+                <p class="index-banner-title">Find skate spots in Africa</p>
+            </div>
+        </div>
+        <div class="index-banner-content2">
+            <div class="index-banner-content-invert"></div>
+            <div class="index-banner-title-div2">
+                <p class="index-banner-title">Lorem ipsum dolor sit amet.</p>
+            </div>
+        </div>
     </div>
     <div style="text-align: center; display: flex; flex-direction: column; align-items: center;">
-        <p style="margin-top: 4em; color: #116dff; margin-bottom: 0em;">Section 1</p>
-        <p style="font-size: 2em; color: purple; margin-top: 0.5em;">An Introduction to Skateboarding in Kenya</p>
-        <p style="width: 50%; font-family: roboto; color: gray; margin-bottom: 5em;">Lorem ipsum dolor sit amet consectetur, adipisicing elit. Pariatur facere excepturi debitis? Quae debitis non unde, magni esse distinctio? Illum perspiciatis suscipit laudantium non quibusdam omnis atque eius a mollitia minima voluptas rem dolores nostrum nemo, vel quas id architecto placeat cupiditate excepturi voluptates? Provident delectus quia nesciunt atque est.</p>
+        <!-- <p style="margin-top: 4em; color: #116dff; margin-bottom: 0em;">Section 1</p> -->
+        <p style="font-size: 2em; color: purple; margin: 2em;">An Introduction to Skateboarding in Africa</p>
+        <p style="width: 50%; font-family: roboto; color: gray; margin-bottom: 5em;">
+            The skateboarding scene in Kenya and Africa has been growing steadily for many years now, with many organizations 
+            representing skaters across the continent. Traditionally it  can be hard to find places to skate in Africa due to 
+            lack of infrastructure or information. This site aims to expand where people in Africa can skate, providing 
+            community uploaded skate spots.
+        </p>
     </div>
-    <!-- <div class="paralax-div">
-        <p style="font-size: 1.5em; font-weight: 500;">one</p>
-        <p style="font-size: 1.5em; font-weight: 500;">two</p>
-        <p style="font-size: 1.5em; font-weight: 500;">three</p>
-    </div> -->
+    <div style="width: 100vw; height: 1px; background-color: purple;"></div>
+    <p style="font-size: 2em; color: purple; margin-top: 2em; text-align: center;">How it works</p>
+    <div class="howitworks-div">
+        <div class="howitworks-item">
+            <div class="howitworks-item-heading">
+                <!-- <p style="margin: 0; font-size: 2em;">1</p> -->
+                <img src="/logos/skating.png" alt="" class="howitworks-logo">
+            </div>
+            <p class="howitworks-text" style="font-size: 1.2em; font-weight: bold; margin: 0; margin-top: 1.5em; color: white;">Register</p>
+            <p class="howitworks-text" style="margin-top: 10px; color: white;"><a href="/signup" style="text-decoration: underline; text-underline-offset: 4px; color: white;">Create an account</a> to upload spots and share interactions with other skaters.</p>
+        </div>
+        <div class="howitworks-item">
+            <div class="howitworks-item-heading">
+                <!-- <p style="margin: 0; font-size: 2em;">2</p> -->
+                <img src="/logos/skating.png" alt="" class="howitworks-logo">
+            </div>
+            <p class="howitworks-text" style="font-size: 1.2em; font-weight: bold; margin: 0; margin-top: 1.5em; color: white;">Upload</p>
+            <p class="howitworks-text" style="margin-top: 10px; color: white;">In the <a href="/map" style="text-decoration: underline; text-underline-offset: 4px; color: white;">In the map</a> page you can upload a spot location you found with images</p>
+        </div>
+        <div class="howitworks-item">
+            <div class="howitworks-item-heading">
+                <!-- <p style="margin: 0; font-size: 2em;">3</p> -->
+                <img src="/logos/skating.png" alt="" class="howitworks-logo">
+            </div>
+            <p class="howitworks-text" style="font-size: 1.2em; font-weight: bold; margin: 0; margin-top: 1.5em; color: white;">Explore</p>
+            <p class="howitworks-text" style="margin-top: 10px; color: white;">Find a variet of different spot types uploaded by other users</p>
+        </div>
+    </div>
+    <div class="paralax-div" style="background-image: url('./images/skateboardingimage1.jpeg'); background-position: center 0%;">
+        <div class="paralax-div-invert"></div>
+    </div>
+    <div class="paralax-div" style="background-image: url('./images/skateboardingimage5.jpeg'); background-position: center 10%;">
+        <div class="paralax-div-invert"></div>
+    </div>
+    <div class="paralax-div" style="background-image: url('./images/skateboardingimage9.jpeg'); background-position: center 10%;">
+        <div class="paralax-div-invert"></div>
+    </div>
+    <div class="paralax-div" style="background-image: url('./images/skateboardingimage11.jpeg'); background-position: center 10%;">
+        <div class="paralax-div-invert"></div>
+    </div>
+    <div class="paralax-div" style="background-image: url('./images/skateboardingimage12.jpeg'); background-position: center 10%;">
+        <div class="paralax-div-invert"></div>
+    </div>
 </body>
-<script>
+<script nonce="<%= cspNonce %>">
     const swiper = new Swiper('.swiper', {
         direction: 'horizontal',
         // slidesPerView: 2,

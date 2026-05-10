@@ -33,7 +33,6 @@ const limiter = rateLimit({
 })
 
 const helmet = require("helmet")
-const { request } = require("node:http")
 
 app.use((request, response, next) => {
     response.locals.cspNonce = crypto.randomBytes(32).toString("hex")
@@ -43,7 +42,6 @@ app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             "script-src": ["'self'", "cdn.jsdelivr.net", "api.mapbox.com", (request, response) => `'nonce-${response.locals.cspNonce}'`],
-            // "style-src": ["'self'"],
             "connect-src": ["'self'", "cdn.jsdelivr.net", "api.mapbox.com", "events.mapbox.com"],
             "worker-src": ["'self'", "blob:", "cdn.jsdelivr.net"]
         }
@@ -57,7 +55,7 @@ app.use(bodyParser.urlencoded({extended: true, limit: "25mb"}))
 app.use(require("express-session")({
     secret: process.env.SESSION_SECRET,
     cookie: {
-        maxAge: 604800000,
+        maxAge: 86400000,
         secure: process.env.ENVIRONMENT === "prod",
         httpOnly: true
     },
@@ -80,7 +78,6 @@ app.use((request, response, next) => {
 })
 
 app.get('/', async (request, response) => {
-    console.log(response.locals)
     response.render('index.ejs')
 })
 
@@ -139,6 +136,7 @@ app.get('/map', async (request, response) => {
 })
 
 app.post('/addspot', async (request, response) => {
+    if (!response.locals.isLoggedIn) {return response.json({status: "ERROR", message: "Login required to upload spot"})}
     const date = new Date()
     let currentDate = date.toISOString().split("T")
     const options = { xss: true, noSql: true, sql: true, level: 5 }
@@ -611,13 +609,12 @@ app.post('/updateProfileImage', async (request, response) => {
 // auth endpoints
 
 app.get('/login', (request, response) => {
-    console.log(response.locals)
     response.render('login.ejs')
 })
 
 app.post('/login', limiter, async (request, response) => {
     const password = request.body.password
-    await databaseMethods.getOne("users", {email: request.body.email})
+    await databaseMethods.getOne("users", {$or: [{email: request.body.username}, {username: request.body.username}]})
     .then(async res => {
         if (res === null) return response.json({status: "ERROR", message: "User not found"})
         let checkPass = await bcrypt.compare(password, res.password)
@@ -626,19 +623,23 @@ app.post('/login', limiter, async (request, response) => {
             if (res.settings.twoFactorAuth === true) {
                 let token = appFuncs.generateToken(7)
                 const currentTime = new Date()
-                request.session.verifyToken = token
-                request.session.tokenExpiry = currentTime.getTime() + 180000
+                request.session.tfaToken = token
+                request.session.tfaTokenExpiry = currentTime.getTime() + 180000
                 request.session.tempEmail = res.email
+                request.session.toRemember = request.body.rememberme
                 let content = `<h1>Login Verification</h1> <p>Your Skate App Login token is ${token}</p>`
-                let mailresult = await appFuncs.sendPrimaryMail("darrylandrew22@gmail.com", "Skate App Login Verification", content)
-                return response.json({status: "SUCCESS", message: "Login successful", action: "tfa"})
+                let mailresult = await appFuncs.sendPrimaryMail(res.email, "Skate App Login Verification", content)
+                return response.json({status: "SUCCESS", message: "Redirecting...", action: "tfa"})
             } else {
+                if (request.body.rememberme) {
+                    request.session.cookie.maxAge = 6048000000
+                }
                 request.session.username = res.username
                 request.session.userID = res._id.toString()
                 request.session.email = res.email
                 request.session.isLoggedIn = true
                 request.session.darkMode = res.settings.darkMode ? "true" : "false"
-                return response.json({status: "SUCCESS", message: "Login successful", action: "login"})
+                return response.json({status: "SUCCESS", message: "Login successful, redirecting...", action: "login"})
             }
         } else {
             response.json({status: "ERROR", message: "Password missmatch"})
@@ -655,23 +656,23 @@ app.get("/twoFactorAuth", async (request, response) => {
         return response.redirect("/login")
     }
     let duration = 0
-    if (!request.session.verifyToken) {
+    if (!request.session.tfaToken) {
         let token = appFuncs.generateToken(7)
         let currentTime = new Date()
-        request.session.verifyToken = token
-        request.session.tokenExpiry = currentTime.getTime() + 180000
-        duration = request.session.tokenExpiry - currentTime.getTime()
+        request.session.tfaToken = token
+        request.session.tfaTokenExpiry = currentTime.getTime() + 180000
+        duration = request.session.tfaTokenExpiry - currentTime.getTime()
         // let content = `<h1>Verify Account</h1> <p>Your Skate App verification token is ${token}</p>`
         let content = `<h1>Login Verification</h1> <p>Your Skate App Login token is ${token}</p>`
-        let mailresult = await appFuncs.sendPrimaryMail("darrylandrew22@gmail.com", "Skate App Account Verification", content)
+        let mailresult = await appFuncs.sendPrimaryMail(request.session.tempEmail, "Skate App Account Verification", content)
     }
     let currentTime = new Date()
-    duration = request.session.tokenExpiry - currentTime.getTime()
+    duration = request.session.tfaTokenExpiry - currentTime.getTime()
     let expired = false
     if (duration < 0) {
-        request.session.verifyToken = null
+        request.session.tfaToken = null
         expired = true
-        // duration = request.session.tokenExpiry - currentTime.getTime()
+        // duration = request.session.tfaTokenExpiry - currentTime.getTime()
         console.log("Token Expired")
     }
     response.render('twoFactorAuth.ejs', {duration: duration, expired: expired})
@@ -682,20 +683,21 @@ app.post("/twoFactorAuth", async (request, response) => {
         return response.redirect("/login")
     }
     let tempEmail = request.session.tempEmail
-    let token = request.session.verifyToken
+    let token = request.session.tfaToken
     let sentToken = request.body.sentToken
     let currentTime = new Date()
-    let duration = request.session.tokenExpiry - currentTime.getTime()
+    let duration = request.session.tfaTokenExpiry - currentTime.getTime()
     let action = request.body.action
     if (action === "checkToken") {
         if(duration < 0) {
+            request.session.tfaToken = null
             response.json({status: "ERROR", message: "Token Expired, try again"})
         } else if (token === sentToken && duration > 0) {
             console.log("Token matched")
             await databaseMethods.getOne("users", {email: tempEmail})
             .then(res => {
-                request.session.verifyToken = null
-                request.session.tokenExpiry = null
+                request.session.tfaToken = null
+                request.session.tfaTokenExpiry = null
                 request.session.username = res.username
                 request.session.userID = res._id.toString()
                 request.session.email = res.email
@@ -714,14 +716,134 @@ app.post("/twoFactorAuth", async (request, response) => {
         }
     } else if (action === "resendToken") {
         let token = appFuncs.generateToken(7)
-        request.session.verifyToken = token
+        request.session.tfaToken = token
         let currentTime = new Date()
-        request.session.tokenExpiry = currentTime.getTime() + 180000
-        duration = request.session.tokenExpiry - currentTime.getTime()
+        request.session.tfaTokenExpiry = currentTime.getTime() + 180000
+        duration = request.session.tfaTokenExpiry - currentTime.getTime()
         let content = `<h1>Verify Account</h1> <p>Your Skate App verification token is ${token}</p>`
-        let mailresult = await appFuncs.sendPrimaryMail("darrylandrew22@gmail.com", "Skate App Account Verification", content)
-        response.json({status: "SUCCESS", duration: duration})
+        let mailresult = await appFuncs.sendPrimaryMail(request.session.tempEmail, "Skate App Account Verification", content)
+        response.json({status: "SUCCESS", message: "Token resent", duration: duration})
     }
+})
+
+app.get("/forgotPassword", async (request, response) => {
+    if(!request.session.passwordResetStep) {
+        request.session.passwordResetStep = "sendemail"
+    }
+    let duration = 0
+    let expired = false
+    if (request.session.fpToken) {
+        let currentTime = new Date()
+        duration = request.session.fpTokenExpiry - currentTime.getTime()
+        if (duration < 0) {
+            request.session.fpToken = null
+            expired = true
+        }
+    }
+    response.render("forgotPassword.ejs", {resetStep: request.session.passwordResetStep, duration: duration, expired: expired})
+})
+
+app.post("/forgotPassword", async (request, response) => {
+    let action = request.body.action
+    if (action === "sendemail") {
+        let email = request.body.email
+        await databaseMethods.getOne("users", {email: email})
+        .then(async res => {
+            if (res === null) {
+                return response.json({status: "ERROR", message: `Could not find account with email ${email}`})
+            }
+            if (res.verified === false) {
+                return response.json({status: "ERROR", message: `Email ${email} is not verified`})
+            }
+            request.session.fpEmail = email
+            request.session.passwordResetStep = "resetpassword"
+            let token = appFuncs.generateToken(7)
+            let currentTime = new Date()
+            request.session.fpToken = token
+            request.session.fpTokenExpiry = currentTime.getTime() + 180000
+            duration = request.session.fpTokenExpiry - currentTime.getTime()
+            let content = `<h1>Reset Account Password</h1> <p>Your Skate App reset token is ${token}</p>`
+            let mailresult = await appFuncs.sendPrimaryMail(email, "Skate App password reset", content)
+            response.json({status: "SUCCESS", message: "Token sent", duration: duration})
+        })
+        .catch(error => {
+            return response.json({status: "ERROR", message: `Error getting user`})
+        })
+    } else if (action === "resetpassword") {
+        // request.session.passwordResetStep = "resetpassword"
+        if (!request.session.fpEmail && request.session.fpEmail != "") {
+            request.session.passwordResetStep = "sendemail"
+            return response.json({status: "ERROR", message: `Error getting email`})
+        }
+        let email = request.session.fpEmail
+        let token = request.body.token
+        let newpassword = request.body.newpassword
+        let confirmnewpassword = request.body.confirmnewpassword
+        let currentTime = new Date()
+        let duration = request.session.fpTokenExpiry - currentTime.getTime()
+        if (duration < 0) {
+            request.session.fpToken = null
+            return response.json({status: "ERROR", message: "Token expired"})
+        }
+        if (newpassword !== confirmnewpassword) {
+            return response.json({status: "ERROR", message: "Password missmatch"})
+        }
+        if (token !== request.session.fpToken) {
+            return response.json({status: "ERROR", message: "token missmatch"})
+        }
+        const hashedPass = await bcrypt.hash(newpassword, saltRounds)
+        await databaseMethods.makeUpdate("users", {email: email}, {
+            $set: {password: hashedPass}
+        })
+        .then(res => {
+            response.json({status: "SUCCESS", message: "Password reset successful"})
+        })
+        .catch(error => {
+            response.json({status: "ERROR", message: "Error with password reset"})
+        })
+    } else if (action === "resendToken") {
+        if (!request.session.fpEmail && request.session.fpEmail != "") {
+            request.session.passwordResetStep = "sendemail"
+            return response.json({status: "ERROR", message: `Error getting email`})
+        }
+        let email = request.session.fpEmail
+        let token = appFuncs.generateToken(7)
+        let currentTime = new Date()
+        request.session.fpToken = token
+        request.session.fpTokenExpiry = currentTime.getTime() + 180000
+        duration = request.session.fpTokenExpiry - currentTime.getTime()
+        let content = `<h1>Reset Account Password</h1> <p>Your Skate App reset token is ${token}</p>`
+        let mailresult = await appFuncs.sendPrimaryMail(email, "Skate App password reset", content)
+        response.json({status: "SUCCESS", message: "Token resent", duration: duration})
+    } else {
+        response.json({status: "ERROR", message: "Error with password reset"})
+    }
+})
+
+app.post("/changePassword", async (request, response) => {
+    if (request.body.newpassword !== request.body.confirmnewpassword) {
+        return response.json({status: "ERROR", message: "New password missmatch"})
+    }
+    let userId = ObjectId.createFromHexString(request.session.userID)
+    await databaseMethods.getOne("users", {_id: userId})
+    .then(async res => {
+        // let hashedPassOld = await bcrypt.hash(request.body.oldpassword, saltRounds)
+        let passwordMatch = await bcrypt.compare(request.body.oldpassword, res.password)
+        if (!passwordMatch) {
+            return "Password missmatch"
+        }
+        let hashedPassNew = await bcrypt.hash(request.body.newpassword, saltRounds)
+        return databaseMethods.makeUpdate("users", {_id: userId}, {$set: {password: hashedPassNew}})
+    })
+    .then(res => {
+        if (res === "Password missmatch") {
+            return response.json({status: "ERROR", message: "Password missmatch"})
+        }
+        return response.json({status: "SUCCESS", message: "Updated password"})
+    })
+    .catch(error => {
+        response.json({status: "ERROR", message: "Error updating password"})
+    })
 })
 
 app.get('/signup', (request, response) => {
@@ -765,6 +887,9 @@ app.post('/signup', async (request, response) => {
         request.session.email = request.body.email
         request.session.darkMode = "false"
         request.session.isLoggedIn = true
+        if (request.body.rememberme) {
+            request.session.cookie.maxAge = 6048000000
+        }
         let token = appFuncs.generateToken(7)
         let currentTime = new Date()
         request.session.verifyToken = token
@@ -781,7 +906,7 @@ app.post('/signup', async (request, response) => {
 })
 
 app.get("/verify", async (request, response) => {
-    if (request.session.email === undefined) {
+    if (request.session.email === undefined || request.session.email === null) {
         return response.redirect("/login")
     }
     let duration = 0
@@ -792,7 +917,7 @@ app.get("/verify", async (request, response) => {
         request.session.tokenExpiry = currentTime.getTime() + 180000
         duration = request.session.tokenExpiry - currentTime.getTime()
         let content = `<h1>Verify Account</h1> <p>Your Skate App verification token is ${token}</p>`
-        let mailresult = await appFuncs.sendPrimaryMail("darrylandrew22@gmail.com", "Skate App Account Verification", content)
+        let mailresult = await appFuncs.sendPrimaryMail(request.session.email, "Skate App Account Verification", content)
     }
     let currentTime = new Date()
     duration = request.session.tokenExpiry - currentTime.getTime()
@@ -808,49 +933,48 @@ app.get("/verify", async (request, response) => {
 
 app.post("/verify", async (request, response) => {
     if (request.session.email === undefined || request.session.email === null) {
-        response.redirect("/login")
-    }else {
-        let token = request.session.verifyToken
-        let sentToken = request.body.sentToken
-        let currentTime = new Date()
-        let duration = request.session.tokenExpiry - currentTime.getTime()
-        let action = request.body.action
-        if (action === "checkToken") {
-            if(duration < 0) {
-                response.json({status: "ERROR", message: "Token Expired, try again"})
-            } else if (token === sentToken && duration > 0) {
-                console.log("Token matched")
-                let ID = ObjectId.createFromHexString(request.session.userID)
-                await databaseMethods.makeUpdate("users", {_id: ID}, {
-                    $set: {
-                        verified: true
-                    }
-                })
-                .then(verifiedRes => {
-                    console.log(verifiedRes)
-                    request.session.verifyToken = null
-                    request.session.tokenExpiry = null
-                    response.json({status: "SUCCESS", message: "Token Match"})
-                })
-                .catch(error => {
-                    console.log(error)
-                    response.json({status: "ERROR", message: "Error updating user"})
-                })
+        return response.redirect("/login")
+    }
+    let token = request.session.verifyToken
+    let sentToken = request.body.sentToken
+    let currentTime = new Date()
+    let duration = request.session.tokenExpiry - currentTime.getTime()
+    let action = request.body.action
+    if (action === "checkToken") {
+        if(duration < 0) {
+            response.json({status: "ERROR", message: "Token Expired, try again"})
+        } else if (token === sentToken && duration > 0) {
+            console.log("Token matched")
+            let ID = ObjectId.createFromHexString(request.session.userID)
+            await databaseMethods.makeUpdate("users", {_id: ID}, {
+                $set: {
+                    verified: true
+                }
+            })
+            .then(verifiedRes => {
+                console.log(verifiedRes)
+                request.session.verifyToken = null
+                request.session.tokenExpiry = null
+                response.json({status: "SUCCESS", message: "Token Match"})
+            })
+            .catch(error => {
+                console.log(error)
+                response.json({status: "ERROR", message: "Error updating user"})
+            })
 
-            } else {
-                console.log("Token mismatch")
-                response.json({status: "ERROR", message: "Token Missmatch"})
-            }
-        } else if (action === "resendToken") {
-            let token = appFuncs.generateToken(7)
-            request.session.verifyToken = token
-            let currentTime = new Date()
-            request.session.tokenExpiry = currentTime.getTime() + 180000
-            duration = request.session.tokenExpiry - currentTime.getTime()
-            let content = `<h1>Verify Account</h1> <p>Your Skate App verification token is ${token}</p>`
-            let mailresult = await appFuncs.sendPrimaryMail("darrylandrew22@gmail.com", "Skate App Account Verification", content)
-            response.json({status: "SUCCESS", duration: duration})
+        } else {
+            console.log("Token mismatch")
+            response.json({status: "ERROR", message: "Token Missmatch"})
         }
+    } else if (action === "resendToken") {
+        let token = appFuncs.generateToken(7)
+        request.session.verifyToken = token
+        // let currentTime = new Date()
+        request.session.tokenExpiry = currentTime.getTime() + 180000
+        duration = request.session.tokenExpiry - currentTime.getTime()
+        let content = `<h1>Verify Account</h1> <p>Your Skate App verification token is ${token}</p>`
+        let mailresult = await appFuncs.sendPrimaryMail(request.session.email, "Skate App Account Verification", content)
+        response.json({status: "SUCCESS", message: "Token resent", duration: duration})
     }
 })
 

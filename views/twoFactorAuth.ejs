@@ -18,6 +18,9 @@
         <button type="button" class="secondary-button" id="resendTokenButton">resend</button>
         <button class="auth-button">Confirm</button>
     </form>
+    <div class="spinner-container" id="spinnerContainer">
+        <img src="/logos/skateboardlight.png" alt="spinner" class="spinner">
+    </div>
 </body>
 <script nonce="<%= cspNonce %>">
     let isExpired = '<%= expired %>'
@@ -30,7 +33,6 @@
         tokenExpiryCounter.style.display = "block"
         resendTokenDiv.style.display = "none"
     }
-    console.log(isExpired)
     let timerInterval = null
     function setTimer(duration, targetElement) {
         if (timerInterval !== null) {
@@ -64,6 +66,7 @@
 
     document.getElementById("submitForm").addEventListener("submit", async function(e) {
         e.preventDefault()
+        document.getElementById("spinnerContainer").style.display = "block"
         await fetch("/twoFactorAuth", {
             method: "POST",
             headers: {"Content-Type": "application/json"},
@@ -73,6 +76,7 @@
             })
         })
         .then(async res => {
+            document.getElementById("spinnerContainer").style.display = "none"
             let resData = await res.json()
             console.log(resData)
             addNewAlert(resData.status, resData.message)
@@ -83,11 +87,13 @@
             }
         })
         .catch(error => {
+            document.getElementById("spinnerContainer").style.display = "none"
             addNewAlert("ERROR", "Error checking token")
         })
     })
 
     document.getElementById("resendTokenButton").addEventListener("click", async function() {
+        document.getElementById("spinnerContainer").style.display = "block"
         await fetch("/twoFactorAuth", {
             method: "POST",
             headers: {"Content-Type": "application/json"},
@@ -96,6 +102,7 @@
             })
         })
         .then(async res => {
+            document.getElementById("spinnerContainer").style.display = "none"
             let resData = await res.json()
             console.log(resData)
             setTimer(parseInt(resData.duration), "timerSpan")
@@ -104,6 +111,7 @@
             addNewAlert("SUCCESS", "New token sent")
         })
         .catch(error => {
+            document.getElementById("spinnerContainer").style.display = "none"
             addNewAlert("ERROR", "Error with token resend")
         })
     })

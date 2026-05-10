@@ -49,7 +49,7 @@
                                 <img src="/logos/closeLight.png" alt="" class="image-invert" style="height: 10px;">
                             </div>
                         </div>
-                        <button class="purple-button" style="padding: 0.5em; height: fit-content;" id="usernameConfirm">Confirm</button>
+                        <button class="purple-button" style="padding: 5px; height: fit-content; font-size: 0.8em;" id="usernameConfirm">Confirm</button>
                     </div>
                 </div>
 
@@ -66,7 +66,7 @@
                                 <img src="/logos/closeLight.png" alt="" class="image-invert" style="height: 10px;">
                             </div>
                         </div>
-                        <button class="purple-button" style="padding: 0.5em; height: fit-content;" id="emailConfirm">Confirm</button>
+                        <button class="purple-button" style="padding: 5px; height: fit-content; font-size: 0.8em;" id="emailConfirm">Confirm</button>
                     </div>
                 </div>
                 <script nonce="<%= cspNonce %>">
@@ -74,6 +74,9 @@
                     document.getElementById("emailEdit").addEventListener("click", function() {
                         document.getElementById("emailValue").classList.toggle("hidden")
                         document.getElementById("emailEditDiv").classList.toggle("hidden")
+                        let inputLength = document.getElementById("emailInput").value.length
+                        document.getElementById("emailInput").focus()
+                        document.getElementById("emailInput").setSelectionRange(0, inputLength)
                         this.classList.toggle("hidden")
                     })
 
@@ -81,6 +84,7 @@
                         document.getElementById("emailValue").classList.toggle("hidden")
                         document.getElementById("emailEditDiv").classList.toggle("hidden")
                         document.getElementById("emailEdit").classList.toggle("hidden")
+                        document.getElementById("emailInput").value = "<%= userProfile.email %>"
                     })
 
                     document.getElementById("emailConfirm").addEventListener("click", async function() {
@@ -109,6 +113,9 @@
                     document.getElementById("usernameEdit").addEventListener("click", function() {
                         document.getElementById("usernameValue").classList.toggle("hidden")
                         document.getElementById("usernameEditDiv").classList.toggle("hidden")
+                        let inputLength = document.getElementById("usernameInput").value.length
+                        document.getElementById("usernameInput").focus()
+                        document.getElementById("usernameInput").setSelectionRange(0, inputLength)
                         this.classList.toggle("hidden")
                     })
 
@@ -116,6 +123,7 @@
                         document.getElementById("usernameValue").classList.toggle("hidden")
                         document.getElementById("usernameEditDiv").classList.toggle("hidden")
                         document.getElementById("usernameEdit").classList.toggle("hidden")
+                        document.getElementById("usernameInput").value = "<%= userProfile.username %>"
                     })
 
                     document.getElementById("usernameConfirm").addEventListener("click", async function() {
@@ -151,6 +159,48 @@
                 <% } else { %>
                     <a href="/verify" class="purple-button" style="margin-top: 1em; padding: 0.5em;">verify Email</a>
                 <% } %>
+
+                <button class="base-button modal-button" data-toggle-modal="changePassword">Change Password</button>
+                <div class="base-modal" id="changePassword" data-likes-loaded="false">
+                    <div class="base-modal-inner">
+                        <img src="./logos/closelight.png" alt="close menu" class="close-menu2 image-invert close-modal" data-toggle-modal="changePassword">
+                        <div class="base-modal-content" id="changePasswordContent">
+                            <form action="" method="post" class="auth-div" style="min-width: 250px;" id="changePasswordForm">
+                                <input type="password" placeholder="old password" name="oldpassword" id="oldpassword" class="auth-input" required>
+                                <input type="password" placeholder="new password" name="newpassword" id="newpassword" class="auth-input" required>
+                                <input type="password" placeholder="confirm password" name="confirmnewpassword" id="confirmnewpassword" class="auth-input" required>
+                                <button class="auth-button">Confirm</button>
+                            </form>
+                            <script nonce="<%= cspNonce %>">
+                                document.getElementById("changePasswordForm").addEventListener("submit", async function(e) {
+                                    e.preventDefault()
+                                    await fetch("/changePassword", {
+                                        method: "POST",
+                                        headers: {
+                                            "Content-Type": "application/json"
+                                        },
+                                        body: JSON.stringify({
+                                            oldpassword: document.getElementById("oldpassword").value,
+                                            newpassword: document.getElementById("newpassword").value,
+                                            confirmnewpassword: document.getElementById("confirmnewpassword").value,
+                                        })
+                                    })
+                                    .then(async res => {
+                                        let resData = await res.json()
+                                        if (resData.status === "SUCCESS") {
+                                            addNewAlert(resData.status, resData.message)
+                                        } else {
+                                            addNewAlert(resData.status, resData.message)
+                                        }
+                                    })
+                                    .catch(error => {
+                                        addNewAlert("ERROR", "Error changing password")
+                                    })
+                                })
+                            </script>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
         <div class="profile-divider"></div>
@@ -160,7 +210,7 @@
                 <div class="underline"></div>
 
                 <div class="profile-pill-outer">
-                    <div class="profile-pill-title" style="position: relative;">
+                    <div class="profile-pill-title" style="position: relative; width: fit-content;">
                         Two factor Authentication
                         <div class="tooltip-div" style="top: 50%; transform: translateY(-50%); right: -30px;">
                             <p class="tooltip-icon">?</p>
@@ -470,8 +520,6 @@
                 dragImagePlaceholder.style.backgroundImage = `${elm.style.backgroundImage}`
 
                 function dragEvent(drag) {
-                    // isDragging = true
-                    console.log("window drag")
                     dragImagePlaceholder.style.top = `${drag.clientY - 50}px`
                     dragImagePlaceholder.style.left = `${drag.clientX - 50}px`
                 }
@@ -551,6 +599,11 @@
                 dragImagePlaceholder.style.backgroundImage = `${elm.style.backgroundImage}`
 
                 function dragEvent(drag) {
+                    // let endTarget = document.elementFromPoint(drag.changedTouches[0].clientX, drag.changedTouches[0].clientY)
+                    // console.log(endTarget.classList.contains("edit-pictures-item"))
+                    // if(endTarget.classList.contains("edit-pictures-item")) {
+                    //     endTarget.classList.add("edit-pictures-item-draghover")
+                    // }
                     dragImagePlaceholder.style.top = `${drag.touches[0].clientY - 50}px`
                     dragImagePlaceholder.style.left = `${drag.touches[0].clientX - 50}px`
                 }

@@ -73,7 +73,7 @@
                 </div>
                 <div style="display: flex; align-items: center; gap: 1em; margin-top: 2em;">
                     <button class="base-button" style="padding: 10px; font-size: 1em;" id="getDirections<%= spots[x]._id  %>" data-lng="<%= spots[x].longitude %>" data-lat="<%= spots[x].latitude %>" data-id="<%= spots[x]._id  %>">Get Directions</button>
-                    <a href="https://www.google.com/maps/search/?api=1&query=<%= spots[x].latitude %>,<%= spots[x].longitude %>" class="secondary-button" style="padding: 10px; display: block; font-size: 1em;">Open in Google maps</a>
+                    <a href="https://www.google.com/maps/search/?api=1&query=<%= spots[x].latitude %>,<%= spots[x].longitude %>" class="purple-button" style="padding: 10px; display: block; font-size: 1em;">Open in Google maps</a>
                 </div>
                 <p id="spotDetailsTitle"><%= spots[x].description  %></p>
                 <div style="height: 1px; background-color: gray; margin: 1em 0em;"></div>
@@ -152,7 +152,7 @@
     </script>
     <% } %>
 
-    <button class="map-inner-sidebar modal-button" data-toggle-modal="menuContent">Options</button>
+    <button class="map-inner-sidebar modal-button" data-toggle-modal="menuContent">MENU</button>
     <div class="map-outer-div">
         <div class="base-modal" id="menuContent">
             <div class="base-modal-inner" id="addSpotDiv">
@@ -164,8 +164,8 @@
                         <div class="map-filters">
                             <div style="display: flex; flex-direction: column;">
                                 <label for="typeFilter">Spot type</label>
-                                <select name="typefilter" id="typeFilter" style="padding: 0.3em; margin-top: 0.5em; border: 1px solid gray; border-radius: 4px;" onchange="handleSpotFilters()">
-                                    <option value="" selected disabled>select</option>
+                                <select name="typefilter" id="typeFilter" style="padding: 0.3em; margin-top: 0.5em; border: 1px solid gray; border-radius: 4px;">
+                                    <option value="all" selected disabled>select</option>
                                     <option value="all" style="color: black;">all (<span id="typeFilter-all">0</span>)</option>
                                     <option value="ledge" style="color: red;">ledge (<span id="typeFilter-ledge">0</span>)</option>
                                     <option value="rail" style="color: blue;">rail (<span id="typeFilter-rail">0</span>)</option>
@@ -176,7 +176,7 @@
                             </div>
                             <div style="display: flex; flex-direction: column;">
                                 <label for="sortByFilter">Sort By</label>
-                                <select name="sortBy" id="sortByFilter" style="padding: 0.3em; margin-top: 0.5em; border: 1px solid gray; border-radius: 4px;" onchange="sortSpots()">
+                                <select name="sortBy" id="sortByFilter" style="padding: 0.3em; margin-top: 0.5em; border: 1px solid gray; border-radius: 4px;">
                                     <option value="" selected disabled>select</option>
                                     <option value="popular">Popularity</option>
                                     <option value="recent">most recent</option>
@@ -185,22 +185,14 @@
                             </div>
                             
                         </div>
-                        <!-- <div style="margin-bottom: 1em;">
-                            <input type="checkbox" name="yourFavouritesCheck" id="yourFavouritesCheck" onchange="handleSpotFilters()">
-                            <label for="yourFavouritesCheck">Your favourites</label>
-                        </div>
-                        <div>
-                            <input type="checkbox" name="savedSpotsCheck" id="savedSpotsCheck" onchange="handleSpotFilters()">
-                            <label for="savedSpotsCheck">Saved Spots</label>
-                        </div> -->
                     </div>
                     <p style="margin-top: 2em;">Results</p>
-                    <div class="spots-list">
+                    <div class="spots-list" id="spotsListContainer">
                         <% if (spots.length === 0) {%>
                             <p style="margin: 0;">No Data to show</p>    
                         <%} %>
                         <% for(var x = 0; x < spots.length; x++) { %>
-                        <div class="spot-list-item" data-index="<%= x %>" data-id="<%= spots[x]._id %>">
+                        <div class="spot-list-item" data-id="<%= spots[x]._id %>">
                             <div class="spot-list-item-image" style="background-image: url('/images/carouselimage1.jpg');" id="spotListImage<%= spots[x]._id %>"></div>
                             <div class="spot-list-item-details">
                                 <p class="spot-description-short"><%= spots[x].description %></p>
@@ -234,20 +226,22 @@
             </div>
         </div>
         <div class="directions-detail-container" id="directionsDetails">
-            <img src="/logos/closelight.png" style="height: 1em; cursor: pointer; float: right;" alt="" onclick="closeDirectionsDetails()">
+            <img src="/logos/closelight.png" style="height: 1em; cursor: pointer; float: right;" alt="" id="closeDirectionsDetails">
             <p style="clear: both;"><span id="directionsDistance">0</span> meters</p>
             <p>Accuracy: <span id="directionsAccuracy">25</span> meters</p>
             <div class="directions-picker">
-                <p style="background-color: blue;" class="directions-picker-item directions-picker-selected" data-profile="driving" data-profile-color="blue">drive</p>
+                <p style="background-color: orange;" class="directions-picker-item directions-picker-selected" data-profile="driving" data-profile-color="orange">drive</p>
                 <p style="background-color: green;" class="directions-picker-item" data-profile="walking" data-profile-color="green">walk</p>
                 <p style="background-color: purple;" class="directions-picker-item" data-profile="cycling" data-profile-color="purple">cycle</p>
             </div>
             <button class="base-button hidden" style="margin-top: 1em;" id="recalculateDirections">Recenter</button>
             <button class="base-button hidden" style="margin-top: 1em;" id="confirmRecalculateDirections">Confirm</button>
+            <button class="base-button hidden" style="margin-top: 1em;" id="startTrackingPosition">Start</button>
+            <button class="base-button hidden" style="margin-top: 1em;" id="stopTrackingPosition">End</button>
         </div>
         <div id="map" class="map-div"></div>
         <div class="map-sidebar" id="addSpotForm">
-            <img src="/logos/arrow-filled.png" alt="" class="addspot-collapse-arrow map-sidebar-arrow-rotate" id="addspotCollapseArrow">
+            <img src="/logos/arrow-filled-light.png" alt="" class="addspot-collapse-arrow map-sidebar-arrow-rotate image-invert" id="addspotCollapseArrow">
             <div class="map-sidebar-content">
                 <button class="cancel-spot-button" id="cancelNewSpotButton">Cancel</button>
                 <p style="font-size: 0.8em;">Drag the red marker to spot location(Current Location might be inaccurate)</p>
@@ -272,7 +266,7 @@
                     <input type="file" name="images" id="spotImages" accept="image/png, image/jpeg" multiple required>
                     <!-- <input type="file" name="images" id="spotImages" accept="image/png, image/jpeg" multiple> -->
                     <p style="font-size: 0.8em; margin-top: 5px;">File size: <span id="fileSizeSpan">0</span> mb</p>
-                    <button type="button" class="base-button modal-button hidden" data-toggle-modal="editUploadImages" id="modifyUploadImages" style="width: fit-content;">Edit Images</button>
+                    <button type="button" class="base-button modal-button hidden" data-toggle-modal="editUploadImages" id="modifyUploadImages" style="width: fit-content; margin-bottom: 1em;">Edit Images</button>
 
                     <button class="spot-confirm" >Confirm</button>
                 </form>
@@ -322,8 +316,6 @@
     let spotListItems = document.querySelectorAll(".spot-list-item")
     const spotListCallback = (entries, observer) => {
         entries.forEach(item => {
-            console.log(item.isIntersecting)
-            console.log(item.target.getAttribute("data-index"))
             let spotId = item.target.getAttribute("data-id")
             if(item.isIntersecting){
                 loadSpotImages(spotId, "all")
@@ -331,6 +323,25 @@
             }
         })
     }
+
+    let spotsListObserver = new IntersectionObserver(spotListCallback, {
+        root: spotsListObserverContainer,
+        threshold: 1,
+        // trackVisibility: true,
+        // delay: 100
+    })
+    spotListItems.forEach(item => {
+        spotsListObserver.observe(item)
+    })
+    // spotsListObserver.observe(spotListItems[0])
+
+    // async function getUser() {
+    //     let userRes = await fetch('/getUser')
+    //     .then(res => {
+    //         console.log(res)
+    //         return res
+    //     })
+    // }
 
     function shortText(text, length) {
         let newText = text.slice(0, length)
@@ -373,25 +384,6 @@
             item.innerText = shortText(description, 50)
         }
     })
-
-    let spotsListObserver = new IntersectionObserver(spotListCallback, {
-        root: spotsListObserverContainer,
-        threshold: 1,
-        // trackVisibility: true,
-        // delay: 100
-    })
-    spotListItems.forEach(item => {
-        spotsListObserver.observe(item)
-    })
-    // spotsListObserver.observe(spotListItems[0])
-
-    // async function getUser() {
-    //     let userRes = await fetch('/getUser')
-    //     .then(res => {
-    //         console.log(res)
-    //         return res
-    //     })
-    // }
 
     let currentOpenModal = null
 
@@ -484,66 +476,11 @@
     let darkMap = "<%= darkMap %>"
     const map = new mapboxgl.Map({
         container: 'map',
-        style: darkMap === "true" ? 'mapbox://styles/mapbox/dark-v11' : 'mapbox://styles/mapbox/streets-v12',
+        style: darkMap === "true" ? 'mapbox://styles/darro254/cmoq3085e000j01qxehlocn5h' : 'mapbox://styles/darro254/cmopguduo004q01r38cye2e2p',
+        // style: darkMap === "true" ? 'mapbox://styles/mapbox/dark-v11' : 'mapbox://styles/mapbox/streets-v12',
         center: [36.8219, -1.2921],
         zoom: 10
     })
-
-    // let pauseLike = false
-    // async function likeAction(elm, spotID) {
-    //     if (pauseLike) {
-    //         return
-    //     }
-    //     if ("<%= isLoggedIn %>" === "false") {
-    //         addNewAlert("ERROR", "<a href='/login'>Login</a> required for interactions")
-    //         return
-    //     }
-    //     pauseLike = true
-    //     let isLiked = elm.getAttribute("data-isliked")
-    //     let likeRef = elm.getAttribute("data-likeref")
-    //     let likesCounter = document.querySelectorAll(`.spotLikesCount-${spotID}`)
-    //     if (isLiked === "true" && likeRef === "None") {
-    //         console.log("cancel like")
-    //         return
-    //     }
-    //     let src = isLiked === "true" ? '/logos/heart-unfilledlight.png' : '/logos/heart-filledlight.png'
-    //     document.querySelectorAll(`.likeButton${spotID}`).forEach(item => {item.setAttribute("src", src)})
-    //     let currentData = spotDetailsMap.get(`spot-${spotID}`)
-    //     await fetch("/updateLiked", {
-    //         method: "POST",
-    //         headers: {"Content-Type": "application/json"},
-    //         body: JSON.stringify({
-    //             ID: spotID,
-    //             isLiked: isLiked,
-    //             likeRef: likeRef
-    //         }),
-    //         // signal: likeActionSignal
-    //     })
-    //     .then(async res => {
-    //         let resData = await res.json()
-    //         console.log(res)
-    //         pauseLike = false
-    //         if (resData.status === "SUCCESS") {
-    //             document.querySelectorAll(`.likeButton${spotID}`).forEach(item => {
-    //                 item.setAttribute("data-isliked", resData.isLiked)
-    //                 item.setAttribute("data-likeref", resData.likeRef)
-    //             })
-    //             // let likesCount = parseInt(likesCounter[0].innerText)
-    //             let likesCount = currentData.likesCount
-    //             let newLikesCount = resData.isLiked ? `${++likesCount}` : `${--likesCount}`
-    //             likesCounter.forEach(item => item.innerText = newLikesCount)
-    //             spotDetailsMap.set(`spot-${spotID}`, {
-    //                 ...currentData,
-    //                 likeRef: resData.likeRef,
-    //                 likesCount: newLikesCount,
-    //                 isLiked: resData.isLiked,
-    //             })
-    //         }
-    //     })
-    //     .catch(error => {
-    //         pauseLike = false
-    //     })
-    // }
 
     let likeActionController = null
     function likeActionListeners() {
@@ -836,7 +773,8 @@
                 spotDetailsMap.set(`spot-${spotId}`, {
                     ...currentData,
                     imageUrl: resData.images[0].imageUrl,
-                    isLoadingImages: false
+                    isLoadingImages: false,
+                    loadedImages: true
                 })
                 if (spotPopupImage) spotPopupImage.setAttribute("src", resData.images[0].imageUrl)
                 spotListImage.style.backgroundImage = `url("${resData.images[0].imageUrl}")`
@@ -922,7 +860,8 @@
             createdBy: item.createdBy,
             spotType: item.spottype,
             isLoadingImages: false,
-            createdAtInMs: item.createdAtInMs
+            loadedImages: false,
+            dateCreatedInMs: item.dateCreatedInMs
         })
         spotCategories[`${item.spottype}`].push({
             type: 'Feature',
@@ -947,7 +886,7 @@
             <img class="spot-details-image" src="${currentData.imageUrl}" id="spotPopupImage${spotId}">
             <div style="padding: 1em;" class="popup-details">
                 <p style="font-weight: bold; font-size: 1em; margin-bottom: 0px; margin-top: 0em;">Type: ${currentData.spotType}</p>
-                <p style="font-size: 1.3em; margin: 0;">Uploaded by ${currentData.createdBy} ${dateToTimepassed(currentData.createdAtInMs)}</p>
+                <p style="font-size: 1.3em; margin: 0;">Uploaded by ${currentData.createdBy} ${dateToTimepassed(currentData.dateCreatedInMs)}</p>
                 <div class="popup-interactions">
                     <div style="display: flex; gap: 5px">
                         <div style="display: flex; align-items: center; gap: 0.5em">
@@ -977,10 +916,14 @@
                     popup.setLngLat([resData.spot.longitude, resData.spot.latitude]).setHTML(description).addTo(map);
                     likeActionListeners()
                     modalListeners()
+                    let paddingValue = screen.height - 200
                     map.easeTo({
-                        center: [resData.spot.longitude, (resData.spot.latitude - 0.023)],
+                        center: [resData.spot.longitude, resData.spot.latitude],
                         zoom: 13,
-                        duration: 500
+                        duration: 500,
+                        padding: {
+                            bottom: paddingValue
+                        }
                     })
                     let currentData = spotDetailsMap.get(`spot-${spotId}`)
                     let modalCarousel = document.getElementById(`spotDetailsModal${spotId}`).querySelectorAll(".swiper-wrapper")[0]
@@ -993,7 +936,8 @@
                     spotDetailsMap.set(`spot-${spotId}`, {
                         ...currentData,
                         imageUrl: resData.images[0].imageUrl,
-                        isLoadingImages: false
+                        isLoadingImages: false,
+                        loadedImages: true
                     })
                     if (spotPopupImage) spotPopupImage.setAttribute("src", resData.images[0].imageUrl)
                     spotListImage.style.backgroundImage = `url("${resData.images[0].imageUrl}")`
@@ -1053,25 +997,48 @@
         })
     }
 
-    function openDirectionsDetails(locationTrack) {
+    function openDirectionsDetails() {
         document.getElementById("directionsDetails").style.display = "block"
+        let rightOffset = document.getElementById("directionsDetails").getBoundingClientRect().width
+        console.log(rightOffset)
+        if (screen.width > 445) {
+            // document.querySelector(".mapboxgl-ctrl-top-right").classList.add("mapbox-geoloc-reposition")
+            document.querySelector(".mapboxgl-ctrl-top-right").style.right = `${rightOffset + 10}px`
+        }
         // map.setLayoutProperty("routeLayer", "visibility", "none")
     }
 
-    function closeDirectionsDetails() {
-        // geoLoc.trigger()
+    // close directions container
+    document.getElementById("closeDirectionsDetails").addEventListener("click", function() {
         map.removeControl(geoLoc)
         map.addControl(geoLoc)
         // geoLoc.options.trackUserLocation = false
+        document.getElementById("confirmRecalculateDirections").classList.add("hidden")
+        document.getElementById("recalculateDirections").classList.add("hidden")
+        document.getElementById("stopTrackingPosition").classList.add("hidden")
+        document.getElementById("startTrackingPosition").classList.add("hidden")
         document.getElementById("directionsDetails").style.display = "none"
-        map.removeLayer("routeLayer")
-        map.removeSource("routeSource")
+        if (map.getSource("routeSource")) {
+            map.removeLayer("routeLayer")
+            map.removeLayer("routeLayerOutline")
+            map.removeSource("routeSource")
+        }
         manualDirectionsSetMarker.remove()
         directionsMarker.remove()
-    }
+        if (screen.width > 445) {
+            // document.querySelector(".mapboxgl-ctrl-top-right").classList.remove("mapbox-geoloc-reposition")
+            document.querySelector(".mapboxgl-ctrl-top-right").style.right = "0"
+        }
+        map.easeTo({
+            center: spotDirectionCoordinates,
+            zoom: 13,
+            duration: 500
+        })
+    })
     const el = document.createElement('div')
     el.className = 'marker';
-    let directionsMarker = new mapboxgl.Marker(el, {color: "red"})
+    let directionsMarker = new mapboxgl.Marker(el)
+    let lastUserCoordinates = null
 
     let manualDirectionsCoordinates = [36.8219, -1.2921]
     let manualDirectionsSetMarker = new mapboxgl.Marker({color: "red", draggable: true})
@@ -1082,7 +1049,7 @@
         console.log(manualDirectionsCoordinates)
         map.easeTo({
             center: manualDirectionsCoordinates,
-            zoom: 14,
+            // zoom: 14,
             duration: 500
         })
     })
@@ -1106,15 +1073,55 @@
         directionsMarker.setLngLat(manualDirectionsCoordinates).addTo(map)
         manualDirectionsSetMarker.remove()
     })
+
+    document.getElementById("startTrackingPosition").addEventListener("click", function() {
+        geoLoc.trigger()
+        document.getElementById("stopTrackingPosition").classList.remove("hidden")
+        this.classList.add("hidden")
+        directionsMarker.remove()
+    })
+    document.getElementById("stopTrackingPosition").addEventListener("click", function() {
+        document.getElementById("startTrackingPosition").classList.remove("hidden")
+        this.classList.add("hidden")
+        map.removeControl(geoLoc)
+        map.addControl(geoLoc)
+        directionsMarker.setLngLat(lastUserCoordinates).addTo(map)
+    })
     let directionsController = null
     let routeType = "driving"
-    let routeColor = "blue"
+    let routeColor = "orange"
     document.querySelectorAll(".directions-picker-item").forEach(elm => {
-        elm.addEventListener("click", function() {
+        elm.addEventListener("click", async function() {
+            if (this.classList.contains("directions-picker-selected")) {
+                return
+            }
             document.querySelectorAll(".directions-picker-selected")[0].classList.remove("directions-picker-selected")
             this.classList.add("directions-picker-selected")
             routeType = this.getAttribute("data-profile")
             routeColor = this.getAttribute("data-profile-color")
+            if (map.getSource("routeSource")) {
+                document.getElementById("confirmRecalculateDirections").classList.add("hidden")
+                map.removeLayer("routeLayer")
+                map.removeLayer("routeLayerOutline")
+                map.removeSource("routeSource")
+                document.getElementById("spinnerContainer").style.display = "block"
+                await userPositionAsync({enableHighAccuracy: true})
+                .then(async position => {
+                    await getDirections(position.coords.longitude, position.coords.latitude, spotDirectionCoordinates[0], spotDirectionCoordinates[1])
+                    directionsMarker.setLngLat([position.coords.longitude, position.coords.latitude]).addTo(map)
+                    lastUserCoordinates = [position.coords.longitude, position.coords.latitude]
+                    document.getElementById("spinnerContainer").style.display = "none"
+                    // geoLoc.trigger()
+                    document.getElementById("directionsAccuracy").innerText = parseInt(position.coords.accuracy)
+                })
+                .catch(async error => {
+                    await getDirections(manualDirectionsCoordinates[0], manualDirectionsCoordinates[1], spotDirectionCoordinates[0], spotDirectionCoordinates[1])
+                    document.getElementById("recalculateDirections").classList.remove("hidden")
+                    document.getElementById("spinnerContainer").style.display = "none"
+                    directionsMarker.setLngLat(manualDirectionsCoordinates).addTo(map)
+                    manualDirectionsSetMarker.remove()
+                })
+            }
         })
     })
     async function getDirections(startLng, startLat, endLng, endLat) {
@@ -1123,26 +1130,40 @@
         }
         directionsController = new AbortController()
         const signal = directionsController.signal
-        console.log(startLng, startLat, endLng, endLat)
         let accessToken = "<%= mapboxtoken %>"
         // console.log(position.coords.latitude)
         let directionsUrl = `https://api.mapbox.com/directions/v5/mapbox/${routeType}/${startLng},${startLat};${endLng},${endLat}?geometries=geojson&access_token=${accessToken}`
         await fetch(directionsUrl, {signal: signal})
         .then(async res => {
             let json = await res.json()
-            console.log(json)
             popup.remove()
             if (map.getSource("routeSource")) {
                 map.getSource("routeSource").setData(json.routes[0].geometry)
+                console.log("points count", json.routes[0].geometry)
                 console.log(json.routes[0].distance)
                 hideModal(currentOpenModal)
             } else {
+                console.log("points count", json.routes[0].geometry)
                 map.addSource('routeSource', {
                     type: 'geojson',
                     data: {
                         type: "Feature",
                         properties: {},
                         geometry: json.routes[0].geometry
+                    }
+                })
+                map.addLayer({
+                    id: 'routeLayerOutline',
+                    type: 'line',
+                    source: 'routeSource',
+                    layout: {
+                        'line-join': 'round',
+                        'line-cap': 'round'
+                    },
+                    paint: {
+                        'line-color': "white",
+                        'line-width': 10,
+                        'line-opacity': 1
                     }
                 })
                 map.addLayer({
@@ -1155,27 +1176,30 @@
                     },
                     paint: {
                         'line-color': routeColor,
-                        'line-width': 4,
+                        'line-width': 5,
                         'line-opacity': 1
                     }
                 })
                 let visible = map.getLayoutProperty("routeLayer", "visibility")
                 if (!visible) {
                     map.setLayoutProperty("routeLayer", "visibility", "visible")
+                    map.setLayoutProperty("routeLayerOutline", "visibility", "visible")
                 }
                 hideModal(currentOpenModal)
             }
             document.getElementById("directionsDistance").innerText = parseInt(json.routes[0].distance)
-            map.easeTo({
-                center: [startLng, startLat],
-                zoom: 13,
-                duration: 500
+            map.fitBounds([
+                [startLng, startLat],
+                [endLng, endLat]
+            ], {
+                padding: 100
             })
         })
         .catch(error => {
             console.log(error)
         })
     }
+
     map.on('load', () => {
         map.addControl(geoLoc);
         for (let x = 0; x < categoryEntries.length; x++) {
@@ -1214,7 +1238,7 @@
                 'source': `spotsSource${categoryEntries[x][0]}`,
                 'paint': {
                     'circle-color': pointColor,
-                    'circle-radius': 8,
+                    'circle-radius': 10,
                     'circle-stroke-width': 3,
                     'circle-stroke-color': '#ffffff'
                 }
@@ -1236,10 +1260,14 @@
                 if (spotCarousel.getAttribute("data-loaded") === "false") {
                     loadSpotImages(spotId, "all")
                 }
+                let paddingValue = screen.height - 200
                 map.easeTo({
-                    center: [coordinates[0], (coordinates[1] - 0.023)],
+                    center: [coordinates[0], coordinates[1]],
                     zoom: 13,
-                    duration: 500
+                    duration: 500,
+                    padding: {
+                        bottom: paddingValue
+                    }
                 })
             })
             map.on("mouseover", `spotsLayer${categoryEntries[x][0]}`, e => {
@@ -1256,6 +1284,7 @@
                 if (map.getSource("routeSource")) {
                     console.log("reset directions")
                     map.removeLayer("routeLayer")
+                    map.removeLayer("routeLayerOutline")
                     map.removeSource("routeSource")
                 }
                 let endLng = this.getAttribute("data-lng")
@@ -1269,8 +1298,11 @@
                 .then(async position => {
                     await getDirections(position.coords.longitude, position.coords.latitude, endLng, endLat)
                     document.getElementById("spinnerContainer").style.display = "none"
-                    geoLoc.trigger()
                     document.getElementById("directionsAccuracy").innerText = parseInt(position.coords.accuracy)
+                    directionsMarker.setLngLat([position.coords.longitude, position.coords.latitude]).addTo(map)
+                    lastUserCoordinates = [position.coords.longitude, position.coords.latitude]
+                    // geoLoc.trigger()
+                    document.getElementById("startTrackingPosition").classList.remove("hidden")
                 })
                 .catch(error => {
                     document.getElementById("spinnerContainer").style.display = "none"
@@ -1293,8 +1325,106 @@
         }
     })
 
+    let popularSpots = []
+    let recentSpots = []
+
+    function popularFilter() {
+        let tempSpots = [...spotsData]
+        for (let x = tempSpots.length - 1; x >= 0; x--) {
+            let lowestCount = tempSpots[x].likesCount
+            let lowestIndex = null
+            for (let y = tempSpots.length - 1; y >= 0; y--) {
+                if (tempSpots[y].likesCount <= lowestCount) {
+                    lowestCount = tempSpots[y].likesCount
+                    lowestIndex = y
+                }
+            }
+            popularSpots.push(tempSpots[lowestIndex])
+            tempSpots.splice(lowestIndex, 1)
+        }
+    }
+
+    function recentSpotsFilter() {
+        let tempSpots = [...spotsData]
+        for (let x = tempSpots.length - 1; x >= 0; x--) {
+            let lowestCount = tempSpots[x].dateCreatedInMs
+            let lowestIndex = null
+            for (let y = tempSpots.length - 1; y >= 0; y--) {
+                if (tempSpots[y].dateCreatedInMs <= lowestCount) {
+                    lowestCount = tempSpots[y].dateCreatedInMs
+                    lowestIndex = y
+                }
+            }
+            recentSpots.push(tempSpots[lowestIndex])
+            tempSpots.splice(lowestIndex, 1)
+        }
+    }
+
+    let spotsListContainer = document.getElementById("spotsListContainer")
+
+    function updateSpotsList(spotslist, filter) {
+        let tempSpotsList = ""
+        spotslist.forEach((item, index) => {
+            if (item.spottype === filter || filter === "all") {
+                let currentData = spotDetailsMap.get(`spot-${item._id}`)
+                let spotListItem = `<div class="spot-list-item" data-id="${item._id}">
+                    <div class="spot-list-item-image" style="background-image: url('${currentData.imageUrl}');" id="spotListImage${item._id}"></div>
+                    <div class="spot-list-item-details">
+                        <p class="spot-description-short">${item.description}</p>
+                        <div style="width: 100%;">
+                            <div class="menu-interactions">
+                                <div style="display: flex; gap: 5px">
+                                    <div style="display: flex; align-items: center; gap: 0.5em">
+                                        <img src="${currentData.isLiked === true ? "/logos/heart-filledlight.png" : "/logos/heart-unfilledlight.png"}" class="like-button likeButton${item._id}" data-spotid="${item._id}" data-likeref="${currentData.likeRef}" data-isliked="${currentData.isLiked}"></img>
+                                        <p class="likes-count spotLikesCount-${item._id}">${currentData.likesCount}</p>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 0.5em">
+                                        <img src="/logos/comments-light.png" style="height: 2em;"></img>
+                                        <p class="spotCommentsCount-${item._id}">${currentData.commentsCount}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                                <button class='base-button modal-button' data-toggle-modal="spotDetailsModal${item._id}">Details</button>
+                                <div style="width: fit-content;">
+                                    <p style="font-size: 0.8em; margin: 0;">Type: ${item.spottype}</p>
+                                    <p style="font-size: 0.8em; margin: 0;">Uploaded by ${item.createdBy} <span id="spotUploadDateInMs${item._id}">${dateToTimepassed(item.dateCreatedInMs)}</span></p>
+                                </div>
+                                
+                            </div>
+                        </div>
+                    </div>
+                </div>`
+                tempSpotsList = tempSpotsList + spotListItem
+            }
+        })
+        spotsListContainer.replaceChildren()
+        if(tempSpotsList === "") {
+            spotsListContainer.insertAdjacentHTML("beforeend", "<p style='margin: 0;'>No Data to show</p>")
+        } else{
+            spotsListContainer.insertAdjacentHTML("beforeend", tempSpotsList)
+        }
+        likeActionListeners()
+        modalListeners()
+        document.querySelectorAll(".spot-list-item").forEach(item => {
+            let description = item.querySelector(".spot-description-short").innerText
+            if (description.length > 100) {
+                item.querySelector(".spot-description-short").innerText = shortText(description, 50)
+            }
+            spotsListObserver.observe(item)
+        })
+    }
+
+    let filtersSet = false
+
     function handleSpotFilters() {
+        if (!filtersSet) {
+            popularFilter()
+            recentSpotsFilter()
+            filtersSet = true
+        }
         let typeFilter = document.getElementById("typeFilter")
+        let sortByFilter = document.getElementById("sortByFilter")
 
         for (x of categoryEntries) {
             if (x[0] === typeFilter.value || typeFilter.value === "all") {
@@ -1303,8 +1433,49 @@
                 map.setLayoutProperty(`spotsLayer${x[0]}`, "visibility", "none")
             }
         }
+
+        if (sortByFilter.value === "popular") {
+            let reversePoplular = [...popularSpots]
+            reversePoplular.reverse()
+            updateSpotsList(reversePoplular, typeFilter.value)
+        } else if (sortByFilter.value === "recent") {
+            let oldestList = [...recentSpots]
+            oldestList.reverse()
+            updateSpotsList(oldestList, typeFilter.value)
+        } else if (sortByFilter.value === "oldest") {
+            updateSpotsList(recentSpots, typeFilter.value)
+        } else {
+            updateSpotsList(spotsData, typeFilter.value)
+        }
+
         hideModal(currentOpenModal)
+        popup.remove()
     }
+
+    document.getElementById("typeFilter").addEventListener("change", handleSpotFilters)
+    document.getElementById("sortByFilter").addEventListener("change", function() {
+        if (!filtersSet) {
+            popularFilter()
+            recentSpotsFilter()
+            filtersSet = true
+        }
+        let typeFilter = document.getElementById("typeFilter")
+        let sortByFilter = document.getElementById("sortByFilter")
+        if (sortByFilter.value === "popular") {
+            // updateSpotsList(popularSpots, typeFilter.value)
+            let reversePoplular = [...popularSpots]
+            reversePoplular.reverse()
+            updateSpotsList(reversePoplular, typeFilter.value)
+        } else if (sortByFilter.value === "recent") {
+            let oldestList = [...recentSpots]
+            oldestList.reverse()
+            updateSpotsList(oldestList, typeFilter.value)
+        } else if (sortByFilter.value === "oldest") {
+            updateSpotsList(recentSpots, typeFilter.value)
+        } else {
+            updateSpotsList(spotsData, typeFilter.value)
+        }
+    })
 
     function sortSpots() {
         let sortByFilter = document.getElementById("sortByFilter")
@@ -1717,6 +1888,10 @@
             })
             ++positionIndex
         })
+        if ("<%= isLoggedIn %>" === "false") {
+                addNewAlert("ERROR", "<a href='/login'>Login</a> required to upload spot")
+                return
+            }
         if (sizeInMB > 10) {
             addNewAlert("ERROR", "Files are too large")
             return

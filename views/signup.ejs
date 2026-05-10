@@ -16,13 +16,21 @@
         <input type="text" class="auth-input" placeholder="email" name="email" id="email" required>
         <input type="password" class="auth-input" placeholder="password" name="password" id="password" required>
         <input type="password" class="auth-input" placeholder="confirm password" name="confirmpassword" id="confirmpassword" required>
+        <div style="margin-top: 1em;" class="checkbox-div">
+            <input type="checkbox" name="rememberme" id="rememberme" class="checkbox">
+            <label for="rememberme" style="margin: 0;">Remember me</label>
+        </div>
         <button class="auth-button">Confirm</button>
-        <a href="/login" style="color: rgb(198, 198, 198); font-size: 0.8em; margin-top: 3em;">Login</a>
+        <a href="/login" style="margin-top: 1.5em;" class="auth-link">Login</a>
     </form>
+    <div class="spinner-container" id="spinnerContainer">
+        <img src="/logos/skateboardlight.png" alt="spinner" class="spinner">
+    </div>
 </body>
 <script nonce="<%= cspNonce %>">
     document.getElementById("submitForm").addEventListener("submit", async function(e) {
         e.preventDefault()
+        document.getElementById("spinnerContainer").style.display = "block"
         await fetch("/signup", {
             method: "POST",
             headers: {"Content-Type": "application/json"},
@@ -31,9 +39,11 @@
                 email: document.getElementById("email").value,
                 password: document.getElementById("password").value,
                 confirmpassword: document.getElementById("confirmpassword").value,
+                rememberme: document.getElementById("rememberme").checked
             })
         })
         .then(async res => {
+            document.getElementById("spinnerContainer").style.display = "none"
             let resData = await res.json()
             if (resData.status === "SUCCESS") {
                 addNewAlert(resData.status, resData.message)
@@ -45,6 +55,7 @@
             }
         })
         .catch(error => {
+            document.getElementById("spinnerContainer").style.display = "none"
             addNewAlert("ERROR", "Error with signup")
         })
     })
