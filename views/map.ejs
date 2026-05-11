@@ -121,7 +121,6 @@
             })
             .then(async res => {
                 let result = await res.json()
-                console.log("result", result)
                 let commentForm = document.getElementById("addCommentForm<%= spots[x]._id  %>")
                 let commentButton = document.getElementById("addCommentButton<%= spots[x]._id  %>")
                 commentForm.style.display = "none"
@@ -146,7 +145,6 @@
             })
             .catch(error => {
                 addNewAlert("ERROR", "Error adding comment")
-                console.log(error)
             })
         })
     </script>
@@ -196,7 +194,11 @@
                             <div class="spot-list-item-image" style="background-image: url('/images/carouselimage1.jpg');" id="spotListImage<%= spots[x]._id %>"></div>
                             <div class="spot-list-item-details">
                                 <p class="spot-description-short"><%= spots[x].description %></p>
-                                <div style="width: 100%;">
+                                <div style="width: fit-content;" class="spot-uploaded-by">
+                                    <p style="font-size: 0.8em; margin: 0;">Type: <%= spots[x].spottype %></p>
+                                    <p style="font-size: 0.8em; margin: 0;">Uploaded by <%= spots[x].createdBy %> <span id="spotUploadDateInMs<%= spots[x]._id %>"></span></p>
+                                </div>
+                                <div class="menu-interactions-div">
                                     <div class="menu-interactions">
                                         <div style="display: flex; gap: 5px">
                                             <div style="display: flex; align-items: center; gap: 0.5em">
@@ -210,12 +212,11 @@
                                         </div>
                                     </div>
                                     <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-                                        <button class='base-button modal-button' data-toggle-modal="spotDetailsModal<%= spots[x]._id %>">Details</button>
-                                        <div style="width: fit-content;">
+                                        <button class='base-button modal-button' data-toggle-modal="spotDetailsModal<%= spots[x]._id %>" style="padding: 5px; font-size: 0.8em;">Details</button>
+                                        <div style="width: fit-content;" class="spot-uploaded-by2">
                                             <p style="font-size: 0.8em; margin: 0;">Type: <%= spots[x].spottype %></p>
                                             <p style="font-size: 0.8em; margin: 0;">Uploaded by <%= spots[x].createdBy %> <span id="spotUploadDateInMs<%= spots[x]._id %>"></span></p>
                                         </div>
-                                        
                                     </div>
                                 </div>
                             </div>
@@ -338,7 +339,6 @@
     // async function getUser() {
     //     let userRes = await fetch('/getUser')
     //     .then(res => {
-    //         console.log(res)
     //         return res
     //     })
     // }
@@ -375,8 +375,6 @@
         }
     }
 
-    let testDate = new Date('2026-05-10')
-    console.log("time passed", dateToTimepassed(testDate.getTime()))
 
     document.querySelectorAll(".spot-description-short").forEach(item => {
         let description = item.innerText
@@ -406,7 +404,6 @@
         modalOuter.style.pointerEvents = "auto"
         modalInner.style.transform = "translateY(0)"
         currentOpenModal = id
-        console.log("open modal")
         // popup.remove()
         if (modalOuter.classList.contains("spot-details-modal")) {
             let spotId = modalOuter.getAttribute("data-spotid")
@@ -428,7 +425,7 @@
                     }
                 })
                 .catch(error => {
-                    console.log(error)
+                    addNewAlert("ERROR", "An error occured")
                 })
             }
         }
@@ -444,7 +441,6 @@
 
         document.querySelectorAll(".modal-button").forEach(elm => {
             elm.addEventListener("click", function() {
-                console.log("open")
                 if(currentOpenModal !== null) {
                     hideModal(currentOpenModal)
                 }
@@ -506,7 +502,6 @@
                 let likeRef = elm.getAttribute("data-likeref")
                 let likesCounter = document.querySelectorAll(`.spotLikesCount-${spotId}`)
                 if (isLiked === "true" && likeRef === "None") {
-                    console.log("cancel like")
                     return
                 }
                 let src = isLiked === "true" ? '/logos/heart-unfilledlight.png' : '/logos/heart-filledlight.png'
@@ -524,7 +519,6 @@
                 })
                 .then(async res => {
                     let resData = await res.json()
-                    console.log(res)
                     pauseLike = false
                     if (resData.status === "SUCCESS") {
                         document.querySelectorAll(`.likeButton${spotId}`).forEach(item => {
@@ -589,13 +583,10 @@
                 if (type === "comment") {
                     let replyContainer = document.getElementById(`repliesContainer${spotId}-${idRef}`)
                     let replyLength = replyContainer.querySelectorAll(".comment-reply-div").length
-                    console.log("replies length", replyLength)
                     if (replyLength > 0) {
                         deleteLength = deleteLength + replyLength
                     }
-                    console.log("delete length", deleteLength)
                 }
-                console.log(type)
                 await fetch("/deleteComment", {
                     method: "POST",
                     headers: {"Content-Type": "application/json"},
@@ -690,8 +681,6 @@
             </div>`
             if (repliesContainer) {
                 repliesContainer.insertAdjacentHTML("beforeend", reply)
-            } else {
-                console.log("deleted comment")
             }
             if (newAdded) {
                 let replyImage = document.getElementById(`replyprofileImage${replies[x]._id}`)
@@ -714,7 +703,6 @@
 
     //function to load usernames and profile pictures
     async function loadCommentsInfo(spotId) {
-        console.log("loading comments info")
         await fetch("/commentUserInfo", {
             method: "POST",
             headers: {"Content-Type": "application/json"},
@@ -742,15 +730,12 @@
     }
 
     async function loadSpotImages(spotId, action) {
-        console.log("loading images")
         let currentData = spotDetailsMap.get(`spot-${spotId}`)
         let modalCarousel = document.getElementById(`spotDetailsModal${spotId}`).querySelectorAll(".swiper-wrapper")[0]
         if (modalCarousel.getAttribute("data-loaded") === "true") {
-            console.log("images loaded already")
             return
         }
         if (currentData.isLoadingImages) {
-            console.log("currently loading images")
             return
         }
         spotDetailsMap.set(`spot-${spotId}`, {
@@ -779,7 +764,6 @@
                 if (spotPopupImage) spotPopupImage.setAttribute("src", resData.images[0].imageUrl)
                 spotListImage.style.backgroundImage = `url("${resData.images[0].imageUrl}")`
                 let images = ""
-                console.log(resData.images)
                 resData.images.forEach(item => {
                     let swiperSlide = `<div class="swiper-slide">
                         <div class="carousel-image" style="background-image: url('${item.imageUrl}'); background-size: contain;"></div>
@@ -804,11 +788,10 @@
                         el: '.swiper-scrollbar',
                     },
                 });
-                // console.log(swiper.slideNext('2000ms'))
             }
         })
         .catch(error => {
-            console.log(error)
+            addNewAlert("ERROR", "An error ocured")
         })
     }
 
@@ -826,7 +809,6 @@
         let isLiked = false
         let likeRef = "None"
         let likesCount = 0
-        console.log("likes list size", tempLikesList.length, likesList.length)
         tempLikesList.forEach(likeItem => {
             if (likeItem.spotId === item._id) {
                 // likesCount++
@@ -878,8 +860,6 @@
         })
     })
 
-    console.log('spot points', spotCategories)
-
     function setPopupHtml(spotId) {
         let currentData = spotDetailsMap.get(`spot-${spotId}`)
         let desc = `<div id="spotPopupDiv${spotId}" data-index="${currentData.index}">
@@ -928,7 +908,6 @@
                     let currentData = spotDetailsMap.get(`spot-${spotId}`)
                     let modalCarousel = document.getElementById(`spotDetailsModal${spotId}`).querySelectorAll(".swiper-wrapper")[0]
                     if (modalCarousel.getAttribute("data-loaded") === "true") {
-                        console.log("images loaded already")
                         return
                     }
                     let spotPopupImage = document.getElementById(`spotPopupImage${spotId}`)
@@ -942,7 +921,6 @@
                     if (spotPopupImage) spotPopupImage.setAttribute("src", resData.images[0].imageUrl)
                     spotListImage.style.backgroundImage = `url("${resData.images[0].imageUrl}")`
                     let images = ""
-                    console.log("images ref", resData.images)
                     resData.images.forEach(item => {
                         let swiperSlide = `<div class="swiper-slide">
                             <div class="carousel-image" style="background-image: url('${item.imageUrl}'); background-size: contain;"></div>
@@ -972,13 +950,12 @@
                 }
             })
             .catch(error => {
-                console.log(error)
+                addNewAlert("ERROR", "An error occured")
             })
         }
     }
 
     let categoryEntries = Object.entries(spotCategories)
-    console.log(categoryEntries)
 
     const popup = new mapboxgl.Popup({maxWidth: screen.width > 500 ? "390px" : "70%"})
     let directionsInterval = null
@@ -1000,7 +977,6 @@
     function openDirectionsDetails() {
         document.getElementById("directionsDetails").style.display = "block"
         let rightOffset = document.getElementById("directionsDetails").getBoundingClientRect().width
-        console.log(rightOffset)
         if (screen.width > 445) {
             // document.querySelector(".mapboxgl-ctrl-top-right").classList.add("mapbox-geoloc-reposition")
             document.querySelector(".mapboxgl-ctrl-top-right").style.right = `${rightOffset + 10}px`
@@ -1046,7 +1022,6 @@
     manualDirectionsSetMarker.on('dragend', function(e) {
         let lngLat = e.target.getLngLat()
         manualDirectionsCoordinates = [lngLat.lng, lngLat.lat]
-        console.log(manualDirectionsCoordinates)
         map.easeTo({
             center: manualDirectionsCoordinates,
             // zoom: 14,
@@ -1131,7 +1106,6 @@
         directionsController = new AbortController()
         const signal = directionsController.signal
         let accessToken = "<%= mapboxtoken %>"
-        // console.log(position.coords.latitude)
         let directionsUrl = `https://api.mapbox.com/directions/v5/mapbox/${routeType}/${startLng},${startLat};${endLng},${endLat}?geometries=geojson&access_token=${accessToken}`
         await fetch(directionsUrl, {signal: signal})
         .then(async res => {
@@ -1139,11 +1113,8 @@
             popup.remove()
             if (map.getSource("routeSource")) {
                 map.getSource("routeSource").setData(json.routes[0].geometry)
-                console.log("points count", json.routes[0].geometry)
-                console.log(json.routes[0].distance)
                 hideModal(currentOpenModal)
             } else {
-                console.log("points count", json.routes[0].geometry)
                 map.addSource('routeSource', {
                     type: 'geojson',
                     data: {
@@ -1196,7 +1167,7 @@
             })
         })
         .catch(error => {
-            console.log(error)
+            addNewAlert("ERROR", "An error occured")
         })
     }
 
@@ -1246,7 +1217,6 @@
 
             map.on("click", `spotsLayer${categoryEntries[x][0]}`, (e) => {
                 map.getCanvas().style.cursor = "pointer"
-                // console.log(e.features[0].properties)
                 const coordinates = e.features[0].geometry.coordinates.slice()
                 const spotId = e.features[0].properties.spotId
                 const spotType = e.features[0].properties.spotType
@@ -1261,9 +1231,13 @@
                     loadSpotImages(spotId, "all")
                 }
                 let paddingValue = screen.height - 200
+                let zoomLevel = map.getZoom()
+                if (zoomLevel < 13) {
+                    zoomLevel = 13
+                }
                 map.easeTo({
                     center: [coordinates[0], coordinates[1]],
-                    zoom: 13,
+                    zoom: zoomLevel,
                     duration: 500,
                     padding: {
                         bottom: paddingValue
@@ -1282,7 +1256,6 @@
         for (let x = 0; x < spotsData.length; x++) {
             document.getElementById(`getDirections${spotsData[x]._id}`).addEventListener("click", async function() {
                 if (map.getSource("routeSource")) {
-                    console.log("reset directions")
                     map.removeLayer("routeLayer")
                     map.removeLayer("routeLayerOutline")
                     map.removeSource("routeSource")
@@ -1306,7 +1279,6 @@
                 })
                 .catch(error => {
                     document.getElementById("spinnerContainer").style.display = "none"
-                    console.log("geoloc error", error)
                     let confirmRecalculateDirections = document.getElementById("confirmRecalculateDirections")
                     confirmRecalculateDirections.classList.remove("hidden")
                     manualDirectionsSetMarker.setLngLat(manualDirectionsCoordinates).addTo(map)
@@ -1371,7 +1343,11 @@
                     <div class="spot-list-item-image" style="background-image: url('${currentData.imageUrl}');" id="spotListImage${item._id}"></div>
                     <div class="spot-list-item-details">
                         <p class="spot-description-short">${item.description}</p>
-                        <div style="width: 100%;">
+                        <div style="width: fit-content;" class="spot-uploaded-by">
+                            <p style="font-size: 0.8em; margin: 0;">Type: ${item.spottype}</p>
+                            <p style="font-size: 0.8em; margin: 0;">Uploaded by ${item.createdBy} <span id="spotUploadDateInMs${item._id}"></span></p>
+                        </div>
+                        <div class="menu-interactions-div">
                             <div class="menu-interactions">
                                 <div style="display: flex; gap: 5px">
                                     <div style="display: flex; align-items: center; gap: 0.5em">
@@ -1385,12 +1361,11 @@
                                 </div>
                             </div>
                             <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-                                <button class='base-button modal-button' data-toggle-modal="spotDetailsModal${item._id}">Details</button>
-                                <div style="width: fit-content;">
+                                <button class='base-button modal-button' data-toggle-modal="spotDetailsModal${item._id}" style="padding: 5px; font-size: 0.8em;">Details</button>
+                                <div style="width: fit-content;" class="spot-uploaded-by2">
                                     <p style="font-size: 0.8em; margin: 0;">Type: ${item.spottype}</p>
-                                    <p style="font-size: 0.8em; margin: 0;">Uploaded by ${item.createdBy} <span id="spotUploadDateInMs${item._id}">${dateToTimepassed(item.dateCreatedInMs)}</span></p>
+                                    <p style="font-size: 0.8em; margin: 0;">Uploaded by ${item.createdBy} <span id="spotUploadDateInMs${item._id}"></span></p>
                                 </div>
-                                
                             </div>
                         </div>
                     </div>
@@ -1477,11 +1452,6 @@
         }
     })
 
-    function sortSpots() {
-        let sortByFilter = document.getElementById("sortByFilter")
-        console.log(sortByFilter.value)
-    }
-
     const addSpotMarker = new mapboxgl.Marker({color: "red", draggable: true})
     let markerCoordinates = []
     let longitude = document.getElementById("longitude")
@@ -1499,7 +1469,6 @@
 
         searchBox.addEventListener('retrieve', e => {
             let searchResultCoordinates = e.detail.features[0].geometry.coordinates
-            console.log(searchResultCoordinates)
             if (screen.width > 900) {
                 map.easeTo({
                     center: searchResultCoordinates,
@@ -1528,7 +1497,6 @@
         markerCoordinates = [lngLat.lng, lngLat.lat]
         longitude.value = lngLat.lng
         latitude.value = lngLat.lat
-        console.log(markerCoordinates)
         if (screen.width > 900) {
             map.easeTo({
                 center: [lngLat.lng, lngLat.lat],
@@ -1568,7 +1536,6 @@
 
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(function (position) {
-                console.log(position.coords.latitude, position.coords.longitude, position)
                 markerCoordinates = [position.coords.longitude, position.coords.latitude]
                 longitude.value = position.coords.longitude
                 latitude.value = position.coords.latitude
@@ -1694,7 +1661,6 @@
         }
         document.getElementById("modifyUploadImages").classList.remove("hidden")
         for (let x = 0; x < images.files.length; x++) {
-            // console.log(images.files[x])
             const compressedImage = await imageConversion.compressAccurately(images.files[x], 400)
             await filesToBase64(compressedImage)
             .then(res => {
@@ -1725,7 +1691,6 @@
                     let index = parseInt(elm.getAttribute("data-picture-index"))
                     let check = elm.querySelectorAll(".edit-pictures-check")[0]
                     check.classList.toggle("hide-check")
-                    console.log("toggled index", index)
                     let image = spotImageList.get(`image-${index}`)
                     selectedCount = 0
                     editUploadImagesDiv.querySelectorAll(".edit-pictures-item").forEach(item => {
@@ -1733,7 +1698,6 @@
                             ++selectedCount
                         }
                     })
-                    console.log(selectedCount)
                     if (selectedCount === 0) {
                         clearUploadSelections.classList.add("hidden")
                     } else {
@@ -1780,7 +1744,6 @@
                             if (stop.target.classList.contains("edit-pictures-item")) {
                                 stop.target.classList.remove("edit-pictures-item-draghover")
                                 if (stop.target !== draggingElm) {
-                                    console.log("swap images")
                                     let dropIndex = parseInt(stop.target.getAttribute("data-picture-index"))
                                     let dropImage = spotImageList.get(`image-${dropIndex}`)
                                     let tempBg = draggingElm.style.backgroundImage
@@ -1830,7 +1793,6 @@
                             if (endTarget.classList.contains("edit-pictures-item")) {
                                 endTarget.classList.remove("edit-pictures-item-draghover")
                                 if (e.target !== endTarget) {
-                                    console.log("swap images")
                                     let dropIndex = parseInt(endTarget.getAttribute("data-picture-index"))
                                     let dropImage = spotImageList.get(`image-${dropIndex}`)
                                     let tempBg = e.target.style.backgroundImage
@@ -1866,7 +1828,6 @@
                 elm.remove()
             }
         })
-        console.log(spotImageList)
 
         if (spotImageList.size === 0) {
             hideModal(currentOpenModal)
@@ -1921,7 +1882,7 @@
             }
         })
         .catch(error => {
-            console.log(error)
+            addNewAlert("ERROR", "An error occured")
             document.getElementById("spinnerContainer").style.display = "none"
         })
     })

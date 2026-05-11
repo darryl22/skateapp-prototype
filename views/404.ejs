@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/index.css">
+    <title>Skate App</title>
+    <style>
+        .nopage-div{
+            width: 100%;
+            height: calc(100vh - 71px);
+            height: calc(100dvh - 71px);
+            background-image: linear-gradient(to bottom, var(--bg-color), var(--bg-color-secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-color-primary);
+        }
+    </style>
+</head>
+<body>
+    <%- include('templates/nav.ejs') %>
+    <%- include('templates/theme.ejs') %>
+    <div class="nopage-div">
+        <h1 style="text-align: center;">Sorry, Page not Available</h1>
+    </div>
+</body>
+</html>

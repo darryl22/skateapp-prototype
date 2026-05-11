@@ -65,7 +65,6 @@ app.use(require("express-session")({
 }))
 
 app.use((request, response, next) => {
-    console.log(request.method, request.path)
     response.locals.user = "none"
     response.locals.darkMode = "none"
     response.locals.isLoggedIn = false
@@ -90,11 +89,10 @@ app.get('/getUser', async (request, response) => {
             response.json({status: "SUCCESS", message: "User Retrieved", user: user})
         })
         .catch(error => {
-            console.log(error)
             response.json({status: "ERROR", message: "Could not get user"})
         })
     } catch (error) {
-        console.log(error)
+        response.json({status: "ERROR", message: "Could not get user"})
     }
 })
 
@@ -107,7 +105,6 @@ app.get('/map', async (request, response) => {
     }
     await Promise.all(mapPromises)
     .then(res => {
-        // console.log(res[1])
         let darkMap = "true"
         let profilePicture = '/images/defaultProfile2.png'
         let likes = []
@@ -130,7 +127,6 @@ app.get('/map', async (request, response) => {
         response.render('map.ejs', ctx)
     })
     .catch(error => {
-        console.log(error)
         response.redirect("/")
     })
 })
@@ -140,15 +136,18 @@ app.post('/addspot', async (request, response) => {
     const date = new Date()
     let currentDate = date.toISOString().split("T")
     const options = { xss: true, noSql: true, sql: true, level: 5 }
+    if (request.body.description.length > 200) {
+        return response.json({status: "ERROR", message: "Too many characters, maximum of 200 allowed."})
+    }
+    let userId = ObjectId.createFromHexString(request.session.userID)
     let sanitizedDesc = ExpressSanitizer.sanitize.prepareSanitize(request.body.description, options)
-    // console.log(sanitizedDesc)
     let data = {
         description: sanitizedDesc,
         spottype: request.body.spottype,
         longitude: request.body.lng,
         latitude: request.body.lat,
         createdBy: request.session.username,
-        createdByID: ObjectId.createFromHexString(request.session.userID),
+        createdByID: userId,
         dateCreated: currentDate[0],
         dateCreatedInMs: date.getTime(),
         likesCount: 0,
@@ -161,9 +160,8 @@ app.post('/addspot', async (request, response) => {
         insertId = res.insertedId
         for (let x = 0; x < request.body.spotimages.length; x++) {
             uploads[x]["spotId"] = res.insertedId
-            uploads[x]["user"] = ObjectId.createFromHexString(request.session.userID)
+            uploads[x]["user"] = userId
         }
-        console.log(uploads)
         return databaseMethods.addMultiple("spotimages", uploads)
     })
     .then(res => {
@@ -173,7 +171,6 @@ app.post('/addspot', async (request, response) => {
         response.json({status: "SUCCESS", message: "New spot added", newSpot: res._id})
     })
     .catch(error => {
-        console.log(error)
         response.json({status: "ERROR", message: "Error getting created item, please reload page"})
     })
 
@@ -194,7 +191,6 @@ app.get('/getSpot', async (request, response) => {
             response.json({status: "SUCCESS", message: "Reference received", spot: spot, images: res})
         })
         .catch(error => {
-            console.log(error)
             response.json({status: "ERROR", message: "There was an error getting spot"})
         })
     } catch(error) {
@@ -244,11 +240,9 @@ app.post('/updateComment', async (request, response) => {
             response.json({status: "SUCCESS", message: "Updated comments", newComment: res})
         })
         .catch(error => {
-            console.log(error)
             response.json({status: "ERROR", message: "Error updating comment"})
         })
     } catch (error){
-        console.log(error)
         response.json({status: "ERROR", message: "Error updating comment"})
     }
     // response.json({'status': "good"})
@@ -265,11 +259,10 @@ app.get("/loadComments", async (request, response) => {
             response.json({status: "SUCCESS", message: "Loaded comments", comments: commentsList, replies: repliesList, commentsCount: commentsCount})
         })
         .catch(error => {
-            console.log(error)
             response.json({status: "ERROR", message: "Error loading comments"})
         })
     } catch (error) {
-        console.log(error)
+        response.json({status: "ERROR", message: "Error loading comments"})
     }
 })
 
@@ -294,11 +287,10 @@ app.post("/commentUserInfo", async (request, response) => {
             response.json({status: "SUCCESS", message: "Loaded comments info", data: commentsData})
         })
         .catch(error => {
-            console.log(error)
             response.json({status: "ERROR", message: "Error Loading comments info"})
         })
     } catch (error) {
-        console.log(error)
+        response.json({status: "ERROR", message: "Error Loading comments info"})
     }
 })
 
@@ -316,11 +308,9 @@ app.post("/deleteComment", async (request, response) => {
             response.json({status: "SUCCESS", message: "Comment Deleted"})
         })
         .catch(error => {
-            console.log(error)
             response.json({status: "ERROR", message: "Error deleting comment"})
         })
     } catch(error) {
-        console.log(error)
         response.json({status: "ERROR", message: "Error deleting comment"})
     }
 })
@@ -347,26 +337,20 @@ app.post('/updateLiked', async (request, response) => {
         }
         await Promise.allSettled(likePromise)
         .then(res => {
-            console.log(res)
             if (request.body.isLiked === "false") {
-                console.log("add like")
                 return response.json({status: "SUCCESS", message: "Like Updated", isLiked: true, likeRef: res[0].value.insertedId.toString()})
             }
-            console.log("delete like")
             response.json({status: "SUCCESS", message: "Like Updated", isLiked: false, likeRef: "none"})
         })
     } catch (error) {
-        console.log(error)
         response.json({status: "ERROR", message: "Error adding like"})
     }
 })
 
 app.get('/profilePicture', async (request, response) => {
-    // console.log(request.query)
     let userID = ObjectId.createFromHexString(request.query.user)
     await databaseMethods.getOne("users", {_id: userID})
     .then(res => {
-        // console.log(res)
         if (res !== null) {
             response.json({status: "SUCCESS", message: "Loaded profile Imgages", picture: res.profileImage, user: res.username})
         }else {
@@ -374,7 +358,6 @@ app.get('/profilePicture', async (request, response) => {
         }
     })
     .catch(error => {
-        console.log(error)
         response.json({status: "ERROR", message: "Error loading images"})
     })
 })
@@ -411,25 +394,21 @@ app.post('/updateProfile', async (request, response) => {
         settingsUpdate[`settings.${request.body.param}`] = request.body.value === "true" ? true : false
         await databaseMethods.makeUpdate("users", {_id: idObject}, {$set: settingsUpdate})
         .then(res => {
-            console.log(res)
             if (request.body.param === "darkMode") {
                 request.session.darkMode = request.body.value
             }
             response.json({status: "SUCCESS", message: "Profile updated"})
         })
         .catch(error => {
-            console.log(error)
             response.json({status: "ERROR", message: "Error with update"})
         })
     } catch (error) {
-        console.log(error)
         // response.redirect("/profile")
         response.json({status: "ERROR", message: "Error making update"})
     }
 })
 
 app.post("/updateProfileInfo", async (request, response) => {
-    console.log(request.body)
     let ID = ObjectId.createFromHexString(request.session.userID)
     let updateData = {}
     updateData[`${request.body.paramName}`] = request.body.inputValue
@@ -438,7 +417,6 @@ app.post("/updateProfileInfo", async (request, response) => {
     })
     .then(res => {
         if (request.body.paramName === "username") {
-            console.log("renaming spots")
             return databaseMethods.makeMultipleUpdates("spots", {createdByID: request.session.userID}, {
                 $set: {
                     createdBy: request.body.inputValue
@@ -447,7 +425,6 @@ app.post("/updateProfileInfo", async (request, response) => {
         }
     })
     .then(res => {
-        console.log(res)
         request.session[`${request.body.paramName}`] = request.body.inputValue
         response.json({status: "SUCCESS", message: "Profile Updated", updatedValue: request.body.inputValue})
     })
@@ -457,14 +434,11 @@ app.post("/updateProfileInfo", async (request, response) => {
 })
 
 app.get('/getMyUploads', async (request, response) => {
-    // await Promise.all([databaseMethods.getMany("spots", {createdBy: request.session.username}), databaseMethods.getMany("spotimages", {user: ObjectId.createFromHexString(request.session.userID)})])
     await databaseMethods.getMany("spots", {createdBy: request.session.username})
     .then(res => {
-        // console.log(res[1].map(item => item.position))
         response.json({status: "SUCCESS", message: "spots retrieved", myUploads: res})
     })
     .catch(error => {
-        console.log(error)
         response.json({status: "ERROR", message: "Could not retrieve uploads"})
     })
 })
@@ -484,13 +458,11 @@ app.get('/getLikedSpots', async (request, response) => {
         response.json({status: "SUCCESS", message: "spots retrieved", myLikes: res})
     })
     .catch(error => {
-        console.log(error)
         response.json({status: "ERROR", message: "Could not retrieve likes"})
     })
 })
 
 app.post("/modifyImages", async (request, response) => {
-    // console.log(request.body.imageList)
     let imageList = request.body.imageList
     let imagePromises = []
     let spotId = ObjectId.createFromHexString(imageList[0].spotId)
@@ -511,20 +483,17 @@ app.post("/modifyImages", async (request, response) => {
     }
     await Promise.all(imagePromises)
     .then(res => {
-        console.log(res)
         return databaseMethods.getManySorted("spotimages", {spotId: spotId}, {position: 1})
     })
     .then(res => {
         response.json({status: "SUCCESS", message: "Images Modified", newImages: res})
     })
     .catch(error => {
-        console.log(error)
         response.json({status: "ERROR", message: "Error deleting images"})
     })
 })
 
 app.post('/addSpotImages', async (request, response) => {
-    // console.log(request.body.imagesData)
     let images = request.body.imagesData
     let Id = ObjectId.createFromHexString(request.session.userID)
     let sendData = []
@@ -536,24 +505,18 @@ app.post('/addSpotImages', async (request, response) => {
             user: Id
         })
     }
-    // console.log(sendData)
-    // response.json({status: "SUCCESS", message: "New images added"})
     await databaseMethods.addMultiple("spotimages", sendData)
     .then(res => {
-        console.log(res)
         let newImageIds = []
         for (let x = 0; x < images.length; x++) {
             newImageIds.push(res.insertedIds[x])
         }
-        console.log(newImageIds)
         return databaseMethods.getMany("spotimages", {_id: {$in: newImageIds}})
     })
     .then(res => {
-        console.log(res)
         response.json({status: "SUCCESS", message: "New images added", newImages: res})
     })
     .catch(error => {
-        console.log(error)
         response.json({status: "ERROR", message: "Error adding new images"})
     })
 })
@@ -566,42 +529,34 @@ app.post("/updateSpotDetails", async (request, response) => {
         $set: spotUpdate
     })
     .then(res => {
-        console.log(res)
         response.json({status: "SUCCESS", message: "Spot updated"})
     })
     .catch(error => {
-        console.log(error)
         response.json({status: "ERROR", message: "Error updating spot"})
     })
 })
 
 app.post("/deleteSpot", async (request, response) => {
-    console.log(request.body)
     let id = ObjectId.createFromHexString(request.body.spotId)
     await Promise.all([databaseMethods.deleteDocument("spots", {_id: id}), databaseMethods.deleteManyDocuments("spotimages", {spotId: id}), databaseMethods.deleteManyDocuments("comment", {spotId: id}), databaseMethods.deleteManyDocuments("likes", {spotId: id})])
     .then(res => {
-        console.log(res)
         response.json({status: "SUCCESS", message: "Spot Deleted"})
     })
     .catch(error => {
-        console.log(error)
         response.json({status: "ERROR", message: "Error deleting spot"})
     })
 })
 
 app.post('/updateProfileImage', async (request, response) => {
-    // console.log(request.headers)
     await databaseMethods.makeUpdate("users", {username: request.session.username}, {
         $set: {
             profileImage: request.body.profileImage
         }
     })
     .then(res => {
-        console.log(res)
         response.json({status: "SUCCESS", message: "Profile image updated"})
     })
     .catch(error => {
-        console.log(error)
         response.json({status: "ERROR", message: "Error updating profile Image"})
     })
 })
@@ -618,7 +573,6 @@ app.post('/login', limiter, async (request, response) => {
     .then(async res => {
         if (res === null) return response.json({status: "ERROR", message: "User not found"})
         let checkPass = await bcrypt.compare(password, res.password)
-        console.log(checkPass)
         if(checkPass) {
             if (res.settings.twoFactorAuth === true) {
                 let token = appFuncs.generateToken(7)
@@ -646,7 +600,6 @@ app.post('/login', limiter, async (request, response) => {
         }
     })
     .catch(error => {
-        console.log(error)
         response.json({status: "ERROR", message: "Error with login"})
     })
 })
@@ -673,7 +626,6 @@ app.get("/twoFactorAuth", async (request, response) => {
         request.session.tfaToken = null
         expired = true
         // duration = request.session.tfaTokenExpiry - currentTime.getTime()
-        console.log("Token Expired")
     }
     response.render('twoFactorAuth.ejs', {duration: duration, expired: expired})
 })
@@ -693,7 +645,6 @@ app.post("/twoFactorAuth", async (request, response) => {
             request.session.tfaToken = null
             response.json({status: "ERROR", message: "Token Expired, try again"})
         } else if (token === sentToken && duration > 0) {
-            console.log("Token matched")
             await databaseMethods.getOne("users", {email: tempEmail})
             .then(res => {
                 request.session.tfaToken = null
@@ -706,12 +657,10 @@ app.post("/twoFactorAuth", async (request, response) => {
                 response.json({status: "SUCCESS", message: "Token Match"})
             })
             .catch(error => {
-                console.log(error)
                 response.json({status: "ERROR", message: "Error updating user"})
             })
 
         } else {
-            console.log("Token mismatch")
             response.json({status: "ERROR", message: "Token Missmatch"})
         }
     } else if (action === "resendToken") {
@@ -851,14 +800,12 @@ app.get('/signup', (request, response) => {
 })
 
 app.post('/signup', async (request, response) => {
-    if (request.body.password !== request.body.confirmpassword) return response.json({status: "ERROR", message: "Password Missmatch"})
+    if (request.body.password !== request.body.confirmpassword) {return response.json({status: "ERROR", message: "Password Missmatch"})}
     const date = new Date()
-    await Promise.all([databaseMethods.getOne("users", {email: request.body.email}), databaseMethods.getOne("users", {username: request.body.username})])
+    // await Promise.all([databaseMethods.getOne("users", {email: request.body.email}), databaseMethods.getOne("users", {username: request.body.username})])
+    await databaseMethods.getOne("users", {$or: [{email: request.body.email}, {username: request.body.username}]})
     .then(async res => {
-        console.log("Check users", res)
-        if (res[0] !== null) return response.json({status: "ERROR", message: "This email already exists"})
-        if (res[1] !== null) return response.json({status: "ERROR", message: "This username already exists"})
-
+        if (res !== null) {return response.json({status: "ERROR", message: "An account withthis email or username already exists"})}
         let currentDate = date.toISOString().split("T")
         const hashedPass = await bcrypt.hash(request.body.password, saltRounds)
         const user = {
@@ -881,7 +828,6 @@ app.post('/signup', async (request, response) => {
         return databaseMethods.addOne("users", res)
     })
     .then(async res => {
-        console.log("User response", res)
         request.session.username = request.body.username
         request.session.userID = res.insertedId.toString()
         request.session.email = request.body.email
@@ -896,11 +842,9 @@ app.post('/signup', async (request, response) => {
         request.session.tokenExpiry = currentTime.getTime() + 180000
         let content = `<h1>Verify Account</h1> <p>Your Skate App verification token is ${token}</p>`
         // let mailresult = await sendTokenFlow(request, token, "Skate App Account Verification", content)
-        console.log(mailresult)
         response.json({status: "SUCCESS", message: "Created user", email: request.body.email})
     })
     .catch(error => {
-        console.log(error)
         response.json({status: "ERROR", message: "Error getting user"})
     })
 })
@@ -926,7 +870,6 @@ app.get("/verify", async (request, response) => {
         request.session.verifyToken = null
         expired = true
         duration = request.session.tokenExpiry - currentTime.getTime()
-        console.log("Token Expired")
     }
     response.render("verify.ejs", {duration: duration, expired: expired})
 })
@@ -944,7 +887,6 @@ app.post("/verify", async (request, response) => {
         if(duration < 0) {
             response.json({status: "ERROR", message: "Token Expired, try again"})
         } else if (token === sentToken && duration > 0) {
-            console.log("Token matched")
             let ID = ObjectId.createFromHexString(request.session.userID)
             await databaseMethods.makeUpdate("users", {_id: ID}, {
                 $set: {
@@ -952,18 +894,15 @@ app.post("/verify", async (request, response) => {
                 }
             })
             .then(verifiedRes => {
-                console.log(verifiedRes)
                 request.session.verifyToken = null
                 request.session.tokenExpiry = null
                 response.json({status: "SUCCESS", message: "Token Match"})
             })
             .catch(error => {
-                console.log(error)
                 response.json({status: "ERROR", message: "Error updating user"})
             })
 
         } else {
-            console.log("Token mismatch")
             response.json({status: "ERROR", message: "Token Missmatch"})
         }
     } else if (action === "resendToken") {
@@ -982,6 +921,10 @@ app.get("/logout", (request, response) => {
     request.session.destroy()
     response.clearCookie("connect.sid")
     response.redirect("/login")
+})
+
+app.use((request, response, next) => {
+    response.status(404).render("404.ejs")
 })
 
 app.listen(port, () => {
