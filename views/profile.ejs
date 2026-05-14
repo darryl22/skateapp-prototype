@@ -25,7 +25,7 @@
         <div class="profile-side">
             <div class="profile-info-div" style="display: flex; flex-direction: column; align-items: start;">
                 <div class="profile-image-container">
-                    <div class="profile-settings-picture" style="background-image: url('<%= userProfile.profileImage %>');" id="profilePicture">
+                    <div class="profile-settings-picture modal-button" style="background-image: url('<%= userProfile.profileImage %>');" id="profilePicture" data-toggle-modal="profileImageModal">
                         <!-- <img src="/images/defaultProfile.jpg" alt="" style="width: 100%; aspect-ratio: 1 / 1;"> -->
                     </div>
                     <div class="edit-profile-image" id="editProfileImage">
@@ -49,7 +49,7 @@
                                 <img src="/logos/closeLight.png" alt="" class="image-invert" style="height: 10px;">
                             </div>
                         </div>
-                        <button class="purple-button" style="padding: 5px; height: fit-content; font-size: 0.8em;" id="usernameConfirm">Confirm</button>
+                        <button class="purple-button" style="padding: 5px 8px; height: fit-content; font-size: 0.8em; border-radius: 16px;" id="usernameConfirm">Confirm</button>
                     </div>
                 </div>
 
@@ -66,7 +66,7 @@
                                 <img src="/logos/closeLight.png" alt="" class="image-invert" style="height: 10px;">
                             </div>
                         </div>
-                        <button class="purple-button" style="padding: 5px; height: fit-content; font-size: 0.8em;" id="emailConfirm">Confirm</button>
+                        <button class="purple-button" style="padding: 5px 8px; height: fit-content; font-size: 0.8em; border-radius: 16px;" id="emailConfirm">Confirm</button>
                     </div>
                 </div>
                 <script nonce="<%= cspNonce %>">
@@ -88,6 +88,9 @@
                     })
 
                     document.getElementById("emailConfirm").addEventListener("click", async function() {
+                        if (document.getElementById("emailInput").value === "<%= userProfile.email %>") {
+                            return
+                        }
                         await fetch("/updateProfileInfo", {
                             method: "POST",
                             headers: {
@@ -100,11 +103,14 @@
                         })
                         .then(async res => {
                             let resData = await res.json()
-                            console.log(resData)
-                            if (res.status === "SUCCESS") {
+                            if (resData.status === "SUCCESS") {
                                 document.getElementById("emailValue").classList.toggle("hidden")
+                                document.getElementById("emailValue").innerText = resData.updatedValue
                                 document.getElementById("emailEditDiv").classList.toggle("hidden")
                                 document.getElementById("emailEdit").classList.toggle("hidden")
+                                addNewAlert(resData.status, resData.message)
+                            } else {
+                                addNewAlert(resData.status, resData.message)
                             }
                         })
                     })
@@ -127,6 +133,9 @@
                     })
 
                     document.getElementById("usernameConfirm").addEventListener("click", async function() {
+                        if (document.getElementById("usernameInput").value === "<%= userProfile.username %>") {
+                            return
+                        }
                         await fetch("/updateProfileInfo", {
                             method: "POST",
                             headers: {
@@ -139,25 +148,28 @@
                         })
                         .then(async res => {
                             let resData = await res.json()
-                            console.log(resData)
-                            if (res.status === "SUCCESS") {
+                            if (resData.status === "SUCCESS") {
                                 document.getElementById("usernameValue").classList.toggle("hidden")
+                                document.getElementById("usernameValue").innerText = resData.updatedValue
                                 document.getElementById("usernameEditDiv").classList.toggle("hidden")
                                 document.getElementById("usernameEdit").classList.toggle("hidden")
+                                addNewAlert(resData.status, resData.message)
+                            } else {
+                                addNewAlert(resData.status, resData.message)
                             }
                         })
                     })
                 </script>
 
                 <% if (userProfile.verified) { %>
-                    <div style="display: flex; align-items: center; gap: 5px; margin-top: 1em;">
+                    <div style="display: flex; align-items: center; gap: 5px; margin-top: 2em;">
                         <p>Verified</p>
                         <div class="verified-tick-div">
                             <img src="/logos/checkLight.png" alt="tick" style="height: 9px;">
                         </div>
                     </div>
                 <% } else { %>
-                    <a href="/verify" class="purple-button" style="margin-top: 1em; padding: 0.5em;">verify Email</a>
+                    <a href="/verify" class="purple-button" style="padding: 0.5em; margin-top: 2em; margin-bottom: 1em;">verify Email</a>
                 <% } %>
 
                 <button class="base-button modal-button" data-toggle-modal="changePassword">Change Password</button>
@@ -211,10 +223,10 @@
 
                 <div class="profile-pill-outer">
                     <div class="profile-pill-title" style="position: relative; width: fit-content;">
-                        Two factor Authentication
-                        <div class="tooltip-div" style="top: 50%; transform: translateY(-50%); right: -30px;">
+                        <p style="margin: 0;">Two factor Auth</p>
+                        <div class="tooltip-div" style="top: 50%; transform: translateY(-50%) translateX(-100%); left: -5px;">
                             <p class="tooltip-icon">?</p>
-                            <p class="tooltip-text hide-tooltip">Your account email will be used for authentication</p>
+                            <p class="tooltip-text hide-tooltip" style="transform: translateY(-100%) translateX(45%);">Your account email will be used for authentication</p>
                         </div>
                     </div>
                     <div class="profile-pill-div" id="twoFactorAuthPill" data-param="twoFactorAuth">
@@ -261,17 +273,27 @@
             </div>
         </div>
     </div>
-    <div class="profile-image-modal-outer" id="profileImageModalOuter">
-        <div class="profile-image-modal-container" id="profileImageModalContainer">
-            <img src="./logos/closelight.png" alt="close menu" class="close-menu2 image-invert" id="hideProfileImageModal">
-            <p style="align-self: center; font-weight: bold;">Preview</p>
-
-            <div class="profile-image-container" style="width: 50%;">
-                <div class="profile-settings-picture" style="background-image: url('/images/defaultProfile2.png'); width: 100%;" id="profilePicturePreview">
+    <div class="base-modal" id="profileImageChangeModal">
+        <div class="base-modal-inner">
+            <img src="./logos/closelight.png" alt="close menu" class="close-menu2 image-invert close-modal" data-toggle-modal="profileImageChangeModal">
+            <div class="base-modal-content profile-picture-preview-content">
+                <p style="align-self: center; font-weight: bold;">Preview</p>
+                <div class="profile-modal-image-container">
+                    <div class="profile-modal-settings-picture" id="profilePicturePreview"></div>
+                    <input type="file" accept="image" name="profilePicture" id="profilePictureInput" style="display: none;">
                 </div>
-                <input type="file" accept="image" name="profilePicture" id="profilePictureInput" style="display: none;">
+                <button class="default-button" style="margin-top: 2em;" id="confirmProfileImageUpdate">CONFIRM</button>
             </div>
-            <button class="default-button" style="justify-self: flex-end;" id="confirmProfileImageUpdate">CONFIRM</button>
+        </div>
+    </div>
+    <div class="base-modal" id="profileImageModal">
+        <div class="base-modal-inner">
+            <img src="./logos/closelight.png" alt="close menu" class="close-menu2 image-invert close-modal" data-toggle-modal="profileImageModal">
+            <div class="base-modal-content profile-picture-preview-content">
+                <div class="profile-modal-image-container">
+                    <div class="profile-modal-settings-picture" style="background-image: url('<%= userProfile.profileImage %>');"></div>
+                </div>
+            </div>
         </div>
     </div>
     <div class="drag-image-position"></div>
@@ -310,7 +332,6 @@
     document.querySelectorAll(".tooltip-div").forEach(item => {
         item.addEventListener("click", function() {
             function checkClickedOut(e) {
-                console.log("check clicked out")
                 if (!item.contains(e.target)) {
                     item.querySelector(".tooltip-text").classList.add("hide-tooltip")
                     document.removeEventListener("click", checkClickedOut)
@@ -358,6 +379,7 @@
     })
 
     let currentOpenModal = null
+    // keeps track of open edit modals for clearing selections
     let currentOpenModalID = null
     let eventController = null
 
@@ -370,7 +392,7 @@
         currentOpenModal = null
     }
 
-    async function showModal(id) {
+    function showModal(id) {
         let modalOuter = document.getElementById(`${id}`)
         let modalInner = modalOuter.querySelectorAll(".base-modal-inner")[0]
         modalOuter.style.opacity = "1"
@@ -379,14 +401,12 @@
         currentOpenModal = id
         if (modalOuter.hasAttribute("data-uploads-loaded")) {
             if (modalOuter.getAttribute("data-uploads-loaded") === "false") {
-                console.log("Uploads loading")
                 modalOuter.setAttribute("data-uploads-loaded", "true")
                 retrieveUploads()
             }
         }
         if (modalOuter.hasAttribute("data-likes-loaded")) {
             if (modalOuter.getAttribute("data-likes-loaded") === "false") {
-                console.log("Likes Loading")
                 modalOuter.setAttribute("data-likes-loaded", "true")
                 retrieveLikes()
             }
@@ -432,7 +452,7 @@
                         clearSelections(currentOpenModalID)
                         hideEditImagesSection(currentOpenModalID)
                     } catch(error){
-                        console.log(error)
+                        console.log("Error closing div")
                     }
                 }
             }, {signal: eventSignal})
@@ -479,7 +499,6 @@
                     })
                     check.classList.add("hide-check")
                 }
-                // console.log(selectedImages.get(`spot-${id}`))
                 let noneSelected = true
                 let newPositions = false
                 selectedImages.get(`spot-${id}`).forEach((item, key) => {
@@ -599,11 +618,6 @@
                 dragImagePlaceholder.style.backgroundImage = `${elm.style.backgroundImage}`
 
                 function dragEvent(drag) {
-                    // let endTarget = document.elementFromPoint(drag.changedTouches[0].clientX, drag.changedTouches[0].clientY)
-                    // console.log(endTarget.classList.contains("edit-pictures-item"))
-                    // if(endTarget.classList.contains("edit-pictures-item")) {
-                    //     endTarget.classList.add("edit-pictures-item-draghover")
-                    // }
                     dragImagePlaceholder.style.top = `${drag.touches[0].clientY - 50}px`
                     dragImagePlaceholder.style.left = `${drag.touches[0].clientX - 50}px`
                 }
@@ -676,7 +690,6 @@
                         }
                     })
                 }
-                console.log(sendData)
 
                 if (selectedLength === sendData.length) {
                     addNewAlert("ERROR", "At least one image needed in spot")
@@ -694,7 +707,6 @@
                 })
                 .then(async res => {
                     let resData = await res.json()
-                    console.log(resData)
                     if (resData.status === "SUCCESS") {
                         document.getElementById(`confirmEditImagesButton-${id}`).classList.add("hidden")
                         updateModalImages(id, resData.newImages)
@@ -706,7 +718,7 @@
                     }
                 })
                 .catch(error => {
-                    console.log(error)
+                    addNewAlert("ERROR", "Error updating images")
                 })
             }, {signal: eventSignal})
         })
@@ -714,7 +726,6 @@
         document.querySelectorAll(".add-new-images").forEach(elm => {
             elm.addEventListener("submit", async function(e) {
                 e.preventDefault()
-                console.log("new images")
                 let id = elm.getAttribute("data-id")
                 let images = document.getElementById(`addSpotImages-${id}`)
                 if ((images.length + selectedImages.get(`spot-${id}`).size) > 10) {
@@ -755,7 +766,6 @@
                 })
                 .then(async res => {
                     let resData = await res.json()
-                    console.log(resData)
                     if (resData.status === "SUCCESS") {
                         addNewAlert(resData.status, resData.message)
                         updateModalImages(id, resData.newImages, "addnew")
@@ -769,10 +779,9 @@
                     }
                 })
                 .catch(error => {
-                    console.log(error)
+                    addNewAlert("ERROR", "Error uploading images")
                 })
 
-                console.log(sizeInMB)
             }, {signal: eventSignal})
         })
 
@@ -910,7 +919,6 @@
                 })
                 .then(async res => {
                     let resData = await res.json()
-                    console.log(resData)
                     if (resData.status === "SUCCESS") {
                         window.location.replace("/profile")
                     } else {
@@ -934,7 +942,7 @@
                         clearSelections(currentOpenModalID)
                         hideEditImagesSection(currentOpenModalID)
                     } catch(error){
-                        console.log(error)
+                        console.log("An error occured")
                     }
                 }
             }
@@ -991,8 +999,6 @@
             spotPicturesCarousel.replaceChildren()
             selectedImages.set(`spot-${id}`, imageList)
         }
-        console.log("action is", action)
-        console.log("spot images are", selectedImages)
         editPicturesDiv.insertAdjacentHTML("beforeend",imageNodes)
         spotPicturesCarousel.insertAdjacentHTML("beforeend",carouselNodes)
         const swiper = new Swiper(`.swiper${id}`, {
@@ -1022,7 +1028,6 @@
         document.getElementById(`confirmEditImagesButton-${id}`).classList.add("hidden")
         // let positionReset = 0
         editPicturesDiv.querySelectorAll(".edit-pictures-item").forEach(elm => {
-            console.log("picture index", elm.getAttribute("data-picture-index"))
             let check = elm.querySelectorAll(".edit-pictures-check")[0]
             // let imageId = elm.getAttribute("data-imageid")
             let imageId = elm.getAttribute("data-imageidoriginal")
@@ -1032,7 +1037,6 @@
             if(currentImage.newPosition) {
                 elm.style.backgroundImage = `url("${currentImage.imageUrl}")`
             }
-            console.log("new index", currentImage.position)
             selectedImages.get(`spot-${id}`).set(`list-${imageId}`, {
                 ...currentImage,
                 isSelected: false,
@@ -1057,9 +1061,9 @@
                 for (let x = 0; x < resData.myUploads.length; x++) {
                     let elementNode = `<div class="profile-spot-item uploads-front-banner" id="uploadsFrontBanner${resData.myUploads[x]._id}" data-spotid="${resData.myUploads[x]._id}">
                         <div class="profile-spot-item-info">
-                            <div style="margin: 1em; display: flex; align-items: center; gap: 0.5em;">
-                                <a class="purple-button" href="/map?spot=${resData.myUploads[x]._id}" style="display: block;">View</a>
-                                <button class="purple-button modal-button" data-toggle-modal="editSpot${resData.myUploads[x]._id}">Edit</button>
+                            <div class="profile-spot-item-info-links">
+                                <a class="purple-button profile-spot-info-button" href="/map?spot=${resData.myUploads[x]._id}" style="display: block;">View</a>
+                                <button class="purple-button profile-spot-info-button modal-button" data-toggle-modal="editSpot${resData.myUploads[x]._id}">Edit</button>
                             </div>
                         </div>
                         <div class="background-dark-filter" style="background-image: url('/images/loading.png');" id="frontImageEdit-${resData.myUploads[x]._id}"></div>
@@ -1133,7 +1137,6 @@
             }
         })
         .catch(error => {
-            console.log(error)
             addNewAlert("ERROR", "Could not get Uploads")
             updateModalListeners()
         })
@@ -1149,9 +1152,7 @@
             })
         })
         .then(async res => {
-            // console.log("response", res)
             let resData = await res.json()
-            // console.log(resData)
             if (resData.status === "SUCCESS") {
                 document.getElementById(`uploadsFrontBanner${spotId}`).querySelector(".background-dark-filter").style.backgroundImage = `url('${resData.images[0].imageUrl}')`
                 updateModalImages(spotId, resData.images)
@@ -1165,7 +1166,6 @@
         })
         .then(async res => {
             let resData = await res.json()
-            console.log(resData)
             if (resData.status === "SUCCESS") {
                 let likedSpotsContainer = document.getElementById("likedSpotsContainer")
                 if (resData.myLikes.length === 0) {
@@ -1179,7 +1179,7 @@
                     let elementNode = `<div class="profile-spot-item likes-front-banner" id="likesFrontBanner${resData.myLikes[x]._id}" data-spotid="${resData.myLikes[x]._id}">
                         <div class="profile-spot-item-info">
                             <div style="margin: 1em;">
-                                <a class="purple-button" href="/map?spot=${resData.myLikes[x]._id}" style="display: block;">View</a>
+                                <a class="purple-button profile-spot-info-button" href="/map?spot=${resData.myLikes[x]._id}" style="display: block;">View</a>
                             </div>
                         </div>
                         <div class="background-dark-filter" style="background-image: url('/images/loading.png');"></div>
@@ -1204,7 +1204,6 @@
         })
         .then(async res => {
             let resData = await res.json()
-            // console.log(resData)
             if (resData.status === "SUCCESS") {
                 // updateModalImages(spotId, resData.images)
                 document.getElementById(`likesFrontBanner${spotId}`).querySelector(".background-dark-filter").style.backgroundImage = `url('${resData.images[0].imageUrl}')`
@@ -1219,37 +1218,21 @@
     })
 
     profilePictureInput.addEventListener("change", function() {
-        console.log(profilePictureInput.files[0].size)
         filesToBase64(profilePictureInput.files[0])
         .then(fileRes => {
-            // console.log(fileRes)
             profilePreview = fileRes
             let prev = document.getElementById("profilePicturePreview")
             prev.style.backgroundImage = `url("${profilePreview}")`
-            openProfileImageModal()
+            showModal("profileImageChangeModal")
         })
         .catch(error => {
-            console.log(error)
+            addNewAlert("ERROR", "Error updating profile picture")
         })
     })
 
-    function openProfileImageModal() {
-        let profileImageModalOuter = document.getElementById("profileImageModalOuter")
-        let profileImageModalContainer = document.getElementById("profileImageModalContainer")
-        profileImageModalOuter.style.opacity = 1
-        profileImageModalContainer.style.transform = "translateY(0)"
-        profileImageModalOuter.style.pointerEvents = "auto"
-    }
-
-    function hideProfileImageModal() {
-        let profileImageModalOuter = document.getElementById("profileImageModalOuter")
-        let profileImageModalContainer = document.getElementById("profileImageModalContainer")
-        profileImageModalOuter.style.opacity = 0
-        profileImageModalContainer.style.transform = "translateY(-20%)"
-        profileImageModalOuter.style.pointerEvents = "none"
-    }
-
-    document.getElementById("hideProfileImageModal").addEventListener("click", hideProfileImageModal)
+    // document.getElementById("profilePicture").addEventListener("click", function() {
+    //     showModal("profileImageModal")
+    // })
 
     document.getElementById("confirmProfileImageUpdate").addEventListener("click", async function() {
         await fetch('/updateProfileImage', {
@@ -1264,13 +1247,12 @@
             if(resData.status === "SUCCESS") {
                 addNewAlert(resData.status, resData.message)
                 document.getElementById("profilePicture").style.backgroundImage = `url('${profilePreview}')`
-                hideProfileImageModal()
+                hideModal(currentOpenModal)
             } else {
                 addNewAlert(resData.status, resData.message)
             }
         })
         .catch(error => {
-            console.log(error)
             addNewAlert("ERROR", "Error updating image")
         })
     })
@@ -1281,6 +1263,10 @@
             if (pillUpdating) {
                 return
             }
+            if ("<%= userProfile.verified %>" === "false" && this.getAttribute("data-param") === "twoFactorAuth") {
+                addNewAlert("ERROR", "Email verification needed for two factor auth")
+                return
+            }
             pillUpdating = true
             this.classList.toggle("pill-on")
             let id = this.getAttribute("id")
@@ -1288,7 +1274,6 @@
             document.getElementById(`${id}Circle`).classList.toggle("pill-circle-on")
             let pillValue = document.getElementById(`${id}Value`).value
             document.getElementById(`${id}Value`).value = pillValue === "true" ? "false" : "true"
-            console.log(document.getElementById(`${id}Value`).value)
             await fetch("/updateProfile", {
                 method: "POST",
                 headers: {"Content-Type": "application/json"},
@@ -1301,7 +1286,6 @@
                 let resData = await res.json()
                 if (resData.status === "SUCCESS") {
                     addNewAlert(resData.status, resData.message)
-                    console.log("darkMode", document.getElementById("darkModePillValue").value)
                     if (document.getElementById("darkModePillValue").value === "true") {
                         document.body.classList.add("dark-mode")
                         document.body.classList.remove("light-mode")

@@ -32,6 +32,7 @@ const limiter = rateLimit({
     ipv6Subnet: 56
 })
 
+
 const helmet = require("helmet")
 
 app.use((request, response, next) => {
@@ -379,8 +380,7 @@ app.get('/profile', async (request, response) => {
             email: res.email,
             verified: res.verified,
             settings: res.settings,
-            profileImage: res.profileImage,
-            likedSpots: res.likedSpots
+            profileImage: res.profileImage
         }
         response.render('profile.ejs', {userProfile: userProfile})
     })
@@ -412,23 +412,42 @@ app.post("/updateProfileInfo", async (request, response) => {
     let ID = ObjectId.createFromHexString(request.session.userID)
     let updateData = {}
     updateData[`${request.body.paramName}`] = request.body.inputValue
-    await databaseMethods.makeUpdate("users", {_id: ID}, {
-        $set: updateData
+    console.log(updateData)
+    // await databaseMethods.getOne("users", {$or: [{email: request.body.inputValue}, {username: request.body.inputValue}]})
+    await databaseMethods.getOne("users", updateData)
+    .then(res => {
+        console.log(res)
+        if (res !== null) {return `${request.body.paramName} exists`}
+        return databaseMethods.makeUpdate("users", {_id: ID}, {
+            $set: updateData
+        })
     })
     .then(res => {
+        console.log(res)
+        if (res === `${request.body.paramName} exists`) {return `${request.body.paramName} exists`}
         if (request.body.paramName === "username") {
-            return databaseMethods.makeMultipleUpdates("spots", {createdByID: request.session.userID}, {
+            return databaseMethods.makeMultipleUpdates("spots", {createdByID: ID}, {
                 $set: {
                     createdBy: request.body.inputValue
                 }
             })
         }
+        if (request.body.paramName === "email") {
+            return databaseMethods.makeUpdate("users", {_id: ID}, {
+                $set: {
+                    verified: false
+                }
+            })
+        }
     })
     .then(res => {
+        console.log("spots update", res)
+        if (res === `${request.body.paramName} exists`) {return response.json({status: "ERROR", message: `An account with ${request.body.paramName} already exists`})}
         request.session[`${request.body.paramName}`] = request.body.inputValue
         response.json({status: "SUCCESS", message: "Profile Updated", updatedValue: request.body.inputValue})
     })
     .catch(error => {
+        console.log(error)
         response.json({status: "ERROR", message: "Error updating profile"})
     })
 })
@@ -586,7 +605,7 @@ app.post('/login', limiter, async (request, response) => {
                 return response.json({status: "SUCCESS", message: "Redirecting...", action: "tfa"})
             } else {
                 if (request.body.rememberme) {
-                    request.session.cookie.maxAge = 6048000000
+                    request.session.cookie.maxAge = 604800000
                 }
                 request.session.username = res.username
                 request.session.userID = res._id.toString()
@@ -805,7 +824,8 @@ app.post('/signup', async (request, response) => {
     // await Promise.all([databaseMethods.getOne("users", {email: request.body.email}), databaseMethods.getOne("users", {username: request.body.username})])
     await databaseMethods.getOne("users", {$or: [{email: request.body.email}, {username: request.body.username}]})
     .then(async res => {
-        if (res !== null) {return response.json({status: "ERROR", message: "An account withthis email or username already exists"})}
+        // if (res !== null) {return response.json({status: "ERROR", message: "An account withthis email or username already exists"})}
+        if (res !== null) {return "user exists"}
         let currentDate = date.toISOString().split("T")
         const hashedPass = await bcrypt.hash(request.body.password, saltRounds)
         const user = {
@@ -819,22 +839,24 @@ app.post('/signup', async (request, response) => {
                 darkMap: false
             },
             profileImage: "/images/defaultProfile2.png",
-            likedSpots: [],
             dateCreated: currentDate[0]
         }
         return user
     })
     .then(async res => {
+        console.log(res)
+        if (res === "user exists") {return "user exists"}
         return databaseMethods.addOne("users", res)
     })
     .then(async res => {
+        if (res === "user exists") {return response.json({status: "ERROR", message: "An account withthis email or username already exists"})}
         request.session.username = request.body.username
         request.session.userID = res.insertedId.toString()
         request.session.email = request.body.email
         request.session.darkMode = "false"
         request.session.isLoggedIn = true
         if (request.body.rememberme) {
-            request.session.cookie.maxAge = 6048000000
+            request.session.cookie.maxAge = 604800000
         }
         let token = appFuncs.generateToken(7)
         let currentTime = new Date()

@@ -195,24 +195,23 @@
                             <div class="spot-list-item-details">
                                 <p class="spot-description-short"><%= spots[x].description %></p>
                                 <div style="width: fit-content;" class="spot-uploaded-by">
-                                    <p style="font-size: 0.8em; margin: 0;">Type: <%= spots[x].spottype %></p>
-                                    <p style="font-size: 0.8em; margin: 0;">Uploaded by <%= spots[x].createdBy %> <span id="spotUploadDateInMs<%= spots[x]._id %>"></span></p>
+                                    <p style="font-size: 0.8em; margin: 0;">Type: <%= spots[x].spottype %>, uploaded <span id="spotUploadDateInMs<%= spots[x]._id %>"></span></p>
                                 </div>
                                 <div class="menu-interactions-div">
                                     <div class="menu-interactions">
-                                        <div style="display: flex; gap: 5px">
+                                        <div style="display: flex; gap: 5px;">
                                             <div style="display: flex; align-items: center; gap: 0.5em">
-                                                <img src="/logos/heart-unfilledlight.png" class="like-button likeButton<%= spots[x]._id %>" data-spotid="<%= spots[x]._id %>" data-likeref="" data-isliked=""></img>
+                                                <img src="/logos/heart-unfilledlight.png" class="like-button image-invert likeButton<%= spots[x]._id %>" data-spotid="<%= spots[x]._id %>" data-likeref="" data-isliked=""></img>
                                                 <p class="likes-count spotLikesCount-<%= spots[x]._id %>"><%= spots[x].likesCount %></p>
                                             </div>
                                             <div style="display: flex; align-items: center; gap: 0.5em">
-                                                <img src="/logos/comments-light.png" style="height: 2em;"></img>
-                                                <p class="spotCommentsCount-<%= spots[x]._id %>"><%= spots[x].commentsCount%></p>
+                                                <img src="/logos/comments-light.png" class="list-comment-button image-invert"></img>
+                                                <p class="comments-count spotCommentsCount-<%= spots[x]._id %>"><%= spots[x].commentsCount%></p>
                                             </div>
                                         </div>
                                     </div>
                                     <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-                                        <button class='base-button modal-button' data-toggle-modal="spotDetailsModal<%= spots[x]._id %>" style="padding: 5px; font-size: 0.8em;">Details</button>
+                                        <button class='base-button modal-button' data-toggle-modal="spotDetailsModal<%= spots[x]._id %>" style="padding: 7px; font-size: 0.8em;">Details</button>
                                         <div style="width: fit-content;" class="spot-uploaded-by2">
                                             <p style="font-size: 0.8em; margin: 0;">Type: <%= spots[x].spottype %></p>
                                             <p style="font-size: 0.8em; margin: 0;">Uploaded by <%= spots[x].createdBy %> <span id="spotUploadDateInMs<%= spots[x]._id %>"></span></p>
@@ -227,7 +226,7 @@
             </div>
         </div>
         <div class="directions-detail-container" id="directionsDetails">
-            <img src="/logos/closelight.png" style="height: 1em; cursor: pointer; float: right;" alt="" id="closeDirectionsDetails">
+            <img src="/logos/closelight.png" class="close-directions image-invert" style="height: 1em; cursor: pointer; float: right;" alt="" id="closeDirectionsDetails">
             <p style="clear: both;"><span id="directionsDistance">0</span> meters</p>
             <p>Accuracy: <span id="directionsAccuracy">25</span> meters</p>
             <div class="directions-picker">
@@ -274,7 +273,11 @@
             </div>
         </div>
         <div class="base-modal" id="editUploadImages">
-            <div class="base-modal-inner">
+            <div class="base-modal-inner" style="position: relative;">
+                <div class="tooltip-div" style="top: 2em; right: 2em;">
+                    <p class="tooltip-icon">?</p>
+                    <p class="tooltip-text hide-tooltip" style="transform: translateY(calc(100% + 10px)) translateX(-45%);">Drag images to reorder.</p>
+                </div>
                 <img src="./logos/closelight.png" alt="close menu" class="close-menu2 image-invert close-modal" data-toggle-modal="editUploadImages">
                 <div class="base-modal-content">
                     <div class="edit-pictures-div" id="editUploadImagesDiv"></div>
@@ -305,6 +308,24 @@
     // });
     // const swiperF = document.querySelector('.swiper').swiper;
     // let swiper = null
+
+    document.querySelectorAll(".tooltip-div").forEach(item => {
+        item.addEventListener("click", function() {
+            function checkClickedOut(e) {
+                console.log("check clicked out")
+                if (!item.contains(e.target)) {
+                    item.querySelector(".tooltip-text").classList.add("hide-tooltip")
+                    document.removeEventListener("click", checkClickedOut)
+                }
+            }
+            if (this.querySelector(".tooltip-text").classList.contains("hide-tooltip")) {
+                this.querySelector(".tooltip-text").classList.remove("hide-tooltip")
+                document.addEventListener("click", checkClickedOut)
+            } else {
+                this.querySelector(".tooltip-text").classList.add("hide-tooltip")
+            }
+        })
+    })
 
     let dataContainer = document.getElementById('spot-container');
     let likesListContainer = document.getElementById('likes-load-container')
@@ -902,7 +923,7 @@
                         zoom: 13,
                         duration: 500,
                         padding: {
-                            bottom: paddingValue
+                            bottom: 200
                         }
                     })
                     let currentData = spotDetailsMap.get(`spot-${spotId}`)
@@ -1240,7 +1261,7 @@
                     zoom: zoomLevel,
                     duration: 500,
                     padding: {
-                        bottom: paddingValue
+                        bottom: 200
                     }
                 })
             })
@@ -1344,24 +1365,23 @@
                     <div class="spot-list-item-details">
                         <p class="spot-description-short">${item.description}</p>
                         <div style="width: fit-content;" class="spot-uploaded-by">
-                            <p style="font-size: 0.8em; margin: 0;">Type: ${item.spottype}</p>
-                            <p style="font-size: 0.8em; margin: 0;">Uploaded by ${item.createdBy} <span id="spotUploadDateInMs${item._id}"></span></p>
+                            <p style="font-size: 0.8em; margin: 0;">Type: ${item.spottype}, uploaded <span id="spotUploadDateInMs${item._id}"></span></p>
                         </div>
                         <div class="menu-interactions-div">
                             <div class="menu-interactions">
-                                <div style="display: flex; gap: 5px">
+                                <div style="display: flex; gap: 5px;">
                                     <div style="display: flex; align-items: center; gap: 0.5em">
-                                        <img src="${currentData.isLiked === true ? "/logos/heart-filledlight.png" : "/logos/heart-unfilledlight.png"}" class="like-button likeButton${item._id}" data-spotid="${item._id}" data-likeref="${currentData.likeRef}" data-isliked="${currentData.isLiked}"></img>
+                                        <img src="${currentData.isLiked ? "/logos/heart-filledlight.png" : "/logos/heart-unfilledlight.png"}" class="like-button image-invert likeButton${item._id}" data-spotid="${item._id}" data-likeref="${currentData.likeRef}" data-isliked="${currentData.isLiked}"></img>
                                         <p class="likes-count spotLikesCount-${item._id}">${currentData.likesCount}</p>
                                     </div>
                                     <div style="display: flex; align-items: center; gap: 0.5em">
-                                        <img src="/logos/comments-light.png" style="height: 2em;"></img>
-                                        <p class="spotCommentsCount-${item._id}">${currentData.commentsCount}</p>
+                                        <img src="/logos/comments-light.png" class="list-comment-button image-invert"></img>
+                                        <p class="comments-count spotCommentsCount-${item._id}">${currentData.commentsCount}</p>
                                     </div>
                                 </div>
                             </div>
                             <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-                                <button class='base-button modal-button' data-toggle-modal="spotDetailsModal${item._id}" style="padding: 5px; font-size: 0.8em;">Details</button>
+                                <button class='base-button modal-button' data-toggle-modal="spotDetailsModal${item._id}" style="padding: 7px; font-size: 0.8em;">Details</button>
                                 <div style="width: fit-content;" class="spot-uploaded-by2">
                                     <p style="font-size: 0.8em; margin: 0;">Type: ${item.spottype}</p>
                                     <p style="font-size: 0.8em; margin: 0;">Uploaded by ${item.createdBy} <span id="spotUploadDateInMs${item._id}"></span></p>
@@ -1832,6 +1852,7 @@
         if (spotImageList.size === 0) {
             hideModal(currentOpenModal)
             document.getElementById("spotImages").value = null
+            document.getElementById("fileSizeSpan").innerText = 0
             return
         }
     }
