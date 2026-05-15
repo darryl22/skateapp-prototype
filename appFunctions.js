@@ -1,7 +1,7 @@
 const nodemailer = require("nodemailer")
 const transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 587,
+    host: "smtp.hmailplus.com",
+    port: process.env.EMAIL_PORT,
     secure: false,
     auth: {
         user: process.env.EMAIL_USER,
@@ -13,7 +13,7 @@ class appFunctions{
     async sendPrimaryMail(receiver, subject, content) {
         try {
             const info = await transporter.sendMail({
-                from: "skatetopicke@gmail.com",
+                from: process.env.EMAIL_USER,
                 to: receiver,
                 subject: subject,
                 text: "",

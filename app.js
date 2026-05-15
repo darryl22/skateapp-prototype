@@ -26,7 +26,7 @@ const ExpressSanitizer = require("perfect-express-sanitizer")
 const {rateLimit} = require("express-rate-limit")
 const limiter = rateLimit({
     windowMs: 10 * 60 * 1000,
-    limit: 50,
+    limit: 100,
     standardHeaders: true,
     legacyHeaders: false,
     ipv6Subnet: 56
@@ -649,7 +649,7 @@ app.get("/twoFactorAuth", async (request, response) => {
     response.render('twoFactorAuth.ejs', {duration: duration, expired: expired})
 })
 
-app.post("/twoFactorAuth", async (request, response) => {
+app.post("/twoFactorAuth", limiter, async (request, response) => {
     if (!request.session.tempEmail) {
         return response.redirect("/login")
     }
@@ -711,7 +711,7 @@ app.get("/forgotPassword", async (request, response) => {
     response.render("forgotPassword.ejs", {resetStep: request.session.passwordResetStep, duration: duration, expired: expired})
 })
 
-app.post("/forgotPassword", async (request, response) => {
+app.post("/forgotPassword", limiter, async (request, response) => {
     let action = request.body.action
     if (action === "sendemail") {
         let email = request.body.email
@@ -788,7 +788,7 @@ app.post("/forgotPassword", async (request, response) => {
     }
 })
 
-app.post("/changePassword", async (request, response) => {
+app.post("/changePassword", limiter, async (request, response) => {
     if (request.body.newpassword !== request.body.confirmnewpassword) {
         return response.json({status: "ERROR", message: "New password missmatch"})
     }
@@ -818,7 +818,7 @@ app.get('/signup', (request, response) => {
     response.render('signup.ejs')
 })
 
-app.post('/signup', async (request, response) => {
+app.post('/signup', limiter, async (request, response) => {
     if (request.body.password !== request.body.confirmpassword) {return response.json({status: "ERROR", message: "Password Missmatch"})}
     const date = new Date()
     // await Promise.all([databaseMethods.getOne("users", {email: request.body.email}), databaseMethods.getOne("users", {username: request.body.username})])
@@ -896,7 +896,7 @@ app.get("/verify", async (request, response) => {
     response.render("verify.ejs", {duration: duration, expired: expired})
 })
 
-app.post("/verify", async (request, response) => {
+app.post("/verify", limiter, async (request, response) => {
     if (request.session.email === undefined || request.session.email === null) {
         return response.redirect("/login")
     }

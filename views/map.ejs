@@ -312,7 +312,6 @@
     document.querySelectorAll(".tooltip-div").forEach(item => {
         item.addEventListener("click", function() {
             function checkClickedOut(e) {
-                console.log("check clicked out")
                 if (!item.contains(e.target)) {
                     item.querySelector(".tooltip-text").classList.add("hide-tooltip")
                     document.removeEventListener("click", checkClickedOut)

@@ -33,7 +33,6 @@
         tokenExpiryCounter.style.display = "block"
         resendTokenDiv.style.display = "none"
     }
-    console.log(isExpired)
     let timerInterval = null
     function setTimer(duration, targetElement) {
         if (timerInterval !== null) {
@@ -61,7 +60,6 @@
     setTimer(parseInt(duration), "timerSpan")
 
     document.getElementById("token").addEventListener("input", function() {
-        console.log("to upper", this.value.toUpperCase())
         this.value = this.value.toUpperCase()
     })
 
@@ -79,7 +77,6 @@
         .then(async res => {
             document.getElementById("spinnerContainer").style.display = "none"
             let resData = await res.json()
-            console.log(resData)
             addNewAlert(resData.status, resData.message)
             if (resData.status === "SUCCESS") {
                 setTimeout(() => {
@@ -105,7 +102,6 @@
         .then(async res => {
             document.getElementById("spinnerContainer").style.display = "none"
             let resData = await res.json()
-            console.log(resData)
             setTimer(parseInt(resData.duration), "timerSpan")
             tokenExpiryCounter.style.display = "block"
             resendTokenDiv.style.display = "none"
