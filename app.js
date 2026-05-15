@@ -61,6 +61,7 @@ app.use(require("express-session")({
         httpOnly: true
     },
     store: store,
+    proxy: true,
     resave: true,
     saveUninitialized: false
 }))
