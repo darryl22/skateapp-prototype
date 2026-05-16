@@ -780,7 +780,7 @@
                 })
                 .catch(error => {
                     console.log(error)
-                    addNewAlert("ERROR", "Error uploading images")
+                    addNewAlert("ERROR", error)
                 })
 
             }, {signal: eventSignal})
