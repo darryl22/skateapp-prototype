@@ -746,6 +746,9 @@
                             spotId: id
                         })
                     })
+                    .catch(error => {
+                        console.log(error)
+                    })
                     currentPosition = currentPosition + 1
                     totalSize = totalSize + compressedImage.size
                 }
