@@ -1,6 +1,5 @@
 const express = require("express")
 const app = express()
-const port = 3000
 require("dotenv").config()
 const bodyParser = require("body-parser")
 
@@ -950,6 +949,6 @@ app.use((request, response, next) => {
     response.status(404).render("404.ejs")
 })
 
-app.listen(port, () => {
-    console.log(`Started at http://localhost:${port}`)
+app.listen(process.env.PORT, () => {
+    console.log(`Started at http://localhost:${process.env.PORT}`)
 })
