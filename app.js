@@ -602,6 +602,9 @@ app.post('/login', limiter, async (request, response) => {
                 request.session.toRemember = request.body.rememberme
                 let content = `<h1>Login Verification</h1> <p>Your Skate App Login token is ${token}</p>`
                 let mailresult = await appFuncs.sendPrimaryMail(res.email, "Skate App Login Verification", content)
+                if (mailresult === "Error sending mail") {
+                    return response.json({status: "ERROR", message: "Error sending mail"})
+                }
                 return response.json({status: "SUCCESS", message: "Redirecting...", action: "tfa"})
             } else {
                 if (request.body.rememberme) {
@@ -637,6 +640,10 @@ app.get("/twoFactorAuth", async (request, response) => {
         // let content = `<h1>Verify Account</h1> <p>Your Skate App verification token is ${token}</p>`
         let content = `<h1>Login Verification</h1> <p>Your Skate App Login token is ${token}</p>`
         let mailresult = await appFuncs.sendPrimaryMail(request.session.tempEmail, "Skate App Account Verification", content)
+        if (mailresult === "Error sending mail") {
+            // return response.json({status: "ERROR", message: "Error sending mail"})
+            return response.redirect("/login")
+        }
     }
     let currentTime = new Date()
     duration = request.session.tfaTokenExpiry - currentTime.getTime()
@@ -690,6 +697,9 @@ app.post("/twoFactorAuth", limiter, async (request, response) => {
         duration = request.session.tfaTokenExpiry - currentTime.getTime()
         let content = `<h1>Verify Account</h1> <p>Your Skate App verification token is ${token}</p>`
         let mailresult = await appFuncs.sendPrimaryMail(request.session.tempEmail, "Skate App Account Verification", content)
+        if (mailresult === "Error sending mail") {
+            return response.json({status: "ERROR", message: "Error sending mail"})
+        }
         response.json({status: "SUCCESS", message: "Token resent", duration: duration})
     }
 })
@@ -732,6 +742,9 @@ app.post("/forgotPassword", limiter, async (request, response) => {
             duration = request.session.fpTokenExpiry - currentTime.getTime()
             let content = `<h1>Reset Account Password</h1> <p>Your Skate App reset token is ${token}</p>`
             let mailresult = await appFuncs.sendPrimaryMail(email, "Skate App password reset", content)
+            if (mailresult === "Error sending mail") {
+                return response.json({status: "ERROR", message: "Error sending mail"})
+            }
             response.json({status: "SUCCESS", message: "Token sent", duration: duration})
         })
         .catch(error => {
@@ -782,6 +795,9 @@ app.post("/forgotPassword", limiter, async (request, response) => {
         duration = request.session.fpTokenExpiry - currentTime.getTime()
         let content = `<h1>Reset Account Password</h1> <p>Your Skate App reset token is ${token}</p>`
         let mailresult = await appFuncs.sendPrimaryMail(email, "Skate App password reset", content)
+        if (mailresult === "Error sending mail") {
+            return response.json({status: "ERROR", message: "Error sending mail"})
+        }
         response.json({status: "SUCCESS", message: "Token resent", duration: duration})
     } else {
         response.json({status: "ERROR", message: "Error with password reset"})
@@ -884,6 +900,9 @@ app.get("/verify", async (request, response) => {
         duration = request.session.tokenExpiry - currentTime.getTime()
         let content = `<h1>Verify Account</h1> <p>Your Skate App verification token is ${token}</p>`
         let mailresult = await appFuncs.sendPrimaryMail(request.session.email, "Skate App Account Verification", content)
+        if (mailresult === "Error sending mail") {
+            return response.json({status: "ERROR", message: "Error sending mail"})
+        }
     }
     let currentTime = new Date()
     duration = request.session.tokenExpiry - currentTime.getTime()
@@ -935,6 +954,9 @@ app.post("/verify", limiter, async (request, response) => {
         duration = request.session.tokenExpiry - currentTime.getTime()
         let content = `<h1>Verify Account</h1> <p>Your Skate App verification token is ${token}</p>`
         let mailresult = await appFuncs.sendPrimaryMail(request.session.email, "Skate App Account Verification", content)
+        if (mailresult === "Error sending mail") {
+            return response.json({status: "ERROR", message: "Error sending mail"})
+        }
         response.json({status: "SUCCESS", message: "Token resent", duration: duration})
     }
 })

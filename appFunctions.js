@@ -1,8 +1,8 @@
 const nodemailer = require("nodemailer")
 const transporter = nodemailer.createTransport({
-    host: "smtp.hmailplus.com",
+    host: process.env.EMAIL_HOST,
     port: process.env.EMAIL_PORT,
-    secure: false,
+    secure: process.env.EMAIL_SECURE === "true",
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
@@ -19,11 +19,9 @@ class appFunctions{
                 text: "",
                 html: content
             })
-            // console.log(info.messageId)
-            // console.log(info)
             return info
         } catch(error) {
-            console.log(error)
+            return "Error sending mail"
         }
     }
 

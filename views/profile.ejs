@@ -782,7 +782,6 @@
                     }
                 })
                 .catch(error => {
-                    console.log(error)
                     addNewAlert("ERROR", error)
                 })
 
@@ -796,7 +795,7 @@
                 let totalSize = 0
                 for (let x = 0; x < elm.files.length; x++) {
                     const compressedImage = await imageConversion.compressAccurately(elm.files[x], 400)
-                    totalSize = totalSize + elm.files[x].size
+                    totalSize = totalSize + compressedImage.size
                 }
                 let sizeInMB = totalSize / 1000000
                 if (sizeInMB > 10) {
