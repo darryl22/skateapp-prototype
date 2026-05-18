@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" class="svg-elm" viewBox="-100 -100 200 200" width="200" height="350">
+    <path d="M -90 -70 L 0 175 90 -70" fill="blue"></path>
+    <circle r="90" cy="-70" fill="blue" stroke="blue" stroke-width="5"></circle>
+    <path transform="rotate(-25, 0, -70)" d="
+        M -50 -70
+        L 50 -70
+        M -65 -80
+        Q -60 -70 -50 -70
+        M 65 -80
+        Q 60 -70 50 -70
+    " fill="none" stroke="white" stroke-width="5" stroke-linecap="round"></path>
+    <circle transform="rotate(-25, 0, -70)" r="7" cx="-45" cy="-55" fill="white"></circle>
+    <circle transform="rotate(-25, 0, -70)" r="7" cx="45" cy="-55" fill="white"></circle>
+    <circle r="80" cy="-70" stroke="white" stroke-width="5" fill="none"></circle>
+</svg>

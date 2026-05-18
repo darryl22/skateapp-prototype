@@ -1197,18 +1197,48 @@
             let pointColor = ""
             if (categoryEntries[x][0] === "stairs") {
                 pointColor = "green"
+                map.loadImage("/logos/marker-green.png", (error, image) => {
+                    if (error) {
+                        console.log("logo missing")
+                    }
+                    map.addImage('marker-stairs', image)
+                })
                 document.getElementById(`typeFilter-stairs`).innerText = categoryEntries[x][1].length
             } else if (categoryEntries[x][0] === "rail") {
                 pointColor = "blue"
+                map.loadImage("/logos/marker-blue.png", (error, image) => {
+                    if (error) {
+                        console.log("logo missing")
+                    }
+                    map.addImage('marker-rail', image)
+                })
                 document.getElementById(`typeFilter-rail`).innerText = categoryEntries[x][1].length
             } else if (categoryEntries[x][0] === "park") {
                 pointColor = "purple"
+                map.loadImage("/logos/marker-purple.png", (error, image) => {
+                    if (error) {
+                        console.log("logo missing")
+                    }
+                    map.addImage('marker-park', image)
+                })
                 document.getElementById(`typeFilter-park`).innerText = categoryEntries[x][1].length
             } else if (categoryEntries[x][0] === "ledge") {
                 pointColor = "red"
+                map.loadImage("/logos/marker-red.png", (error, image) => {
+                    if (error) {
+                        console.log("logo missing")
+                    }
+                    map.addImage('marker-ledge', image)
+                })
                 document.getElementById(`typeFilter-ledge`).innerText = categoryEntries[x][1].length
             } else {
                 pointColor = "gray"
+                map.loadImage("/logos/marker-orange.png", (error, image) => {
+                    if (error) {
+                        console.log("logo missing")
+                    }
+                    map.addImage('marker-other', image)
+                })
                 document.getElementById(`typeFilter-other`).innerText = categoryEntries[x][1].length
             }
             map.addSource(`spotsSource${categoryEntries[x][0]}`, {
@@ -1225,13 +1255,20 @@
 
             map.addLayer({
                 'id': `spotsLayer${categoryEntries[x][0]}`,
-                'type': 'circle',
+                // 'type': 'circle',
+                'type': 'symbol',
                 'source': `spotsSource${categoryEntries[x][0]}`,
-                'paint': {
-                    'circle-color': pointColor,
-                    'circle-radius': 10,
-                    'circle-stroke-width': 3,
-                    'circle-stroke-color': '#ffffff'
+                // 'paint': {
+                //     'circle-color': pointColor,
+                //     'circle-radius': 10,
+                //     'circle-stroke-width': 3,
+                //     'circle-stroke-color': '#ffffff'
+                // }
+                'layout': {
+                    'icon-image': `marker-${categoryEntries[x][0]}`,
+                    'icon-size': 0.1,
+                    'icon-anchor': "bottom",
+                    'icon-allow-overlap': true
                 }
             })
 
