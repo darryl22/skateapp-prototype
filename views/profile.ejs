@@ -752,7 +752,8 @@
                             })
                         })
                         .catch(error => {
-                            console.log(error)
+                            addNewAlert("ERROR", error)
+                            return
                         })
                         currentPosition = currentPosition + 1
                         totalSize = totalSize + compressedImage.size
@@ -813,6 +814,7 @@
                         totalSize = totalSize + compressedImage.size
                     } catch(error) {
                         addNewAlert("ERROR", error)
+                        return
                     }
                 }
                 let sizeInMB = totalSize / 1000000
