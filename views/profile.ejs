@@ -21,6 +21,9 @@
     <%- include('templates/nav.ejs') %>
     <%- include('templates/alert.ejs') %>
     <%- include('templates/theme.ejs') %>
+    <div class="spinner-container image-invert" id="spinnerContainer">
+        <img src="/logos/skateboardlight.png" alt="spinner" class="spinner">
+    </div>
     <div class="profile-div">
         <div class="profile-side">
             <div class="profile-info-div" style="display: flex; flex-direction: column; align-items: start;">
@@ -733,24 +736,29 @@
                     images.value = null
                     return
                 }
+                document.getElementById("spinnerContainer").style.display = "block"
                 let totalSize = 0
                 let currentPosition = selectedImages.get(`spot-${id}`).size
                 let newImages = []
                 for (let x = 0; x < images.files.length; x++) {
-                    const compressedImage = await imageConversion.compressAccurately(images.files[x], 400)
-                    await filesToBase64(compressedImage)
-                    .then(res => {
-                        newImages.push({
-                            position: currentPosition,
-                            imageUrl: res,
-                            spotId: id
+                    try {
+                        const compressedImage = await imageConversion.compressAccurately(images.files[x], 400)
+                        await filesToBase64(compressedImage)
+                        .then(res => {
+                            newImages.push({
+                                position: currentPosition,
+                                imageUrl: res,
+                                spotId: id
+                            })
                         })
-                    })
-                    .catch(error => {
-                        console.log(error)
-                    })
-                    currentPosition = currentPosition + 1
-                    totalSize = totalSize + compressedImage.size
+                        .catch(error => {
+                            console.log(error)
+                        })
+                        currentPosition = currentPosition + 1
+                        totalSize = totalSize + compressedImage.size
+                    } catch(error) {
+                        addNewAlert("ERROR", error)
+                    }
                 }
                 let sizeInMB = totalSize / 1048576
                 if (sizeInMB > 10) {
@@ -777,11 +785,15 @@
                         showEditImagesSection(id)
                         images.value = null
                         document.getElementById(`fileSizeSpan-${id}`).innerText = "0"
+                        document.getElementById("spinnerContainer").style.display = "none"
+
                     } else {
+                        document.getElementById("spinnerContainer").style.display = "none"
                         addNewAlert(resData.status, resData.message)
                     }
                 })
                 .catch(error => {
+                    document.getElementById("spinnerContainer").style.display = "none"
                     addNewAlert("ERROR", error)
                 })
 
@@ -794,8 +806,12 @@
                 let fileSizeSpan = document.getElementById(`fileSizeSpan-${id}`)
                 let totalSize = 0
                 for (let x = 0; x < elm.files.length; x++) {
-                    const compressedImage = await imageConversion.compressAccurately(elm.files[x], 400)
-                    totalSize = totalSize + compressedImage.size
+                    try {
+                        const compressedImage = await imageConversion.compressAccurately(elm.files[x], 400)
+                        totalSize = totalSize + compressedImage.size
+                    } catch(error) {
+                        addNewAlert("ERROR", error)
+                    }
                 }
                 let sizeInMB = totalSize / 1000000
                 if (sizeInMB > 10) {
