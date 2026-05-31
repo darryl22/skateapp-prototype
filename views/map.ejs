@@ -1741,19 +1741,23 @@
         }
         document.getElementById("modifyUploadImages").classList.remove("hidden")
         for (let x = 0; x < images.files.length; x++) {
-            const compressedImage = await imageConversion.compressAccurately(images.files[x], 400)
-            await filesToBase64(compressedImage)
-            .then(res => {
-                totalSize = totalSize + compressedImage.size
-                let imageNode = `<div class="edit-pictures-item" style="background-image: url('${res}');" data-picture-index="${x}">
-                    <div class="edit-pictures-check hide-check">
-                        <p style="margin: 0;">X</p>
-                    </div>
-                    <div class="edit-check-circle"></div>
-                </div>`
-                imageNodesList = imageNodesList + imageNode
-                spotImageList.set(`image-${x}`, res)
-            })
+            try{
+                const compressedImage = await imageConversion.compressAccurately(images.files[x], 400)
+                await filesToBase64(compressedImage)
+                .then(res => {
+                    totalSize = totalSize + compressedImage.size
+                    let imageNode = `<div class="edit-pictures-item" style="background-image: url('${res}');" data-picture-index="${x}">
+                        <div class="edit-pictures-check hide-check">
+                            <p style="margin: 0;">X</p>
+                        </div>
+                        <div class="edit-check-circle"></div>
+                    </div>`
+                    imageNodesList = imageNodesList + imageNode
+                    spotImageList.set(`image-${x}`, res)
+                })
+            } catch(error) {
+                addNewAlert("ERROR", error)
+            }
         }
         sizeInMB = totalSize / 1048576
         if (sizeInMB > 10) {

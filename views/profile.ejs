@@ -757,12 +757,14 @@
                         currentPosition = currentPosition + 1
                         totalSize = totalSize + compressedImage.size
                     } catch(error) {
+                        document.getElementById("spinnerContainer").style.display = "none"
                         addNewAlert("ERROR", error)
                     }
                 }
                 let sizeInMB = totalSize / 1048576
                 if (sizeInMB > 10) {
                     addNewAlert("ERROR", "Files are too large")
+                    document.getElementById("spinnerContainer").style.display = "none"
                     return
                 }
                 await fetch('/addSpotImages', {
