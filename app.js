@@ -412,18 +412,15 @@ app.post("/updateProfileInfo", async (request, response) => {
     let ID = ObjectId.createFromHexString(request.session.userID)
     let updateData = {}
     updateData[`${request.body.paramName}`] = request.body.inputValue
-    console.log(updateData)
     // await databaseMethods.getOne("users", {$or: [{email: request.body.inputValue}, {username: request.body.inputValue}]})
     await databaseMethods.getOne("users", updateData)
     .then(res => {
-        console.log(res)
         if (res !== null) {return `${request.body.paramName} exists`}
         return databaseMethods.makeUpdate("users", {_id: ID}, {
             $set: updateData
         })
     })
     .then(res => {
-        console.log(res)
         if (res === `${request.body.paramName} exists`) {return `${request.body.paramName} exists`}
         if (request.body.paramName === "username") {
             return databaseMethods.makeMultipleUpdates("spots", {createdByID: ID}, {
@@ -441,7 +438,6 @@ app.post("/updateProfileInfo", async (request, response) => {
         }
     })
     .then(res => {
-        console.log("spots update", res)
         if (res === `${request.body.paramName} exists`) {return response.json({status: "ERROR", message: `An account with ${request.body.paramName} already exists`})}
         request.session[`${request.body.paramName}`] = request.body.inputValue
         response.json({status: "SUCCESS", message: "Profile Updated", updatedValue: request.body.inputValue})
@@ -860,7 +856,6 @@ app.post('/signup', limiter, async (request, response) => {
         return user
     })
     .then(async res => {
-        console.log(res)
         if (res === "user exists") {return "user exists"}
         return databaseMethods.addOne("users", res)
     })

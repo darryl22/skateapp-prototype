@@ -169,6 +169,8 @@
                                     <option value="rail" style="color: blue;">rail (<span id="typeFilter-rail">0</span>)</option>
                                     <option value="stairs" style="color: green;">stairs (<span id="typeFilter-stairs">0</span>)</option>
                                     <option value="park" style="color: purple;">park (<span id="typeFilter-park">0</span>)</option>
+                                    <option value="flatground" style="color: #03cafc;">flatground (<span id="typeFilter-flatground">0</span>)</option>
+                                    <option value="hill" style="color: rgb(213, 213, 0);">hill (<span id="typeFilter-hill">0</span>)</option>
                                     <option value="other" style="color: gray;">other (<span id="typeFilter-other">0</span>)</option>
                                 </select>
                             </div>
@@ -250,7 +252,7 @@
                     <input type="hidden" value="0" name="latitude" id="latitude">
                     <mapbox-search-box access-token="<%= mapboxtoken %>" proximity="0, 0" style="margin-bottom: 1em;"></mapbox-search-box>
                     <label for="description" style="margin-bottom: 0.5em;">Description</label>
-                    <textarea name="description" id="description" style="margin-bottom: 1em; height: 4em; border-radius: 5px; padding: 5px; background-color: rgba(0, 0, 0, 0); color: white;" required></textarea>
+                    <textarea name="description" id="description" style="margin-bottom: 1em; height: 4em; border-radius: 5px; padding: 5px; background-color: rgba(0, 0, 0, 0); color: var(--text-color-primary);" required></textarea>
 
                     <label for="spottype">Spot Type</label>
                     <select name="spottype" id="spottype" style="padding: 0.3em; margin-top: 0.5em; border: 1px solid gray; border-radius: 4px; margin-bottom: 1em;" required>
@@ -259,6 +261,8 @@
                         <option value="stairs">stairs</option>
                         <option value="park">park</option>
                         <option value="ledge">ledge</option>
+                        <option value="flatground">flatground</option>
+                        <option value="hill">hill</option>
                         <option value="other">other</option>
                     </select>
 
@@ -822,6 +826,8 @@
         rail: [],
         stairs: [],
         park: [],
+        flatground: [],
+        hill: [],
         other: [],
     }
     spotsData.forEach((item, index) => {
@@ -1231,6 +1237,24 @@
                     map.addImage('marker-ledge', image)
                 })
                 document.getElementById(`typeFilter-ledge`).innerText = categoryEntries[x][1].length
+            } else if (categoryEntries[x][0] === "flatground") {
+                pointColor = "#03cafc"
+                map.loadImage("/logos/marker-blue-light.png", (error, image) => {
+                    if (error) {
+                        console.log("logo missing")
+                    }
+                    map.addImage('marker-flatground', image)
+                })
+                document.getElementById(`typeFilter-flatground`).innerText = categoryEntries[x][1].length
+            } else if (categoryEntries[x][0] === "hill") {
+                pointColor = "#03cafc"
+                map.loadImage("/logos/marker-yellow.png", (error, image) => {
+                    if (error) {
+                        console.log("logo missing")
+                    }
+                    map.addImage('marker-hill', image)
+                })
+                document.getElementById(`typeFilter-hill`).innerText = categoryEntries[x][1].length
             } else {
                 pointColor = "gray"
                 map.loadImage("/logos/marker-orange.png", (error, image) => {
