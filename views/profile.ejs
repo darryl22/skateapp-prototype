@@ -325,12 +325,14 @@
 
     function filesToBase64(img) {
         return new Promise((resolve, reject) => {
-            const reader = new FileReader
+            const reader = new FileReader()
             reader.onload = () => resolve(reader.result)
             reader.onerror = reject
             reader.readAsDataURL(img)
         })
     }
+
+    const pauseExecution = (timeWait) => new Promise((resolve) => setTimeout(resolve, timeWait))
 
     document.querySelectorAll(".tooltip-div").forEach(item => {
         item.addEventListener("click", function() {
@@ -759,6 +761,7 @@
                         totalSize = totalSize + compressedImage.size
                     } catch(error) {
                         document.getElementById("spinnerContainer").style.display = "none"
+                        images.value = null
                         addNewAlert("ERROR", error)
                     }
                 }
@@ -804,16 +807,20 @@
         })
 
         document.querySelectorAll(".add-new-images-input").forEach(elm => {
+            let fileLoadWait = 1000
             elm.addEventListener("change", async function() {
                 let id = elm.getAttribute("data-id")
                 let fileSizeSpan = document.getElementById(`fileSizeSpan-${id}`)
                 let totalSize = 0
+                await pauseExecution(fileLoadWait)
                 for (let x = 0; x < elm.files.length; x++) {
                     try {
                         const compressedImage = await imageConversion.compressAccurately(elm.files[x], 400)
                         totalSize = totalSize + compressedImage.size
                     } catch(error) {
                         addNewAlert("ERROR", error)
+                        fileLoadWait = fileLoadWait + 1000
+                        elm.value = null
                         return
                     }
                 }

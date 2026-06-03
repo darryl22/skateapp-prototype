@@ -1197,6 +1197,36 @@
         })
     }
 
+    function addSpotLayer(type, spotObject) {
+        map.addSource(`spotsSource${type}`, {
+            'type': 'geojson',
+            'data': {
+                'type': 'FeatureCollection',
+                'features': spotObject
+            },
+        })
+
+        map.addLayer({
+            'id': `spotsLayer${type}`,
+            'type': 'symbol',
+            'source': `spotsSource${type}`,
+            'layout': {
+                'icon-image': `marker-${type}`,
+                'icon-size': 0.1,
+                'icon-anchor': "bottom",
+                'icon-allow-overlap': true
+            }
+        })
+    }
+
+    function addSpotChangeLocation(e) {
+        let lngLat = e.lngLat
+        markerCoordinates = [lngLat.lng, lngLat.lat]
+        longitude.value = lngLat.lng
+        latitude.value = lngLat.lat
+        addSpotMarker.setLngLat(e.lngLat)
+    }
+
     map.on('load', () => {
         map.addControl(geoLoc);
         for (let x = 0; x < categoryEntries.length; x++) {
@@ -1208,6 +1238,7 @@
                         console.log("logo missing")
                     }
                     map.addImage('marker-stairs', image)
+                    addSpotLayer("stairs", spotCategories.stairs)
                 })
                 document.getElementById(`typeFilter-stairs`).innerText = categoryEntries[x][1].length
             } else if (categoryEntries[x][0] === "rail") {
@@ -1217,6 +1248,7 @@
                         console.log("logo missing")
                     }
                     map.addImage('marker-rail', image)
+                    addSpotLayer("rail", spotCategories.rail)
                 })
                 document.getElementById(`typeFilter-rail`).innerText = categoryEntries[x][1].length
             } else if (categoryEntries[x][0] === "park") {
@@ -1226,6 +1258,7 @@
                         console.log("logo missing")
                     }
                     map.addImage('marker-park', image)
+                    addSpotLayer("park", spotCategories.park)
                 })
                 document.getElementById(`typeFilter-park`).innerText = categoryEntries[x][1].length
             } else if (categoryEntries[x][0] === "ledge") {
@@ -1235,6 +1268,7 @@
                         console.log("logo missing")
                     }
                     map.addImage('marker-ledge', image)
+                    addSpotLayer("ledge", spotCategories.ledge)
                 })
                 document.getElementById(`typeFilter-ledge`).innerText = categoryEntries[x][1].length
             } else if (categoryEntries[x][0] === "flatground") {
@@ -1244,6 +1278,7 @@
                         console.log("logo missing")
                     }
                     map.addImage('marker-flatground', image)
+                    addSpotLayer("flatground", spotCategories.flatground)
                 })
                 document.getElementById(`typeFilter-flatground`).innerText = categoryEntries[x][1].length
             } else if (categoryEntries[x][0] === "hill") {
@@ -1253,6 +1288,7 @@
                         console.log("logo missing")
                     }
                     map.addImage('marker-hill', image)
+                    addSpotLayer("hill", spotCategories.hill)
                 })
                 document.getElementById(`typeFilter-hill`).innerText = categoryEntries[x][1].length
             } else {
@@ -1262,39 +1298,29 @@
                         console.log("logo missing")
                     }
                     map.addImage('marker-other', image)
+                    addSpotLayer("other", spotCategories.other)
                 })
                 document.getElementById(`typeFilter-other`).innerText = categoryEntries[x][1].length
             }
-            map.addSource(`spotsSource${categoryEntries[x][0]}`, {
-                'type': 'geojson',
-                'data': {
-                    'type': 'FeatureCollection',
-                    'features': categoryEntries[x][1]
-                },
-                // cluster: true,
-                // clusterMaxZoom: 11,
-                // clusterRadius: 20
-                // 'dynamic': true
-            })
+            // map.addSource(`spotsSource${categoryEntries[x][0]}`, {
+            //     'type': 'geojson',
+            //     'data': {
+            //         'type': 'FeatureCollection',
+            //         'features': categoryEntries[x][1]
+            //     },
+            // })
 
-            map.addLayer({
-                'id': `spotsLayer${categoryEntries[x][0]}`,
-                // 'type': 'circle',
-                'type': 'symbol',
-                'source': `spotsSource${categoryEntries[x][0]}`,
-                // 'paint': {
-                //     'circle-color': pointColor,
-                //     'circle-radius': 10,
-                //     'circle-stroke-width': 3,
-                //     'circle-stroke-color': '#ffffff'
-                // }
-                'layout': {
-                    'icon-image': `marker-${categoryEntries[x][0]}`,
-                    'icon-size': 0.1,
-                    'icon-anchor': "bottom",
-                    'icon-allow-overlap': true
-                }
-            })
+            // map.addLayer({
+            //     'id': `spotsLayer${categoryEntries[x][0]}`,
+            //     'type': 'symbol',
+            //     'source': `spotsSource${categoryEntries[x][0]}`,
+            //     'layout': {
+            //         'icon-image': `marker-${categoryEntries[x][0]}`,
+            //         'icon-size': 0.1,
+            //         'icon-anchor': "bottom",
+            //         'icon-allow-overlap': true
+            //     }
+            // })
 
             map.on("click", `spotsLayer${categoryEntries[x][0]}`, (e) => {
                 map.getCanvas().style.cursor = "pointer"
@@ -1605,6 +1631,7 @@
 
     addNewSpotButton.addEventListener('click', function() {
         // hideMenu()
+        map.on('click', addSpotChangeLocation)
         hideModal(currentOpenModal)
         popup.remove()
         addSpotForm.style.display = "flex"
@@ -1701,6 +1728,7 @@
 
     cancelNewSpotButton.addEventListener('click', function() {
         addSpotForm.style.display = "none"
+        map.off('click', addSpotChangeLocation)
         addSpotMarker.remove()
         for (x of categoryEntries) {
             map.setLayoutProperty(`spotsLayer${x[0]}`, "visibility", "visible")
@@ -1718,18 +1746,35 @@
 
     function filesToBase64(img) {
         return new Promise((resolve, reject) => {
-            const reader = new FileReader
+            const reader = new FileReader()
             reader.onload = () => resolve(reader.result)
             reader.onerror = reject
             reader.readAsDataURL(img)
         })
     }
 
+    function filesToBase64Compressed(img, size) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader()
+            reader.onload = async (e) => {
+                const imageUri = e.target.result
+                const compressedImage = await imageConversion.compressAccurately(img, size)
+                console.log(compressedImage)
+                resolve(compressedImage)
+            }
+            reader.onerror = reject
+            reader.readAsDataURL(img)
+        })
+    }
+
+    const pauseExecution = (timeWait) => new Promise((resolve) => setTimeout(resolve, timeWait))
+
     let editUploadImagesDiv = document.getElementById("editUploadImagesDiv")
     let clearUploadSelections = document.getElementById("clearUploadSelections")
     let spotImageList = new Map()
     let sizeInMB = 0
     let selectedCount = 0
+    let fileLoadWait = 1000
     document.getElementById("spotImages").addEventListener("change", async function() {
         let images = document.getElementById("spotImages")
         let totalSize = 0
@@ -1740,10 +1785,13 @@
             return
         }
         document.getElementById("modifyUploadImages").classList.remove("hidden")
+        document.getElementById("spinnerContainer").style.display = "block"
+        await pauseExecution(fileLoadWait)
+        document.getElementById("spinnerContainer").style.display = "none"
         for (let x = 0; x < images.files.length; x++) {
             try{
                 const compressedImage = await imageConversion.compressAccurately(images.files[x], 400)
-                await filesToBase64(compressedImage)
+                await filesToBase64(compressedImage, 400)
                 .then(res => {
                     totalSize = totalSize + compressedImage.size
                     let imageNode = `<div class="edit-pictures-item" style="background-image: url('${res}');" data-picture-index="${x}">
@@ -1757,13 +1805,16 @@
                 })
             } catch(error) {
                 addNewAlert("ERROR", error)
+                this.value = null
+                fileLoadWait = fileLoadWait + 1000
                 return
             }
         }
         sizeInMB = totalSize / 1048576
         if (sizeInMB > 10) {
             document.getElementById("fileSizeSpan").style.color = "red"
-        } else {
+        } 
+        else {
             document.getElementById("fileSizeSpan").style.color = "green"
             editUploadImagesDiv.replaceChildren()
             editUploadImagesDiv.insertAdjacentHTML("beforeend", imageNodesList)
